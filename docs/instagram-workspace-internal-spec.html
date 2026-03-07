@@ -1,0 +1,259 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Instagram Workspace Internal Spec</title>
+  <style>
+    :root {
+      --bg: #f5f7fb;
+      --page: #ffffff;
+      --ink: #111827;
+      --muted: #4b5563;
+      --line: #d6deeb;
+      --accent: #1d4ed8;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      font-family: "Segoe UI", Arial, sans-serif;
+      color: var(--ink);
+      background:
+        radial-gradient(circle at top left, #eef4ff 0%, transparent 32%),
+        var(--bg);
+    }
+
+    .page {
+      width: min(900px, calc(100vw - 48px));
+      margin: 32px auto;
+      padding: 40px 44px;
+      background: var(--page);
+      border: 1px solid var(--line);
+      border-radius: 20px;
+      box-shadow: 0 14px 34px rgba(15, 23, 42, 0.08);
+    }
+
+    h1, h2, h3 {
+      margin: 0 0 14px;
+      line-height: 1.15;
+    }
+
+    h1 {
+      font-size: 2.1rem;
+    }
+
+    h2 {
+      margin-top: 34px;
+      font-size: 1.35rem;
+      padding-top: 18px;
+      border-top: 1px solid var(--line);
+    }
+
+    h3 {
+      margin-top: 22px;
+      font-size: 1.05rem;
+    }
+
+    p, li {
+      font-size: 1rem;
+      line-height: 1.65;
+      color: var(--muted);
+    }
+
+    ul, ol {
+      margin: 10px 0 0 22px;
+      padding: 0;
+    }
+
+    code {
+      padding: 2px 6px;
+      border-radius: 6px;
+      background: #edf2ff;
+      color: #1e3a8a;
+      font-family: Consolas, "Courier New", monospace;
+      font-size: 0.94em;
+    }
+
+    .lead {
+      font-size: 1.05rem;
+    }
+
+    .block {
+      margin-top: 16px;
+      padding: 16px 18px;
+      border: 1px solid var(--line);
+      border-radius: 14px;
+      background: #f8fbff;
+    }
+
+    .label {
+      color: var(--accent);
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      font-size: 0.8rem;
+    }
+
+    @media print {
+      body {
+        background: #ffffff;
+      }
+
+      .page {
+        width: 100%;
+        margin: 0;
+        padding: 0;
+        border: 0;
+        box-shadow: none;
+      }
+    }
+  </style>
+</head>
+<body>
+  <main class="page">
+    <p class="label">Internal Product Spec</p>
+    <h1>Instagram Workspace Internal Spec</h1>
+    <p class="lead">Build a dataset-based Instagram SaaS where users upload their Instagram export once, create reusable datasets, and run multiple tools against those datasets.</p>
+
+    <div class="block">
+      <p><strong>Core model:</strong> <code>Instagram export -&gt; processed dataset -&gt; dataset workspace -&gt; multiple tools -&gt; results</code></p>
+      <p><strong>Key principle:</strong> <code>Upload once. Use many times.</code></p>
+    </div>
+
+    <h2>Product Positioning</h2>
+    <p>Use <code>workspace</code> or <code>platform</code> for the product identity. Use <code>analyzer</code> as a capability or tool type inside the platform.</p>
+    <p><strong>Working positioning:</strong> <code>Upload your Instagram export once, create a reusable dataset, and run AI-powered tools to analyze and improve your account.</code></p>
+
+    <h2>Core Product Model</h2>
+    <p>The primary object is the <code>Dataset</code>. A dataset is a processed Instagram export that stores normalized account data, metadata, and tool-ready records for repeated use across multiple tools.</p>
+    <ul>
+      <li>import source context</li>
+      <li>normalized follower/following records</li>
+      <li>metadata</li>
+      <li>dataset name</li>
+      <li>notes</li>
+      <li>creation timestamps</li>
+      <li>tool-compatible derived records</li>
+      <li>saved outputs/history later</li>
+    </ul>
+
+    <h2>Core Workflow</h2>
+    <ol>
+      <li>User lands on homepage</li>
+      <li>User uploads Instagram export</li>
+      <li>System validates and processes files</li>
+      <li>User reviews upload summary</li>
+      <li>User names dataset and adds optional notes</li>
+      <li>System creates dataset</li>
+      <li>User enters dataset workspace</li>
+      <li>User selects a tool</li>
+      <li>Tool runs against dataset</li>
+      <li>User reviews results</li>
+    </ol>
+
+    <h2>Main Pages</h2>
+    <h3>Homepage</h3>
+    <ul>
+      <li>hero</li>
+      <li>primary CTA: <code>Create Dataset</code> / <code>Upload Export</code></li>
+      <li>secondary CTA: <code>Explore Tools</code></li>
+      <li>short how-it-works section</li>
+      <li>tool preview section</li>
+      <li>tutorial/help section</li>
+    </ul>
+
+    <h3>Datasets List</h3>
+    <ul>
+      <li>dataset cards/list</li>
+      <li>create dataset button</li>
+      <li>dataset status/meta</li>
+      <li>search/filter later</li>
+    </ul>
+
+    <h3>Dataset Workspace</h3>
+    <ul>
+      <li>dataset name</li>
+      <li>created date</li>
+      <li>notes</li>
+      <li>dataset overview metrics</li>
+      <li>available tools</li>
+      <li>recent outputs/history later</li>
+    </ul>
+
+    <h3>Tool Page</h3>
+    <ul>
+      <li>tool name</li>
+      <li>dataset context</li>
+      <li>tool controls</li>
+      <li>result panels</li>
+      <li>export/copy actions</li>
+    </ul>
+
+    <h2>Dataset Workspace Metrics</h2>
+    <p>Base workspace metrics should stay factual and directly supported by the data.</p>
+    <ul>
+      <li>follower count</li>
+      <li>following count</li>
+      <li>mutual count</li>
+      <li>not-following-back count</li>
+      <li>imported file count</li>
+      <li>import date</li>
+      <li>dataset created date</li>
+    </ul>
+    <p>Advanced inferred insights such as engagement rate, active hour, or account activity patterns should be tool outputs unless the export clearly supports them as stable dataset-level metrics.</p>
+
+    <h2>Tool System</h2>
+    <p>One dataset can power multiple tools.</p>
+
+    <h3>MVP Tool</h3>
+    <p><code>Not Following Back</code></p>
+    <ul>
+      <li>compare following vs followers</li>
+      <li>identify users who do not follow back</li>
+      <li>review/manage results</li>
+      <li>copy/export results</li>
+      <li>support workflow handling</li>
+    </ul>
+
+    <h3>Near-Term Tools</h3>
+    <ul>
+      <li>Mutuals / relationship analysis</li>
+      <li>Ghost follower analysis</li>
+      <li>Audience/activity insights</li>
+    </ul>
+
+    <h3>Later Tools</h3>
+    <ul>
+      <li>Posting-time recommendations</li>
+      <li>AI growth recommendations</li>
+      <li>exportable creator/account reports</li>
+    </ul>
+
+    <h2>Navigation Model</h2>
+    <p>Top-level navigation should include Home, Login / Signup, App, Datasets, Tools, and Account / Billing later.</p>
+    <p>In-app flow should center on Datasets list, Dataset workspace, Tool page, and Results/output view.</p>
+
+    <h2>Current Codebase Fit</h2>
+    <p>What already aligns: homepage direction, dataset-first onboarding, upload/parsing flow, Tool 1, and local dataset handoff.</p>
+    <p>What is temporary: static front-end architecture, prototype-first file structure, limited persistence, and no real SaaS backend/auth model yet.</p>
+
+    <h2>Technical Direction</h2>
+    <p>The current static HTML/CSS/JavaScript stack is good for prototype and workflow validation, but it is not the ideal final architecture for a real SaaS.</p>
+    <p>Best long-term fit: <code>Next.js / React</code> plus a backend for users, datasets, jobs, and tool outputs.</p>
+    <p>Do not rewrite immediately just for fashion. Rewrite when the page structure is stable, the dataset model is clearer, the second and third tools are defined, and auth/account architecture becomes necessary.</p>
+
+    <h2>Immediate Next Steps</h2>
+    <ol>
+      <li>Inspect a real Instagram export sample.</li>
+      <li>Define actual available data fields.</li>
+      <li>Decide which future tools are truly supportable.</li>
+      <li>Finalize product naming and page structure.</li>
+      <li>Then decide whether to keep iterating in the current codebase or begin a framework migration.</li>
+    </ol>
+  </main>
+</body>
+</html>

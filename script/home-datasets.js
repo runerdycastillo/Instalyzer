@@ -2,6 +2,7 @@ const STORAGE_KEY_THEME = "ig_theme_v1";
 const STORAGE_KEY_TUTORIAL_UNLOCKED = "ff_tutorial_unlocked_v1";
 const STORAGE_KEY_DATASETS = "ff_guest_datasets_v1";
 const STORAGE_KEY_ACTIVE_DATASET_ID = "ff_active_dataset_id_v1";
+const STORAGE_KEY_UPLOADED_DATA = "ff_uploaded_instagram_data_v1";
 const MAX_GUEST_DATASETS = 2;
 let datasets = loadDatasets();
 let activeDatasetId = loadActiveDatasetId();
@@ -81,6 +82,28 @@ function saveActiveDatasetId(id) {
 
 function getActiveDataset() {
   return datasets.find((dataset) => dataset.id === activeDatasetId) || datasets[0] || null;
+}
+
+function syncPrototypeUploadCache() {
+  const active = getActiveDataset();
+
+  if (!active) {
+    localStorage.removeItem(STORAGE_KEY_UPLOADED_DATA);
+    return;
+  }
+
+  localStorage.setItem(
+    STORAGE_KEY_UPLOADED_DATA,
+    JSON.stringify({
+      source: "dataset",
+      datasetId: active.id,
+      datasetName: active.name,
+      uploadedAt: active.createdAtMs || Date.now(),
+      followersData: active.followersData,
+      followingData: active.followingData,
+      meta: active.meta || {}
+    })
+  );
 }
 
 function formatDatasetDate(value) {
@@ -189,7 +212,13 @@ function renderDatasetList() {
 
 function renderActiveDataset() {
   const active = getActiveDataset();
-  if (active) saveActiveDatasetId(active.id);
+  if (active) {
+    saveActiveDatasetId(active.id);
+    syncPrototypeUploadCache();
+    return;
+  }
+
+  syncPrototypeUploadCache();
 }
 
 function renderAll() {
@@ -449,6 +478,7 @@ function createDatasetFromStage() {
   } catch {
     setUploadStatus("Could not save that dataset locally. Try a smaller export or clear old datasets first.", "error");
     datasets = loadDatasets();
+    syncPrototypeUploadCache();
     return;
   }
   selectDataset(dataset.id);
@@ -556,11 +586,14 @@ function wireDatasetList() {
 function syncActiveDataset() {
   if (!datasets.length) {
     saveActiveDatasetId("");
+    syncPrototypeUploadCache();
     return;
   }
   if (!datasets.some((dataset) => dataset.id === activeDatasetId)) {
     saveActiveDatasetId(datasets[0].id);
   }
+
+  syncPrototypeUploadCache();
 }
 
 applyTheme(activeTheme);
