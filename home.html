@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>f&f home</title>
+    <title>f&f | home</title>
     <script>
         (() => {
             const saved = localStorage.getItem("ig_theme_v1");
@@ -12,15 +12,28 @@
             window.__initialTheme = theme;
         })();
     </script>
+    <link rel="icon" type="image/png" href="./assets/favicon.png">
     <link rel="preload" as="image" href="./assets/f&f-logo.png">
     <link rel="preload" as="image" href="./assets/f&f-logo-light.png">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@500;600;700&family=Source+Sans+3:wght@400;500;600;700&family=IBM+Plex+Mono:wght@500&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="./styles/styles.css">
-    <script defer src="./script/home.js"></script>
+    <script defer src="./script/vendor-fflate.js"></script>
+    <script defer src="./script/home-datasets.js"></script>
 </head>
 <body>
+    <div class="page-shell">
+    <div class="bg-hex bg-hex-1" aria-hidden="true"></div>
+    <div class="bg-hex bg-hex-2" aria-hidden="true"></div>
+    <div class="bg-hex bg-hex-3" aria-hidden="true"></div>
+    <div class="bg-hex bg-hex-4" aria-hidden="true"></div>
+    <div class="bg-hex bg-hex-5" aria-hidden="true"></div>
+    <div class="bg-hex bg-hex-6" aria-hidden="true"></div>
+    <div class="bg-hex bg-hex-7" aria-hidden="true"></div>
+    <div class="bg-hex bg-hex-8" aria-hidden="true"></div>
+    <div class="bg-hex bg-hex-9" aria-hidden="true"></div>
+    <div class="bg-hex bg-hex-10" aria-hidden="true"></div>
     <div class="app-page">
         <nav class="top-nav panel" aria-label="Primary">
             <div class="top-nav-brand">
@@ -32,7 +45,9 @@
                 </button>
             </div>
             <div class="top-nav-center">
-                <img id="home-nav-logo" src="./assets/f&f-logo.png" alt="f&f logo" class="top-nav-logo" width="96" height="96" />
+                <span class="top-nav-logo-link is-current" aria-label="Home" aria-current="page">
+                    <img id="home-nav-logo" src="./assets/f&f-logo.png" alt="f&f logo" class="top-nav-logo" width="96" height="96" />
+                </span>
                 <script>
                     (() => {
                         const logo = document.getElementById("home-nav-logo");
@@ -44,83 +59,100 @@
                 </script>
             </div>
             <div class="top-nav-links">
-                <a href="./index.html" class="top-nav-link">open app</a>
-                <a href="./home.html" class="top-nav-home is-current" aria-label="Home" aria-current="page">
-                    <svg viewBox="0 0 24 24" aria-hidden="true">
-                        <path d="M3 10.5 12 3l9 7.5"></path>
-                        <path d="M5 9.5V21h14V9.5"></path>
-                        <path d="M9.5 21v-6h5v6"></path>
-                    </svg>
-                </a>
+                <a href="./index.html" class="top-nav-link">open prototype</a>
                 <button id="toggle-theme" class="mini-btn theme-btn top-nav-theme-btn" aria-label="Toggle theme"></button>
             </div>
         </nav>
 
-        <main class="panel landing-shell" aria-label="Home landing page">
-            <section class="hero-section" aria-labelledby="hero-title">
-                <div class="hero-ambient" aria-hidden="true">
-                    <img src="./assets/logo-arrows.png" alt="" class="hero-logo-arrows" />
-                    <div class="hero-stage-card hero-stage-card-back"></div>
-                    <div class="hero-stage-card hero-stage-card-front">
-                        <div class="hero-stage-bar"></div>
-                        <div class="hero-stage-icons">
-                            <span class="hero-stage-icon">
-                                <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3v12"></path><path d="m7 10 5 5 5-5"></path><path d="M5 21h14"></path></svg>
-                            </span>
-                            <span class="hero-stage-icon">
-                                <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><path d="M7 10 12 15 17 10"></path><path d="M12 15V3"></path></svg>
-                            </span>
-                            <span class="hero-stage-icon">
-                                <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 11h6"></path><path d="M9 15h4"></path><rect x="4" y="4" width="16" height="16" rx="3"></rect></svg>
-                            </span>
-                        </div>
-                        <div class="hero-stage-grid">
-                            <span></span>
-                            <span></span>
-                            <span></span>
-                            <span></span>
-                        </div>
+        <div class="dataset-workspace">
+            <aside class="dataset-sidebar panel" aria-label="Datasets">
+                    <div class="dataset-sidebar-head">
+                        <p class="section-kicker">guest workspace</p>
+                        <h2 class="dataset-sidebar-title">datasets</h2>
                     </div>
-                </div>
-                <h1 id="hero-title" class="hero-title">turn your instagram export into tools</h1>
-                <p class="hero-eyebrow">instagram export tools</p>
-                <p class="hero-copy">
-                    f&amp;f helps you upload your followers and following data, process it once, and open the tools you need.
-                </p>
-                <div class="hero-flow" aria-label="Product flow">
-                    <span class="hero-flow-item">
-                        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3v12"></path><path d="m7 10 5 5 5-5"></path><path d="M5 21h14"></path></svg>
-                        export
-                    </span>
-                    <span class="hero-flow-sep" aria-hidden="true">
-                        <svg viewBox="0 0 24 24"><path d="m9 6 6 6-6 6"></path></svg>
-                    </span>
-                    <span class="hero-flow-item">
-                        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><path d="M7 10 12 15 17 10"></path><path d="M12 15V3"></path></svg>
-                        upload
-                    </span>
-                    <span class="hero-flow-sep" aria-hidden="true">
-                        <svg viewBox="0 0 24 24"><path d="m9 6 6 6-6 6"></path></svg>
-                    </span>
-                    <span class="hero-flow-item">
-                        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 11h6"></path><path d="M9 15h4"></path><rect x="4" y="4" width="16" height="16" rx="3"></rect></svg>
-                        choose tools
-                    </span>
-                </div>
-                <div class="hero-actions">
-                    <a href="#upload-section" class="hero-btn hero-btn-primary">upload your data</a>
-                    <a href="#tutorial-section" class="hero-btn hero-btn-secondary">see how it works</a>
-                </div>
-            </section>
 
-            <section id="tutorial-section" class="landing-placeholder-section" aria-label="Tutorial preview">
+                    <div class="dataset-sidebar-actions">
+                        <button type="button" class="hero-btn hero-btn-primary dataset-sidebar-btn" data-open-create-modal>create dataset</button>
+                    </div>
+
+                    <div class="dataset-limit-card">
+                        <p class="dataset-limit-label">guest limit</p>
+                        <p class="dataset-limit-copy" data-dataset-limit-copy>0 of 2 datasets used</p>
+                    </div>
+
+                    <div class="dataset-list-shell">
+                        <div class="dataset-list-head">
+                            <h3 class="dataset-list-title">saved datasets</h3>
+                            <span class="dataset-list-count" data-dataset-count>0</span>
+                        </div>
+                        <div class="dataset-list" data-dataset-list></div>
+                    </div>
+            </aside>
+
+            <main class="panel landing-shell dataset-main" aria-label="Home landing page">
+                    <section class="hero-section" aria-labelledby="hero-title">
+                        <div class="hero-ambient" aria-hidden="true">
+                            <img src="./assets/logo-arrows.png" alt="" class="hero-logo-arrows" />
+                            <div class="hero-stage-card hero-stage-card-back"></div>
+                            <div class="hero-stage-card hero-stage-card-front">
+                                <div class="hero-stage-bar"></div>
+                                <div class="hero-stage-icons">
+                                    <span class="hero-stage-icon">
+                                        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3v12"></path><path d="m7 10 5 5 5-5"></path><path d="M5 21h14"></path></svg>
+                                    </span>
+                                    <span class="hero-stage-icon">
+                                        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><path d="M7 10 12 15 17 10"></path><path d="M12 15V3"></path></svg>
+                                    </span>
+                                    <span class="hero-stage-icon">
+                                        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 11h6"></path><path d="M9 15h4"></path><rect x="4" y="4" width="16" height="16" rx="3"></rect></svg>
+                                    </span>
+                                </div>
+                                <div class="hero-stage-grid">
+                                    <span></span>
+                                    <span></span>
+                                    <span></span>
+                                    <span></span>
+                                </div>
+                            </div>
+                        </div>
+                        <h1 id="hero-title" class="hero-title">turn your instagram export into tools</h1>
+                        <p class="hero-eyebrow">dataset-first workflow</p>
+                        <p class="hero-copy">
+                            import your export, name the dataset, then open the tools.
+                        </p>
+                        <div class="hero-flow" aria-label="Product flow">
+                            <span class="hero-flow-item">
+                                <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3v12"></path><path d="m7 10 5 5 5-5"></path><path d="M5 21h14"></path></svg>
+                                import
+                            </span>
+                            <span class="hero-flow-sep" aria-hidden="true">
+                                <svg viewBox="0 0 24 24"><path d="m9 6 6 6-6 6"></path></svg>
+                            </span>
+                            <span class="hero-flow-item">
+                                <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 20h16"></path><path d="M7 20v-9"></path><path d="M12 20V4"></path><path d="M17 20v-6"></path></svg>
+                                review metadata
+                            </span>
+                            <span class="hero-flow-sep" aria-hidden="true">
+                                <svg viewBox="0 0 24 24"><path d="m9 6 6 6-6 6"></path></svg>
+                            </span>
+                            <span class="hero-flow-item">
+                                <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 11h6"></path><path d="M9 15h4"></path><rect x="4" y="4" width="16" height="16" rx="3"></rect></svg>
+                                launch tools
+                            </span>
+                        </div>
+                        <div class="hero-actions">
+                            <button type="button" class="hero-btn hero-btn-primary" data-open-create-modal>create dataset</button>
+                            <a href="#tutorial-section" class="hero-btn hero-btn-secondary">see how it works</a>
+                        </div>
+                    </section>
+
+                    <section id="tutorial-section" class="landing-placeholder-section" aria-label="Tutorial preview">
                 <div class="section-intro">
                     <p class="section-kicker">desktop walkthrough</p>
                     <h2 class="section-title">how to export your instagram data</h2>
                     <p class="section-copy">
-                        this tutorial is built for the desktop version of instagram. follow the steps below, download your export, then come back here to upload your files.
+                        follow the steps, download your export, then come back here.
                     </p>
-                    <button type="button" class="tutorial-dev-toggle" data-tutorial-reset>show login overlay again</button>
                 </div>
 
                 <div class="tutorial-lock-shell is-locked" data-tutorial-shell>
@@ -136,37 +168,193 @@
                         </div>
                     </div>
 
-                    <div class="tutorial-carousel" aria-label="Instagram export tutorial" data-tutorial-carousel>
-                        <div class="tutorial-carousel-media">
-                            <img
-                                src="./assets/tutorial/profile-page.png"
-                                alt="Instagram desktop profile page"
-                                class="tutorial-image"
-                            />
-                            <div class="tutorial-carousel-body tutorial-carousel-overlay">
-                                <div class="tutorial-carousel-topline">
-                                <span class="tutorial-step-number">01</span>
-                                <span class="tutorial-step-count">1 / 1</span>
-                                </div>
-                                <h3 class="tutorial-step-title">open the menu from your profile page</h3>
-                                <p class="tutorial-step-copy">
-                                    start on your instagram profile page, then click the three-line menu button in the lower left sidebar to open the options menu.
-                                </p>
+                    <div class="tutorial-written-guide" aria-label="Instagram export tutorial" data-tutorial-carousel>
+                        <div class="tutorial-guide-header">
+                            <p class="tutorial-guide-kicker">written walkthrough</p>
+                            <h3 class="tutorial-guide-title">request your export, then <button type="button" class="tutorial-guide-link" data-open-create-modal>upload</button> it here</h3>
+                            <p class="tutorial-guide-copy">
+                                these steps are for instagram on desktop.
+                            </p>
+                        </div>
 
-                                <div class="tutorial-carousel-controls">
-                                    <button type="button" class="tutorial-nav-btn" disabled>previous</button>
-                                    <button type="button" class="tutorial-nav-btn" disabled>next</button>
+                        <ol class="tutorial-step-list">
+                            <li class="tutorial-step-card">
+                                <div class="tutorial-step-topline">
+                                    <span class="tutorial-step-number">01</span>
+                                    <span class="tutorial-step-label">open your profile menu</span>
                                 </div>
+                                <p class="tutorial-step-copy">
+                                    go to your instagram <strong>profile</strong> on desktop and click the <strong>three-line menu</strong> in the lower-left sidebar.
+                                </p>
+                            </li>
+                            <li class="tutorial-step-card">
+                                <div class="tutorial-step-topline">
+                                    <span class="tutorial-step-number">02</span>
+                                    <span class="tutorial-step-label">open settings</span>
+                                </div>
+                                <p class="tutorial-step-copy">
+                                    choose <strong>settings</strong>, then open the <strong>accounts center</strong> area if instagram sends you there.
+                                </p>
+                            </li>
+                            <li class="tutorial-step-card">
+                                <div class="tutorial-step-topline">
+                                    <span class="tutorial-step-number">03</span>
+                                    <span class="tutorial-step-label">find your information</span>
+                                </div>
+                                <p class="tutorial-step-copy">
+                                    click <strong>your information and permissions</strong>, then select <strong>download your information</strong>.
+                                </p>
+                            </li>
+                            <li class="tutorial-step-card">
+                                <div class="tutorial-step-topline">
+                                    <span class="tutorial-step-number">04</span>
+                                    <span class="tutorial-step-label">choose the account and format</span>
+                                </div>
+                                <p class="tutorial-step-copy">
+                                    pick the instagram <strong>account</strong> you want to export, choose the <strong>data range</strong> you need, and select <strong>json</strong> format, not html, before creating the file.
+                                </p>
+                            </li>
+                            <li class="tutorial-step-card">
+                                <div class="tutorial-step-topline">
+                                    <span class="tutorial-step-number">05</span>
+                                    <span class="tutorial-step-label">download the archive</span>
+                                </div>
+                                <p class="tutorial-step-copy">
+                                    once instagram finishes preparing the <strong>export</strong>, download the <strong>zip</strong> directly from the page.
+                                </p>
+                            </li>
+                            <li class="tutorial-step-card">
+                                <div class="tutorial-step-topline">
+                                    <span class="tutorial-step-number">06</span>
+                                    <span class="tutorial-step-label">come back and upload it here</span>
+                                </div>
+                                <p class="tutorial-step-copy">
+                                    return to this page, click <strong>create dataset</strong>, and import the downloaded <strong>export</strong> to build your dataset.
+                                </p>
+                            </li>
+                        </ol>
+
+                        <div class="tutorial-note">
+                            <p class="tutorial-note-title">quick note</p>
+                            <p class="tutorial-note-copy">
+                                if instagram changes the wording, look for the path that mentions your information, permissions, or downloading your data.
+                            </p>
+                        </div>
+                    </div>
+                    </section>
+            </main>
+        </div>
+        <footer class="site-footer panel" aria-label="Site footer">
+            <div class="site-footer-brand is-current" aria-label="Home" aria-current="page">
+                <img id="home-footer-logo" src="./assets/f&f-logo.png" alt="f&f logo" class="site-footer-logo" width="72" height="72" />
+            </div>
+            <p class="site-footer-copy">f&amp;f &copy; 2026</p>
+            <div class="site-footer-spacer" aria-hidden="true"></div>
+        </footer>
+    </div>
+    <div class="modal-shell" data-create-modal hidden>
+        <div class="modal-backdrop" data-close-create-modal></div>
+        <div class="modal-panel panel" role="dialog" aria-modal="true" aria-labelledby="create-dataset-title">
+            <div class="modal-head">
+                <div>
+                    <p class="section-kicker">create dataset</p>
+                    <h2 id="create-dataset-title" class="modal-title">import your export</h2>
+                </div>
+                <button type="button" class="modal-close" data-close-create-modal aria-label="Close create dataset modal">
+                    <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6 18 18"></path><path d="M18 6 6 18"></path></svg>
+                </button>
+            </div>
+
+            <div class="modal-steps" aria-label="Create dataset steps">
+                <span class="modal-step is-active" data-modal-step-indicator="upload">1. upload</span>
+                <span class="modal-step" data-modal-step-indicator="details">2. details</span>
+            </div>
+
+            <section class="modal-stage" data-modal-stage="upload">
+                <p class="modal-copy">
+                    drop the instagram <strong>zip</strong>, folder, or the <strong>followers</strong> and <strong>following</strong> json files.
+                </p>
+
+                <div class="upload-panel" data-upload-panel>
+                    <input type="file" class="upload-input" data-upload-files accept=".json,.zip,application/json,application/zip" multiple hidden />
+                    <input type="file" class="upload-input" data-upload-folder webkitdirectory directory multiple hidden />
+
+                    <div class="upload-dropzone" data-upload-dropzone tabindex="0" role="button" aria-describedby="upload-help upload-status">
+                        <div class="upload-dropzone-icon" aria-hidden="true">
+                            <svg viewBox="0 0 24 24">
+                                <path d="M12 16V4"></path>
+                                <path d="m7 9 5-5 5 5"></path>
+                                <path d="M4 16v2a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-2"></path>
+                            </svg>
+                        </div>
+                        <p class="upload-dropzone-title">drop a zip, files, or a folder here</p>
+                        <p id="upload-help" class="upload-dropzone-copy">
+                            easiest option: drag in the instagram zip.
+                        </p>
+                        <div class="upload-actions">
+                            <button type="button" class="hero-btn hero-btn-primary" data-upload-trigger="folder">choose folder</button>
+                            <button type="button" class="hero-btn hero-btn-secondary" data-upload-trigger="files">choose files</button>
+                        </div>
+                    </div>
+
+                    <div class="upload-status-card" aria-live="polite" aria-atomic="true">
+                        <p class="upload-status-label">status</p>
+                        <p id="upload-status" class="upload-status-text" data-upload-status>
+                            waiting for files. nothing has been uploaded yet.
+                        </p>
+                    </div>
+
+                    <div class="upload-results" data-upload-results hidden>
+                        <div class="upload-results-grid">
+                            <div class="upload-result-card">
+                                <p class="upload-result-label">followers files</p>
+                                <ul class="upload-result-list" data-upload-followers-list></ul>
                             </div>
+                            <div class="upload-result-card">
+                                <p class="upload-result-label">following files</p>
+                                <ul class="upload-result-list" data-upload-following-list></ul>
+                            </div>
+                        </div>
+                        <div class="upload-ready-bar">
+                            <p class="upload-ready-copy" data-upload-ready-copy></p>
+                            <button type="button" class="hero-btn hero-btn-primary" data-go-dataset-details disabled>continue to details</button>
                         </div>
                     </div>
                 </div>
             </section>
 
-            <section id="upload-section" class="landing-placeholder-section" aria-label="Upload preview">
-                <p class="landing-placeholder-text">upload flow coming next</p>
+            <section class="modal-stage" data-modal-stage="details" hidden>
+                <div class="details-form-shell">
+                    <div class="details-form-grid">
+                        <label class="field-label">
+                            <span class="field-label-text">dataset name</span>
+                            <input type="text" class="field-input" data-dataset-name-input maxlength="60" placeholder="march export" />
+                        </label>
+
+                        <label class="field-label">
+                            <span class="field-label-text">created date</span>
+                            <input type="date" class="field-input" data-dataset-date-input />
+                        </label>
+                    </div>
+
+                    <label class="field-label">
+                        <span class="field-label-text">notes</span>
+                        <textarea class="field-textarea" data-dataset-notes-input rows="5" placeholder="optional notes about this export, account state, or what you want to do next"></textarea>
+                    </label>
+
+                    <div class="details-summary-card">
+                        <p class="upload-result-label">dataset summary</p>
+                        <p class="details-summary-copy" data-dataset-summary-copy>no upload has been prepared yet.</p>
+                    </div>
+                </div>
+
+                <div class="modal-footer">
+                    <button type="button" class="hero-btn hero-btn-secondary" data-back-to-upload>back to upload</button>
+                    <button type="button" class="hero-btn hero-btn-primary" data-create-dataset>create dataset</button>
+                </div>
             </section>
-        </main>
+        </div>
+    </div>
     </div>
     <script>
         (() => {

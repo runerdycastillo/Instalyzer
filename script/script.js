@@ -49,6 +49,7 @@ const STORAGE_KEY_THEME = "ig_theme_v1";
 const STORAGE_KEY_UNFOLLOW_EVENTS = "ig_unfollow_events_v1";
 const STORAGE_KEY_SAFETY_MODE = "ig_safety_mode_v1";
 const STORAGE_KEY_STRICT_COOLDOWN_UNTIL = "ig_strict_cooldown_until_v1";
+const STORAGE_KEY_UPLOADED_DATA = "ff_uploaded_instagram_data_v1";
 
 const LIMIT_90_MIN = 10;
 const LIMIT_24_HOUR = 60;
@@ -106,6 +107,30 @@ function loadStrictCooldownUntil() {
 
 function saveStrictCooldownUntil(ts) {
   localStorage.setItem(STORAGE_KEY_STRICT_COOLDOWN_UNTIL, String(ts || 0));
+}
+
+async function loadInstagramDataset() {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY_UPLOADED_DATA);
+    if (raw) {
+      const parsed = JSON.parse(raw);
+      if (parsed?.followersData && parsed?.followingData) {
+        return {
+          followersData: parsed.followersData,
+          followingData: parsed.followingData,
+          source: "upload"
+        };
+      }
+    }
+  } catch {
+    localStorage.removeItem(STORAGE_KEY_UPLOADED_DATA);
+  }
+
+  return {
+    followersData: await loadJson("./data/followers.json"),
+    followingData: await loadJson("./data/following.json"),
+    source: "local"
+  };
 }
 
 function pruneUnfollowEvents(events, now = Date.now()) {
@@ -595,16 +620,11 @@ function renderResults({
           </button>
         </div>
         <div class="top-nav-center">
-          <img src="${getNavLogoSrc(activeTheme)}" alt="f&f logo" class="top-nav-logo" width="96" height="96" />
+          <a href="./home.html" class="top-nav-logo-link" aria-label="Home">
+            <img src="${getNavLogoSrc(activeTheme)}" alt="f&f logo" class="top-nav-logo" width="96" height="96" />
+          </a>
         </div>
         <div class="top-nav-links">
-          <a href="./home.html" class="top-nav-home" aria-label="Home">
-            <svg viewBox="0 0 24 24" aria-hidden="true">
-              <path d="M3 10.5 12 3l9 7.5"></path>
-              <path d="M5 9.5V21h14V9.5"></path>
-              <path d="M9.5 21v-6h5v6"></path>
-            </svg>
-          </a>
           <button id="toggle-theme" class="mini-btn theme-btn top-nav-theme-btn" aria-label="${themeLabel}" title="${themeLabel}">
             <span class="theme-fallback">${activeTheme === "dark" ? "sun" : "moon"}</span>
           </button>
@@ -1268,8 +1288,8 @@ function renderResults({
 }
 async function main() {
   try {
-    const followersData = await loadJson("./data/followers.json");
-    const followingData = await loadJson("./data/following.json");
+    const dataset = await loadInstagramDataset();
+    const { followersData, followingData } = dataset;
 
     const followerEntries = extractEntries(followersData, "relationships_followers");
     const followingEntries = extractEntries(followingData, "relationships_following");
