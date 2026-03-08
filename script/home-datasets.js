@@ -8,6 +8,7 @@ let datasets = loadDatasets();
 let activeDatasetId = loadActiveDatasetId();
 let stagedUpload = null;
 let activeTheme = loadTheme();
+let showDatasetNameValidation = false;
 
 function loadTheme() {
   const saved = localStorage.getItem(STORAGE_KEY_THEME);
@@ -133,27 +134,51 @@ function getUi() {
     modalStages: document.querySelectorAll("[data-modal-stage]"),
     detailsNameInput: document.querySelector("[data-dataset-name-input]"),
     detailsDateInput: document.querySelector("[data-dataset-date-input]"),
-    detailsNotesInput: document.querySelector("[data-dataset-notes-input]"),
-    detailsSummary: document.querySelector("[data-dataset-summary-copy]"),
+    detailsNameError: document.querySelector("[data-dataset-name-error]"),
+    createDatasetButton: document.querySelector("[data-create-dataset]"),
     continueButton: document.querySelector("[data-go-dataset-details]"),
     dropzone: document.querySelector("[data-upload-dropzone]"),
     filesInput: document.querySelector("[data-upload-files]"),
     folderInput: document.querySelector("[data-upload-folder]"),
     uploadStatus: document.querySelector("[data-upload-status]"),
+    uploadStatusPill: document.querySelector("[data-upload-status-pill]"),
+    uploadStatusPillLabel: document.querySelector("[data-upload-status-pill-label]"),
+    uploadStageActions: document.querySelector("[data-upload-stage-actions]"),
     uploadResults: document.querySelector("[data-upload-results]"),
-    followersList: document.querySelector("[data-upload-followers-list]"),
-    followingList: document.querySelector("[data-upload-following-list]"),
-    uploadReadyCopy: document.querySelector("[data-upload-ready-copy]")
+    uploadReadyCopy: document.querySelector("[data-upload-ready-copy]"),
+    sourceLabel: document.querySelector("[data-upload-source]"),
+    categoryCount: document.querySelector("[data-upload-category-count]")
   };
 }
 
 function setUploadStatus(message, tone = "neutral") {
-  const { uploadStatus } = getUi();
+  const { uploadStatus, uploadStatusPill, uploadStatusPillLabel } = getUi();
   if (!(uploadStatus instanceof HTMLElement)) return;
   uploadStatus.textContent = message;
   uploadStatus.classList.remove("is-success", "is-error");
   if (tone === "success") uploadStatus.classList.add("is-success");
   if (tone === "error") uploadStatus.classList.add("is-error");
+
+  if (uploadStatusPill instanceof HTMLButtonElement) {
+    uploadStatusPill.classList.remove("is-success", "is-error", "is-neutral");
+    uploadStatusPill.classList.add(
+      tone === "success" ? "is-success" : tone === "error" ? "is-error" : "is-neutral"
+    );
+    uploadStatusPill.removeAttribute("title");
+    uploadStatusPill.setAttribute("aria-label", message);
+  }
+
+  if (uploadStatusPillLabel instanceof HTMLElement) {
+    const lowerMessage = message.toLowerCase();
+    uploadStatusPillLabel.textContent =
+      tone === "success"
+        ? "upload ready"
+        : tone === "error"
+          ? "upload issue"
+          : lowerMessage.includes("waiting")
+            ? "no export"
+            : "checking";
+  }
 }
 
 function setUploadResultsVisible(visible) {
@@ -162,13 +187,22 @@ function setUploadResultsVisible(visible) {
   uploadResults.hidden = !visible;
 }
 
-function renderUploadList(listEl, items) {
-  if (!(listEl instanceof HTMLElement)) return;
-  listEl.innerHTML = "";
-  for (const item of items) {
-    const li = document.createElement("li");
-    li.textContent = `${item.path} (${item.count} entr${item.count === 1 ? "y" : "ies"})`;
-    listEl.appendChild(li);
+function updateUploadStageActions() {
+  const { uploadStageActions } = getUi();
+  if (!(uploadStageActions instanceof HTMLElement)) return;
+  uploadStageActions.hidden = !stagedUpload;
+}
+
+function updateCreateDatasetButtonState() {
+  const { detailsNameInput, detailsNameError, createDatasetButton } = getUi();
+  if (!(createDatasetButton instanceof HTMLButtonElement)) return;
+  const hasName = detailsNameInput instanceof HTMLInputElement && detailsNameInput.value.trim().length > 0;
+  createDatasetButton.disabled = !stagedUpload || !hasName;
+  if (detailsNameInput instanceof HTMLInputElement) {
+    detailsNameInput.classList.toggle("is-invalid", Boolean(stagedUpload) && !hasName && showDatasetNameValidation);
+  }
+  if (detailsNameError instanceof HTMLElement) {
+    detailsNameError.hidden = hasName || !stagedUpload || !showDatasetNameValidation;
   }
 }
 
@@ -229,11 +263,22 @@ function renderAll() {
 
 function resetUploadUi() {
   stagedUpload = null;
+  showDatasetNameValidation = false;
   setUploadStatus("waiting for files.");
   setUploadResultsVisible(false);
   const ui = getUi();
   if (ui.continueButton instanceof HTMLButtonElement) ui.continueButton.disabled = true;
-  if (ui.detailsSummary) ui.detailsSummary.textContent = "no upload has been prepared yet.";
+  if (ui.uploadReadyCopy) ui.uploadReadyCopy.textContent = "";
+  if (ui.sourceLabel) ui.sourceLabel.textContent = "not detected";
+  if (ui.categoryCount) ui.categoryCount.textContent = "0";
+  updateUploadStageActions();
+  updateModalStepAvailability();
+  updateCreateDatasetButtonState();
+}
+
+function clearStagedUpload() {
+  resetUploadUi();
+  setModalStep("upload");
 }
 
 function setModalStep(step) {
@@ -248,28 +293,38 @@ function setModalStep(step) {
   });
 }
 
+function isModalStepAvailable(step) {
+  if (step === "upload") return true;
+  if (step === "review" || step === "details") return Boolean(stagedUpload);
+  return false;
+}
+
+function updateModalStepAvailability() {
+  const { modalIndicators } = getUi();
+  modalIndicators.forEach((indicator) => {
+    if (!(indicator instanceof HTMLButtonElement)) return;
+    const step = indicator.dataset.modalStepIndicator || "";
+    indicator.disabled = !isModalStepAvailable(step);
+  });
+}
+
 function openCreateModal() {
   if (datasets.length >= MAX_GUEST_DATASETS) return;
   const ui = getUi();
   if (!(ui.modal instanceof HTMLElement)) return;
-  const scrollbarWidth = Math.max(0, window.innerWidth - document.documentElement.clientWidth);
   ui.modal.hidden = false;
-  document.body.style.overflow = "hidden";
-  document.body.style.paddingRight = scrollbarWidth > 0 ? `${scrollbarWidth}px` : "";
   resetUploadUi();
+  updateModalStepAvailability();
   setModalStep("upload");
   const today = new Date().toISOString().slice(0, 10);
   if (ui.detailsNameInput instanceof HTMLInputElement) ui.detailsNameInput.value = "";
   if (ui.detailsDateInput instanceof HTMLInputElement) ui.detailsDateInput.value = today;
-  if (ui.detailsNotesInput instanceof HTMLTextAreaElement) ui.detailsNotesInput.value = "";
 }
 
 function closeCreateModal() {
   const { modal } = getUi();
   if (!(modal instanceof HTMLElement)) return;
   modal.hidden = true;
-  document.body.style.overflow = "";
-  document.body.style.paddingRight = "";
 }
 
 function normalizeUploadPath(file) {
@@ -280,15 +335,77 @@ function isZipFile(file) {
   return /\.zip$/i.test(file.name) || file.type === "application/zip" || file.type === "application/x-zip-compressed";
 }
 
+function normalizePathForMatch(file) {
+  return normalizeUploadPath(file).replace(/\\/g, "/").toLowerCase();
+}
+
+function isFollowersFile(file) {
+  const path = normalizePathForMatch(file);
+  return /(^|\/)connections\/followers_and_following\/followers(_\d+)?\.json$/i.test(path);
+}
+
+function isFollowingFile(file) {
+  const path = normalizePathForMatch(file);
+  return /(^|\/)connections\/followers_and_following\/following\.json$/i.test(path);
+}
+
+function detectImportCategory(file) {
+  const path = normalizePathForMatch(file);
+
+  if (/(^|\/)connections\/followers_and_following\//.test(path)) return "connections";
+  if (/(^|\/)connections\/contacts\//.test(path)) return "contacts";
+  if (/(^|\/)your_instagram_activity\/messages\//.test(path)) return "messages";
+  if (/(^|\/)your_instagram_activity\/threads\//.test(path)) return "threads";
+  if (/(^|\/)logged_information\/past_instagram_insights\//.test(path)) return "insights";
+  if (/(^|\/)your_instagram_activity\/media\//.test(path)) return "media";
+  if (/(^|\/)your_instagram_activity\/comments\//.test(path)) return "comments";
+  if (/(^|\/)your_instagram_activity\/likes\//.test(path)) return "likes";
+  if (/(^|\/)your_instagram_activity\/story_interactions\//.test(path)) return "story interactions";
+  if (/(^|\/)your_instagram_activity\//.test(path)) return "activity";
+  if (/(^|\/)ads_information\//.test(path)) return "ads";
+  if (/(^|\/)personal_information\//.test(path)) return "personal info";
+  if (/(^|\/)security_and_login_information\//.test(path)) return "security";
+  if (/(^|\/)preferences\//.test(path)) return "preferences";
+  if (/(^|\/)apps_and_websites_off_of_instagram\//.test(path)) return "apps and websites";
+
+  return "other";
+}
+
+function createCategoryCounts(files) {
+  const counts = new Map();
+
+  for (const file of files) {
+    const category = detectImportCategory(file);
+    counts.set(category, (counts.get(category) || 0) + 1);
+  }
+
+  return counts;
+}
+
+function summarizeDetectedCategories(categoryCounts) {
+  const ranked = [...categoryCounts.entries()]
+    .sort((a, b) => b[1] - a[1])
+    .map(([label]) => label);
+
+  if (!ranked.length) return "followers and following";
+  if (ranked.length <= 4) return ranked.join(", ");
+
+  const visible = ranked.slice(0, 4);
+  const remaining = ranked.length - visible.length;
+  return `${visible.join(", ")}, +${remaining} more`;
+}
+
 function classifyInstagramJson(data, file) {
   const followersEntries = extractEntries(data, "relationships_followers");
-  if (followersEntries.length > 0) {
+  if (isFollowersFile(file) && followersEntries.length > 0) {
     return { type: "followers", entries: followersEntries, path: normalizeUploadPath(file) };
   }
+
   const followingEntries = extractEntries(data, "relationships_following");
-  if (followingEntries.length > 0) {
+  if (isFollowingFile(file) && followingEntries.length > 0) {
     return { type: "following", entries: followingEntries, path: normalizeUploadPath(file) };
   }
+
   return null;
 }
 
@@ -349,7 +466,7 @@ async function extractZipJsonFiles(file) {
   return extracted;
 }
 
-function buildUploadPayload(followerMatches, followingMatches) {
+function buildUploadPayload(followerMatches, followingMatches, summaryMeta) {
   const followersData = {
     relationships_followers: followerMatches.flatMap((match) => match.entries)
   };
@@ -364,7 +481,12 @@ function buildUploadPayload(followerMatches, followingMatches) {
       followersFiles: followerMatches.map((match) => ({ path: match.path, count: match.entries.length })),
       followingFiles: followingMatches.map((match) => ({ path: match.path, count: match.entries.length })),
       followerEntryCount: followersData.relationships_followers.length,
-      followingEntryCount: followingData.relationships_following.length
+      followingEntryCount: followingData.relationships_following.length,
+      sourceLabel: summaryMeta.sourceLabel,
+      detectedDataLabel: summaryMeta.detectedDataLabel,
+      scannedJsonCount: summaryMeta.scannedJsonCount,
+      ignoredJsonCount: summaryMeta.ignoredJsonCount,
+      categoryCounts: summaryMeta.categoryCounts
     }
   };
 }
@@ -372,16 +494,17 @@ function buildUploadPayload(followerMatches, followingMatches) {
 function renderStagedUpload(payload) {
   stagedUpload = payload;
   const ui = getUi();
-  renderUploadList(ui.followersList, payload.meta.followersFiles);
-  renderUploadList(ui.followingList, payload.meta.followingFiles);
   if (ui.uploadReadyCopy) {
-    ui.uploadReadyCopy.textContent = `Ready. Found ${payload.meta.followerEntryCount} follower entries and ${payload.meta.followingEntryCount} following entries.`;
+    ui.uploadReadyCopy.textContent = "Export recognized and prepared for dataset creation.";
   }
-  if (ui.detailsSummary) {
-    ui.detailsSummary.textContent = `Followers files: ${payload.meta.followersFiles.length}. Following files: ${payload.meta.followingFiles.length}. Entries: ${payload.meta.followerEntryCount} followers and ${payload.meta.followingEntryCount} following.`;
-  }
+  if (ui.sourceLabel) ui.sourceLabel.textContent = payload.meta.sourceLabel || "not detected";
+  if (ui.categoryCount) ui.categoryCount.textContent = `${payload.meta.categoryCounts.length}`;
   if (ui.continueButton instanceof HTMLButtonElement) ui.continueButton.disabled = false;
   setUploadResultsVisible(true);
+  updateUploadStageActions();
+  updateModalStepAvailability();
+  updateCreateDatasetButtonState();
+  setModalStep("review");
 }
 
 async function processSelectedFiles(fileList) {
@@ -421,6 +544,8 @@ async function processSelectedFiles(fileList) {
 
   const followerMatches = [];
   const followingMatches = [];
+  let ignoredJsonCount = 0;
+  const categoryCounts = createCategoryCounts(jsonFiles);
   for (const file of jsonFiles) {
     let parsed;
     try {
@@ -429,7 +554,10 @@ async function processSelectedFiles(fileList) {
       continue;
     }
     const classified = classifyInstagramJson(parsed, file);
-    if (!classified) continue;
+    if (!classified) {
+      ignoredJsonCount += 1;
+      continue;
+    }
     if (classified.type === "followers") followerMatches.push(classified);
     if (classified.type === "following") followingMatches.push(classified);
   }
@@ -445,8 +573,22 @@ async function processSelectedFiles(fileList) {
     return;
   }
 
-  renderStagedUpload(buildUploadPayload(followerMatches, followingMatches));
-  setUploadStatus("Upload ready. Review the files below, then continue to dataset details.", "success");
+  const sourceLabel = zipCount
+    ? `ZIP archive${zipCount > 1 ? "s" : ""}`
+    : files.some((file) => file.webkitRelativePath)
+      ? "folder import"
+      : "selected files";
+
+  const detectedDataLabel = summarizeDetectedCategories(categoryCounts);
+
+  renderStagedUpload(buildUploadPayload(followerMatches, followingMatches, {
+    sourceLabel,
+    detectedDataLabel,
+    scannedJsonCount: jsonFiles.length,
+    ignoredJsonCount,
+    categoryCounts: [...categoryCounts.entries()]
+  }));
+  setUploadStatus("Upload ready. Review the summary below, then continue to dataset details.", "success");
 }
 
 function selectDataset(id) {
@@ -458,14 +600,18 @@ function createDatasetFromStage() {
   if (!stagedUpload || datasets.length >= MAX_GUEST_DATASETS) return;
   const ui = getUi();
   const name = ui.detailsNameInput instanceof HTMLInputElement ? ui.detailsNameInput.value.trim() : "";
+  if (!name) {
+    showDatasetNameValidation = true;
+    updateCreateDatasetButtonState();
+    ui.detailsNameInput?.focus();
+    return;
+  }
   const createdAt = ui.detailsDateInput instanceof HTMLInputElement ? ui.detailsDateInput.value : "";
-  const notes = ui.detailsNotesInput instanceof HTMLTextAreaElement ? ui.detailsNotesInput.value.trim() : "";
 
   const dataset = {
     id: makeDatasetId(),
-    name: name || `dataset ${datasets.length + 1}`,
+    name,
     createdAt: createdAt || new Date().toISOString().slice(0, 10),
-    notes,
     followersData: stagedUpload.followersData,
     followingData: stagedUpload.followingData,
     meta: stagedUpload.meta,
@@ -490,12 +636,7 @@ function wireUploadFlow() {
   const { dropzone, filesInput, folderInput, continueButton } = ui;
   if (!(dropzone instanceof HTMLElement) || !(filesInput instanceof HTMLInputElement) || !(folderInput instanceof HTMLInputElement)) return;
 
-  const openPicker = (mode) => {
-    if (mode === "folder") {
-      folderInput.value = "";
-      folderInput.click();
-      return;
-    }
+  const openPicker = () => {
     filesInput.value = "";
     filesInput.click();
   };
@@ -503,16 +644,15 @@ function wireUploadFlow() {
   document.querySelectorAll("[data-upload-trigger]").forEach((button) => {
     button.addEventListener("click", (event) => {
       event.stopPropagation();
-      const mode = event.currentTarget instanceof HTMLElement ? event.currentTarget.dataset.uploadTrigger : "files";
-      openPicker(mode === "folder" ? "folder" : "files");
+      openPicker();
     });
   });
 
-  dropzone.addEventListener("click", () => openPicker("folder"));
+  dropzone.addEventListener("click", () => openPicker());
   dropzone.addEventListener("keydown", (event) => {
     if (event.key !== "Enter" && event.key !== " ") return;
     event.preventDefault();
-    openPicker("folder");
+    openPicker();
   });
 
   ["dragenter", "dragover"].forEach((type) => {
@@ -564,7 +704,42 @@ function wireModal() {
     setModalStep("upload");
   });
 
+  document.querySelector("[data-back-to-review]")?.addEventListener("click", () => {
+    if (!stagedUpload) {
+      setModalStep("upload");
+      return;
+    }
+    setModalStep("review");
+  });
+
+  document.querySelector("[data-back-to-review-from-upload]")?.addEventListener("click", () => {
+    if (!stagedUpload) return;
+    setModalStep("review");
+  });
+
+  document.querySelector("[data-clear-staged-upload]")?.addEventListener("click", () => {
+    clearStagedUpload();
+  });
+
+  document.querySelectorAll("[data-modal-step-indicator]").forEach((indicator) => {
+    indicator.addEventListener("click", () => {
+      if (!(indicator instanceof HTMLButtonElement)) return;
+      const step = indicator.dataset.modalStepIndicator || "";
+      if (!isModalStepAvailable(step)) return;
+      setModalStep(step);
+    });
+  });
+
   document.querySelector("[data-create-dataset]")?.addEventListener("click", createDatasetFromStage);
+
+  getUi().detailsNameInput?.addEventListener("input", () => {
+    updateCreateDatasetButtonState();
+  });
+
+  getUi().detailsNameInput?.addEventListener("blur", () => {
+    showDatasetNameValidation = true;
+    updateCreateDatasetButtonState();
+  });
 
   document.addEventListener("keydown", (event) => {
     if (event.key !== "Escape") return;

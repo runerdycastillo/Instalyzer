@@ -75,17 +75,17 @@
                         <button type="button" class="hero-btn hero-btn-primary dataset-sidebar-btn" data-open-create-modal>create dataset</button>
                     </div>
 
-                    <div class="dataset-limit-card">
-                        <p class="dataset-limit-label">guest limit</p>
-                        <p class="dataset-limit-copy" data-dataset-limit-copy>0 of 2 datasets used</p>
-                    </div>
-
                     <div class="dataset-list-shell">
                         <div class="dataset-list-head">
                             <h3 class="dataset-list-title">saved datasets</h3>
                             <span class="dataset-list-count" data-dataset-count>0</span>
                         </div>
                         <div class="dataset-list" data-dataset-list></div>
+                    </div>
+
+                    <div class="dataset-limit-card">
+                        <p class="dataset-limit-label">guest limit</p>
+                        <p class="dataset-limit-copy" data-dataset-limit-copy>0 of 2 datasets used</p>
                     </div>
             </aside>
 
@@ -252,9 +252,11 @@
             <div class="site-footer-spacer" aria-hidden="true"></div>
         </footer>
     </div>
+    </div>
     <div class="modal-shell" data-create-modal hidden>
         <div class="modal-backdrop" data-close-create-modal></div>
         <div class="modal-panel panel" role="dialog" aria-modal="true" aria-labelledby="create-dataset-title">
+            <div class="modal-panel-scroll">
             <div class="modal-head">
                 <div>
                     <p class="section-kicker">create dataset</p>
@@ -266,14 +268,36 @@
             </div>
 
             <div class="modal-steps" aria-label="Create dataset steps">
-                <span class="modal-step is-active" data-modal-step-indicator="upload">1. upload</span>
-                <span class="modal-step" data-modal-step-indicator="details">2. details</span>
+                <button type="button" class="modal-step is-active" data-modal-step-indicator="upload">1. upload</button>
+                <span class="modal-step-sep" aria-hidden="true">
+                    <svg viewBox="0 0 20 20">
+                        <path d="m7 4 6 6-6 6"></path>
+                    </svg>
+                </span>
+                <button type="button" class="modal-step" data-modal-step-indicator="review" disabled>2. review</button>
+                <span class="modal-step-sep" aria-hidden="true">
+                    <svg viewBox="0 0 20 20">
+                        <path d="m7 4 6 6-6 6"></path>
+                    </svg>
+                </span>
+                <button type="button" class="modal-step" data-modal-step-indicator="details" disabled>3. setup</button>
             </div>
 
             <section class="modal-stage" data-modal-stage="upload">
-                <p class="modal-copy">
-                    drop the instagram <strong>zip</strong>, folder, or the <strong>followers</strong> and <strong>following</strong> json files.
-                </p>
+                <div class="modal-copy-row">
+                    <p class="modal-copy">
+                        drop your instagram export <strong>zip</strong> or extracted export <strong>folder</strong>.
+                    </p>
+                    <button
+                        type="button"
+                        class="upload-status-pill is-error"
+                        data-upload-status-pill
+                        aria-describedby="upload-status"
+                    >
+                        <span class="upload-status-dot" aria-hidden="true"></span>
+                        <span data-upload-status-pill-label>no export</span>
+                    </button>
+                </div>
 
                 <div class="upload-panel" data-upload-panel>
                     <input type="file" class="upload-input" data-upload-files accept=".json,.zip,application/json,application/zip" multiple hidden />
@@ -287,37 +311,104 @@
                                 <path d="M4 16v2a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-2"></path>
                             </svg>
                         </div>
-                        <p class="upload-dropzone-title">drop a zip, files, or a folder here</p>
+                        <p class="upload-dropzone-title">drop your export here</p>
                         <p id="upload-help" class="upload-dropzone-copy">
-                            easiest option: drag in the instagram zip.
+                            drag and drop your export, or select one below.
                         </p>
                         <div class="upload-actions">
-                            <button type="button" class="hero-btn hero-btn-primary" data-upload-trigger="folder">choose folder</button>
-                            <button type="button" class="hero-btn hero-btn-secondary" data-upload-trigger="files">choose files</button>
+                            <button type="button" class="hero-btn hero-btn-primary" data-upload-trigger="files">choose export</button>
                         </div>
                     </div>
 
-                    <div class="upload-status-card" aria-live="polite" aria-atomic="true">
-                        <p class="upload-status-label">status</p>
-                        <p id="upload-status" class="upload-status-text" data-upload-status>
-                            waiting for files. nothing has been uploaded yet.
+                    <p id="upload-status" class="visually-hidden" data-upload-status aria-live="polite" aria-atomic="true">
+                        waiting for files. nothing has been uploaded yet.
+                    </p>
+                    <div class="upload-stage-actions" data-upload-stage-actions hidden>
+                        <button type="button" class="upload-stage-reset" data-clear-staged-upload aria-label="Reset staged upload">reset</button>
+                        <p class="upload-ready-note upload-ready-note-success">
+                            <span class="upload-ready-check" aria-hidden="true">
+                                <svg viewBox="0 0 20 20">
+                                    <path d="m4.5 10 3.5 3.5L15.5 6"></path>
+                                </svg>
+                            </span>
+                            <span>export ready for review. upload again anytime to replace it.</span>
                         </p>
+                        <button type="button" class="hero-btn hero-btn-secondary modal-nav-btn" data-back-to-review-from-upload>review</button>
                     </div>
+                </div>
+            </section>
 
+            <section class="modal-stage" data-modal-stage="review" hidden>
+                <div class="review-stage-shell">
                     <div class="upload-results" data-upload-results hidden>
-                        <div class="upload-results-grid">
-                            <div class="upload-result-card">
-                                <p class="upload-result-label">followers files</p>
-                                <ul class="upload-result-list" data-upload-followers-list></ul>
+                        <div class="upload-capability-card upload-capability-card-primary">
+                            <h3 class="upload-capability-title">available tools</h3>
+                            <div class="tool-access-card" aria-label="Tool availability">
+                                <ul class="tool-access-list">
+                                    <li class="tool-access-item">
+                                        <span class="tool-access-icon" aria-hidden="true">
+                                            <svg viewBox="0 0 24 24">
+                                                <path d="M12 3v12"></path>
+                                                <path d="m7 10 5 5 5-5"></path>
+                                                <path d="M5 21h14"></path>
+                                            </svg>
+                                        </span>
+                                        <span class="tool-access-copy">
+                                            <strong>Not Following Back</strong>
+                                            <span>available now</span>
+                                        </span>
+                                        <span class="tool-access-badge is-live">live</span>
+                                    </li>
+                                    <li class="tool-access-item">
+                                        <span class="tool-access-icon" aria-hidden="true">
+                                            <svg viewBox="0 0 24 24">
+                                                <path d="M4 20h16"></path>
+                                                <path d="M7 20v-9"></path>
+                                                <path d="M12 20V4"></path>
+                                                <path d="M17 20v-6"></path>
+                                            </svg>
+                                        </span>
+                                        <span class="tool-access-copy">
+                                            <strong>Ghost Followers</strong>
+                                            <span>supported by this dataset later</span>
+                                        </span>
+                                        <span class="tool-access-badge">soon</span>
+                                    </li>
+                                    <li class="tool-access-item">
+                                        <span class="tool-access-icon" aria-hidden="true">
+                                            <svg viewBox="0 0 24 24">
+                                                <path d="M6 18V8"></path>
+                                                <path d="M12 18V4"></path>
+                                                <path d="M18 18v-6"></path>
+                                            </svg>
+                                        </span>
+                                        <span class="tool-access-copy">
+                                            <strong>Activity Insights</strong>
+                                            <span>enabled by detected categories later</span>
+                                        </span>
+                                        <span class="tool-access-badge">soon</span>
+                                    </li>
+                                </ul>
                             </div>
-                            <div class="upload-result-card">
-                                <p class="upload-result-label">following files</p>
-                                <ul class="upload-result-list" data-upload-following-list></ul>
+                        </div>
+                        <div class="upload-summary-card">
+                            <p class="upload-result-label">import summary</p>
+                            <p class="upload-ready-copy" data-upload-ready-copy></p>
+                            <div class="upload-summary-grid">
+                                <div class="upload-summary-metric">
+                                    <span class="upload-summary-key">import source</span>
+                                    <strong class="upload-summary-value" data-upload-source>not detected</strong>
+                                </div>
+                                <div class="upload-summary-metric">
+                                    <span class="upload-summary-key">categories detected</span>
+                                    <strong class="upload-summary-value" data-upload-category-count>0</strong>
+                                </div>
                             </div>
                         </div>
                         <div class="upload-ready-bar">
-                            <p class="upload-ready-copy" data-upload-ready-copy></p>
-                            <button type="button" class="hero-btn hero-btn-primary" data-go-dataset-details disabled>continue to details</button>
+                            <button type="button" class="hero-btn hero-btn-secondary modal-nav-btn" data-back-to-upload>back</button>
+                            <p class="upload-ready-note">next, set the dataset name and date.</p>
+                            <button type="button" class="hero-btn hero-btn-primary modal-nav-btn" data-go-dataset-details disabled>setup</button>
                         </div>
                     </div>
                 </div>
@@ -325,36 +416,32 @@
 
             <section class="modal-stage" data-modal-stage="details" hidden>
                 <div class="details-form-shell">
+                    <p class="modal-copy">
+                        name the dataset and set the date.
+                    </p>
+
                     <div class="details-form-grid">
                         <label class="field-label">
                             <span class="field-label-text">dataset name</span>
-                            <input type="text" class="field-input" data-dataset-name-input maxlength="60" placeholder="march export" />
+                            <input type="text" class="field-input" data-dataset-name-input maxlength="60" placeholder="export name" required />
+                            <span class="field-help field-help-error" data-dataset-name-error hidden>enter a name to continue</span>
                         </label>
 
                         <label class="field-label">
                             <span class="field-label-text">created date</span>
                             <input type="date" class="field-input" data-dataset-date-input />
+                            <span class="field-help" aria-hidden="true" hidden>&nbsp;</span>
                         </label>
-                    </div>
-
-                    <label class="field-label">
-                        <span class="field-label-text">notes</span>
-                        <textarea class="field-textarea" data-dataset-notes-input rows="5" placeholder="optional notes about this export, account state, or what you want to do next"></textarea>
-                    </label>
-
-                    <div class="details-summary-card">
-                        <p class="upload-result-label">dataset summary</p>
-                        <p class="details-summary-copy" data-dataset-summary-copy>no upload has been prepared yet.</p>
                     </div>
                 </div>
 
                 <div class="modal-footer">
-                    <button type="button" class="hero-btn hero-btn-secondary" data-back-to-upload>back to upload</button>
-                    <button type="button" class="hero-btn hero-btn-primary" data-create-dataset>create dataset</button>
+                    <button type="button" class="hero-btn hero-btn-secondary modal-nav-btn" data-back-to-review>back</button>
+                    <button type="button" class="hero-btn hero-btn-primary" data-create-dataset disabled>create dataset</button>
                 </div>
             </section>
+            </div>
         </div>
-    </div>
     </div>
     <script>
         (() => {
