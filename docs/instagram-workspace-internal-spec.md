@@ -75,11 +75,18 @@ Current recommendation:
 
 - use `medium` media quality by default
 - choose the date range based on what you want to analyze
+- for relationship tools such as `Not Following Back`, prefer `all time` export range
 
 Future compatibility direction:
 
 - `HTML` export support may be added later if it meaningfully reduces user friction
 - do not broaden format support until the JSON-first dataset model is stable
+
+Important note:
+
+- shorter export ranges may still be useful for insight-style tools
+- they are weaker for relationship tools because the app needs the broadest possible follower/following account list
+- an incomplete relationship export can make `Not Following Back` inaccurate enough to risk wrong unfollow decisions
 
 ## Main Pages
 

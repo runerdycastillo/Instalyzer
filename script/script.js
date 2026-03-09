@@ -43,7 +43,7 @@ const USERNAME_RE = /^[a-z0-9._]{1,30}$/;
 const STORAGE_KEY_UNFOLLOWED = "ig_unfollowed_usernames_v1";
 const STORAGE_KEY_TBD = "ig_tbd_usernames_v1";
 const STORAGE_KEY_PNF = "ig_page_not_found_usernames_v1";
-const STORAGE_KEY_VISITED = "ig_visited_usernames_v1";
+const STORAGE_KEY_RECENT_VISITS = "ig_recent_visit_timestamps_v1";
 const STORAGE_KEY_PINNED = "ig_pinned_pending_usernames_v1";
 const STORAGE_KEY_THEME = "ig_theme_v1";
 const STORAGE_KEY_UNFOLLOW_EVENTS = "ig_unfollow_events_v1";
@@ -55,6 +55,7 @@ const LIMIT_90_MIN = 10;
 const LIMIT_24_HOUR = 60;
 const WINDOW_90_MIN_MS = 90 * 60 * 1000;
 const WINDOW_24_HOUR_MS = 24 * 60 * 60 * 1000;
+const RECENT_VISIT_WINDOW_MS = 15 * 60 * 1000;
 const SEARCH_DEBOUNCE_MS = 180;
 const SEARCH_SKELETON_MIN_MS = 650;
 const SEARCH_SKELETON_ROWS = 7;
@@ -73,6 +74,35 @@ function loadSet(key) {
 
 function saveSet(key, set) {
   localStorage.setItem(key, JSON.stringify([...set]));
+}
+
+function loadVisitMap() {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY_RECENT_VISITS);
+    const parsed = raw ? JSON.parse(raw) : {};
+    if (!parsed || typeof parsed !== "object" || Array.isArray(parsed)) return {};
+    const entries = Object.entries(parsed).filter(([username, ts]) =>
+      USERNAME_RE.test(username) && Number.isFinite(Number(ts)) && Number(ts) > 0
+    );
+    return Object.fromEntries(entries.map(([username, ts]) => [username, Number(ts)]));
+  } catch {
+    return {};
+  }
+}
+
+function saveVisitMap(visitMap) {
+  localStorage.setItem(STORAGE_KEY_RECENT_VISITS, JSON.stringify(visitMap));
+}
+
+function pruneVisitMap(visitMap, now = Date.now()) {
+  return Object.fromEntries(
+    Object.entries(visitMap).filter(([, ts]) => now - Number(ts) <= RECENT_VISIT_WINDOW_MS)
+  );
+}
+
+function getRecentVisitedSet(visitMap, now = Date.now()) {
+  const pruned = pruneVisitMap(visitMap, now);
+  return new Set(Object.keys(pruned));
 }
 
 function loadUnfollowEvents() {
@@ -182,20 +212,20 @@ function getStrictCooldownRemaining(now = Date.now()) {
 }
 
 function getSafetyStatusHtml(safetyMode, rate, cooldownRemaining) {
-  if (safetyMode === "risk") return "Risk mode active";
+  if (safetyMode === "risk") return "risk mode active";
 
   if (cooldownRemaining > 0) {
     const clamped = Math.max(0, Math.min(WINDOW_90_MIN_MS, cooldownRemaining));
     const ringDeg = Math.round((clamped / WINDOW_90_MIN_MS) * 360);
-    return `<span class="safety-status-with-ring"><span class="status-ring" style="--ring-deg:${ringDeg}deg" aria-hidden="true"></span><span>Strict mode: <span class="status-locked-word">Locked ${msToClock(cooldownRemaining)}</span></span></span>`;
+    return `<span class="safety-status-with-ring"><span class="status-ring" style="--ring-deg:${ringDeg}deg" aria-hidden="true"></span><span>strict mode: <span class="status-locked-word">locked ${msToClock(cooldownRemaining)}</span></span></span>`;
   }
 
   if (rate.canUnfollow) {
-    return 'Strict mode: <span class="status-ready-word">Ready</span>';
+    return 'strict mode: <span class="status-ready-word">ready</span>';
   }
 
   const waitMs = rate.wait90 > 0 ? rate.wait90 : rate.wait24;
-  return `Strict mode: <span class="status-locked-word">Locked ${msToClock(waitMs)}</span>`;
+  return `strict mode: <span class="status-locked-word">locked ${msToClock(waitMs)}</span>`;
 }
 
 function stopSafetyTicker() {
@@ -236,11 +266,11 @@ function startSafetyTicker(safetyMode) {
   }
 }
 
-function persistSets(unfollowedSet, tbdSet, pnfSet, visitedSet, pinnedSet) {
+function persistSets(unfollowedSet, tbdSet, pnfSet, visitMap, pinnedSet) {
   saveSet(STORAGE_KEY_UNFOLLOWED, unfollowedSet);
   saveSet(STORAGE_KEY_TBD, tbdSet);
   saveSet(STORAGE_KEY_PNF, pnfSet);
-  saveSet(STORAGE_KEY_VISITED, visitedSet);
+  saveVisitMap(pruneVisitMap(visitMap));
   saveSet(STORAGE_KEY_PINNED, pinnedSet);
 }
 
@@ -286,7 +316,7 @@ function setSafetyToggleButton(safetyMode) {
   if (!(button instanceof HTMLButtonElement)) return;
 
   const locked = safetyMode === "strict";
-  const label = locked ? "Safety mode ON (strict)" : "Safety mode OFF (risk)";
+  const label = locked ? "strict mode on" : "risk mode on";
   button.setAttribute("aria-label", label);
   button.removeAttribute("title");
   button.setAttribute("data-tip", label);
@@ -403,17 +433,17 @@ function listHtml(arr, type, visitedSet, strictActionLocked = false, pinnedSet =
 
       const tbdButton =
         type === "pending"
-          ? `<button class="mini-btn" data-action="to-tbd" data-username="${encodedUser}">TBD</button>`
+          ? `<button class="mini-btn" data-action="to-tbd" data-username="${encodedUser}">later</button>`
           : "";
 
       const pendingButton =
         type === "tbd" || type === "pnf"
-          ? `<button class="mini-btn" data-action="to-pending" data-username="${encodedUser}">Pending</button>`
+          ? `<button class="mini-btn" data-action="to-pending" data-username="${encodedUser}">pending</button>`
           : "";
 
       const pnfButton =
-        type === "pending" || type === "tbd"
-          ? `<button class="mini-btn" data-action="to-pnf" data-username="${encodedUser}">Not found</button>`
+        type === "pending"
+          ? `<button class="mini-btn" data-action="to-pnf" data-username="${encodedUser}">not found</button>`
           : "";
       const pinButton =
         type === "pending"
@@ -471,8 +501,14 @@ function listHtml(arr, type, visitedSet, strictActionLocked = false, pinnedSet =
                target="_blank"
                rel="noopener noreferrer"
                data-open-username="${encodedUser}"
-               class="user-link">
-              Open
+               class="user-link"
+               title="open profile"
+               aria-label="open profile for @${safeUser}">
+              <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <rect x="3.5" y="3.5" width="17" height="17" rx="5"></rect>
+                <circle cx="12" cy="12" r="4"></circle>
+                <circle cx="17.6" cy="6.4" r="1"></circle>
+              </svg>
             </a>
           </div>
         </div>
@@ -507,9 +543,9 @@ function renderError(message) {
   const root = document.getElementById("root") || document.body;
   root.innerHTML = `
     <section class="app-shell panel" style="max-width:920px; margin: 24px auto;">
-      <h1>Not Following Back Sweep</h1>
+      <h1>not following back</h1>
       <div class="error-box">
-        <p><strong>Could not load your Instagram data.</strong></p>
+        <p><strong>could not load your instagram data.</strong></p>
         <p>${escapeHtml(message)}</p>
       </div>
     </section>
@@ -521,7 +557,7 @@ function renderResults({
   unfollowedSet,
   tbdSet,
   pnfSet,
-  visitedSet,
+  visitMap,
   pinnedSet,
   unfollowEvents,
   followedAtByUsername,
@@ -535,6 +571,7 @@ function renderResults({
   showDone = false,
   showTbd = false,
   showPnf = false,
+  activeResultsView = "",
   theme = "light"
 }) {
   const root = document.getElementById("root") || document.body;
@@ -545,6 +582,7 @@ function renderResults({
   let activeTheme = theme;
   applyTheme(activeTheme);
   stopSafetyTicker();
+  const visitedSet = getRecentVisitedSet(visitMap);
   const themeLabel = activeTheme === "dark" ? "Switch to light mode" : "Switch to dark mode";
 
   const pendingAll = all.filter((u) => !unfollowedSet.has(u) && !tbdSet.has(u) && !pnfSet.has(u));
@@ -570,19 +608,6 @@ function renderResults({
   const rateState = safetyMode === "risk"
     ? { ...rateStateRaw, canUnfollow: true, waitText: "" }
     : rateStateRaw;
-  const verifyInputNorm = norm(verifyQuery);
-  const verifyResultText = (() => {
-    if (!verifyInputNorm) return "";
-    const inFollowing = verifyLookups.following.has(verifyInputNorm);
-    const inFollowers = verifyLookups.followers.has(verifyInputNorm);
-    const flagged = flaggedSet.has(verifyInputNorm);
-
-    if (!inFollowing) return `@${verifyInputNorm} is not in your following file.`;
-    if (inFollowers) return `@${verifyInputNorm} appears in both files, so it should not be flagged.`;
-    if (flagged) return `@${verifyInputNorm} is in following, missing from followers, and currently flagged.`;
-    return `@${verifyInputNorm} is in following and missing from followers, but not currently displayed (likely moved/filtered).`;
-  })();
-
   const dailySegmentCount = 6;
   const filledDailySegments = Math.min(dailySegmentCount, Math.floor(rateState.used24 / 10));
   const ninetyFillPct = safetyMode === "strict" && strictCooldownRemaining > 0
@@ -595,18 +620,24 @@ function renderResults({
     `<span class="pending-safety-dot ${i < pendingSafetyCount ? "is-filled" : ""}" style="--dot-index:${i};"></span>`
   ).join("");
   const dailySegmentsHtml = Array.from({ length: dailySegmentCount }, (_, i) =>
-    `<span class="quota-segment ${i < filledDailySegments ? "filled" : ""}"></span>`
+    `<span class="daily-compact-segment ${i < filledDailySegments ? "is-filled" : ""}"></span>`
   ).join("");
   const dataLine = diagnostics
-    ? `Compared ${diagnostics.followers.unique} followers vs ${diagnostics.following.unique} following.`
+    ? `compared <strong>${diagnostics.followers.unique}</strong> followers vs <strong>${diagnostics.following.unique}</strong> following.`
     : "";
   const sortLabelByValue = {
-    latest: "Sort Latest",
-    earliest: "Sort Earliest",
-    az: "Sort A-Z",
-    za: "Sort Z-A"
+    latest: "sort latest",
+    earliest: "sort earliest",
+    az: "sort a-z",
+    za: "sort z-a"
   };
   const currentSortLabel = sortLabelByValue[sort] || sortLabelByValue.az;
+  const resultsView = activeResultsView || "";
+  const resultsMeta = {
+    done: { title: "unfollowed", count: doneAll.length, empty: "nothing here yet.", note: "accounts you already marked done." },
+    tbd: { title: "review later", count: tbdAll.length, empty: "nothing in review later.", note: "set aside to review later." },
+    pnf: { title: "not found", count: pnfAll.length, empty: "nothing in page not found.", note: "profiles that could not be reached." }
+  };
 
   root.innerHTML = `
     <div class="app-page">
@@ -634,169 +665,179 @@ function renderResults({
       <section id="safety-panel" class="app-shell panel">
         <div class="title-row">
           <div class="title-action-left">
+            <a href="./home.html" class="title-back-link theme-btn" aria-label="Back to overview" title="Back to overview">
+              <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <path d="m15 18-6-6 6-6"></path>
+              </svg>
+            </a>
+          </div>
+          <div class="title-action-right">
             <button id="toggle-safety" class="mini-btn theme-btn" aria-label="Safety mode"></button>
           </div>
-          <h1>Not Following Back Sweep</h1>
+          <h1>not following back</h1>
         </div>
 
         <div class="limit-box ${safetyMode === "strict" && strictLocked ? "limit-box-warning" : ""}">
           <div class="limit-head">
-            <b>Safety Limits</b>
+            <b>safety system</b>
             <span id="safety-status">${getSafetyStatusHtml(safetyMode, rateStateRaw, strictCooldownRemaining)}</span>
           </div>
           <div class="limit-row">
             <div id="limit-90-label">90 min: ${rateState.used90}/${LIMIT_90_MIN}</div>
             <div class="limit-track"><div id="limit-90-fill" class="limit-fill" style="width:${ninetyFillPct}%"></div></div>
           </div>
+          <div class="safety-compact-row">
+            <div class="safety-compact-label">24 hr: ${rateState.used24}/${LIMIT_24_HOUR}</div>
+            <div class="daily-compact-track" aria-label="daily unfollow pacing">
+              ${dailySegmentsHtml}
+            </div>
+            <div class="safety-compact-value">
+              <strong>${filledDailySegments}/6</strong>
+              <span>blocks</span>
+            </div>
+          </div>
           <p class="meta-line safety-mode-copy">${escapeHtml(rateNotice || (safetyMode === "strict"
-            ? "Strict mode locks for a full 90 minutes once you hit 10 unfollows."
-            : "Risk mode removes lock enforcement. Use carefully."))}</p>
+            ? "strict mode pauses for 90 minutes after 10 unfollows to reduce account risk."
+            : "risk mode removes the pause. use carefully."))}</p>
         </div>
 
-        <div class="quota-block" aria-label="daily unfollow quota">
-          <div class="quota-head">
-            <b>Daily Quota Blocks</b>
-            <span>${filledDailySegments}/${dailySegmentCount} blocks (${rateState.used24}/${LIMIT_24_HOUR})</span>
-          </div>
-          <div class="quota-row">${dailySegmentsHtml}</div>
-          <p class="meta-line">Each block fills after 10 unfollows.</p>
-        </div>
-
-        <div class="verify-box">
-          <label for="verify-input">Verify username</label>
-          <div class="verify-controls">
-            <input id="verify-input" type="text" placeholder="@username" value="${escapeHtml(verifyQuery)}" />
-            <button id="verify-check" class="mini-btn">Check</button>
-          </div>
-          <p id="verify-result" class="meta-line">${escapeHtml(verifyResultText)}</p>
-        </div>
       </section>
 
       <section id="search-panel" class="panel search-panel">
-        ${dataLine ? `<p class="meta-line search-panel-headline">${escapeHtml(dataLine)}</p>` : ""}
-        <div class="stats-row">
-          <div><b>Total:</b> ${all.length}</div>
-          <div><b>Pending:</b> ${pendingAll.length}</div>
-          <div><b>TBD:</b> ${tbdAll.length}</div>
-          <div><b>Not found:</b> ${pnfAll.length}</div>
-          <div><b>Unfollowed:</b> ${doneAll.length}</div>
-          <div class="stats-help-cell">
-            <button
-              type="button"
-              class="stats-help"
-              aria-label="Stats legend"
-            >?</button>
-            <div class="stats-help-tip" role="tooltip">
-              <p><b>Total:</b><span>all flagged accounts currently in this sweep.</span></p>
-              <p><b>Pending:</b><span>not checked yet.</span></p>
-              <p><b>TBD:</b><span>set aside to review later.</span></p>
-              <p><b>Not found:</b><span>profile could not be reached.</span></p>
-              <p><b>Unfollowed:</b><span>accounts you already marked done.</span></p>
-            </div>
-          </div>
+        <div class="stats-row tool-stats-row">
+          <div><span class="stats-label-help" data-tip="all flagged accounts currently in this sweep." tabindex="0">total</span><strong>${all.length}</strong></div>
+          <div><span class="stats-label-help" data-tip="not checked yet." tabindex="0">pending</span><strong>${pendingAll.length}</strong></div>
+          <div><span class="stats-label-help" data-tip="accounts you already marked done." tabindex="0">unfollowed</span><strong>${doneAll.length}</strong></div>
+          <div><span class="stats-label-help" data-tip="set aside to review later." tabindex="0">review later</span><strong>${tbdAll.length}</strong></div>
+          <div><span class="stats-label-help" data-tip="profile could not be reached." tabindex="0">not found</span><strong>${pnfAll.length}</strong></div>
         </div>
-        <div class="toolbar">
-          <input id="search-input" type="text" placeholder="Search username" value="${escapeHtml(query)}" autocomplete="off" autocapitalize="none" spellcheck="false" />
-          <div id="sort-dropdown" class="sort-dropdown">
-            <button id="sort-trigger" type="button" class="sort-trigger" aria-haspopup="listbox" aria-expanded="false">${currentSortLabel}</button>
-            <div class="sort-options" role="listbox" aria-label="Sort options">
-              <button type="button" class="sort-option ${sort === "latest" ? "is-active" : ""}" data-sort="latest">Sort Latest</button>
-              <button type="button" class="sort-option ${sort === "earliest" ? "is-active" : ""}" data-sort="earliest">Sort Earliest</button>
-              <button type="button" class="sort-option ${sort === "az" ? "is-active" : ""}" data-sort="az">Sort A-Z</button>
-              <button type="button" class="sort-option ${sort === "za" ? "is-active" : ""}" data-sort="za">Sort Z-A</button>
-            </div>
-            <select id="sort-select" class="sort-select-native" aria-hidden="true" tabindex="-1">
-              <option value="latest" ${sort === "latest" ? "selected" : ""}>Sort Latest</option>
-              <option value="earliest" ${sort === "earliest" ? "selected" : ""}>Sort Earliest</option>
-              <option value="az" ${sort === "az" ? "selected" : ""}>Sort A-Z</option>
-              <option value="za" ${sort === "za" ? "selected" : ""}>Sort Z-A</option>
-            </select>
-          </div>
-        </div>
-        <p id="search-status" class="meta-line search-status"></p>
+        ${dataLine ? `<p class="meta-line search-panel-headline tool-summary-line">${dataLine}</p>` : ""}
       </section>
 
       <div class="lists-grid">
         <section id="pending-panel" class="panel list-panel left-column">
           <h2 class="pending-heading">
-            <span class="pending-heading-main">
-              <span>Pending</span>
-              <span class="pending-safety-chip" aria-label="90 minute safety counter">
-                <span class="pending-safety-ring" aria-hidden="true">${pendingSafetyDotsHtml}</span>
+              <span class="pending-heading-main">
+                <span>pending</span>
               </span>
-            </span>
-            <span class="pending-flow">
-              <span class="pending-step">
-                <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M14 3h7v7"></path><path d="M10 14 21 3"></path><path d="M21 14v7h-7"></path><path d="M3 10V3h7"></path><path d="m3 3 7 7"></path></svg>
-                Open
+              <span class="pending-heading-tools">
+              <span class="pending-flow">
+                <span class="pending-step">
+                  <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M14 3h7v7"></path><path d="M10 14 21 3"></path><path d="M21 14v7h-7"></path><path d="M3 10V3h7"></path><path d="m3 3 7 7"></path></svg>
+                  open
               </span>
               <span class="pending-sep" aria-hidden="true">
                 <svg viewBox="0 0 24 24"><path d="m9 6 6 6-6 6"></path></svg>
               </span>
               <span class="pending-step">
                 <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 12h16"></path><path d="m14 6 6 6-6 6"></path></svg>
-                Unfollow
+                unfollow
               </span>
               <span class="pending-sep" aria-hidden="true">
                 <svg viewBox="0 0 24 24"><path d="m9 6 6 6-6 6"></path></svg>
               </span>
-              <span class="pending-step">
-                <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m20 6-11 11-5-5"></path></svg>
-                Check
+                <span class="pending-step">
+                  <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m20 6-11 11-5-5"></path></svg>
+                  check
+                </span>
               </span>
-            </span>
+              <span class="pending-safety-chip" aria-label="90 minute safety counter">
+                <span class="pending-safety-ring" aria-hidden="true">${pendingSafetyDotsHtml}</span>
+              </span>
+              </span>
           </h2>
+          <div class="toolbar pending-toolbar">
+            <input id="search-input" type="text" placeholder="search pending" value="${escapeHtml(query)}" autocomplete="off" autocapitalize="none" spellcheck="false" />
+            <div id="sort-dropdown" class="sort-dropdown">
+              <button id="sort-trigger" type="button" class="sort-trigger" aria-haspopup="listbox" aria-expanded="false">${currentSortLabel}</button>
+              <div class="sort-options" role="listbox" aria-label="sort options">
+                <button type="button" class="sort-option ${sort === "latest" ? "is-active" : ""}" data-sort="latest">sort latest</button>
+                <button type="button" class="sort-option ${sort === "earliest" ? "is-active" : ""}" data-sort="earliest">sort earliest</button>
+                <button type="button" class="sort-option ${sort === "az" ? "is-active" : ""}" data-sort="az">sort a-z</button>
+                <button type="button" class="sort-option ${sort === "za" ? "is-active" : ""}" data-sort="za">sort z-a</button>
+              </div>
+              <select id="sort-select" class="sort-select-native" aria-hidden="true" tabindex="-1">
+                <option value="latest" ${sort === "latest" ? "selected" : ""}>sort latest</option>
+                <option value="earliest" ${sort === "earliest" ? "selected" : ""}>sort earliest</option>
+                <option value="az" ${sort === "az" ? "selected" : ""}>sort a-z</option>
+                <option value="za" ${sort === "za" ? "selected" : ""}>sort z-a</option>
+              </select>
+            </div>
+          </div>
+          <p id="search-status" class="meta-line search-status"></p>
           <div id="pendingList" class="list-box">
             <div class="list-scroll">
-              ${safetyMode === "strict" && strictLocked ? `<p class="lock-banner">Unfollow is locked right now. You can still move users to TBD or Not Found.</p>` : ""}
-              ${pending.length ? listHtml(pending, "pending", visitedSet, strictLocked, pinnedSet) : `<div class="empty">No pending users.</div>`}
+              ${safetyMode === "strict" && strictLocked ? `<p class="lock-banner">unfollow is locked right now. you can still move users to tbd or not found.</p>` : ""}
+              ${pending.length ? listHtml(pending, "pending", visitedSet, strictLocked, pinnedSet) : `<div class="empty">no pending users.</div>`}
             </div>
           </div>
         </section>
 
         <section class="right-column">
-          <section class="panel list-panel">
-            <div class="section-head">
-              <h2>Unfollowed</h2>
-              <button id="toggle-done" class="mini-btn">${showDone ? "Hide" : "Show"} (${doneAll.length})</button>
-            </div>
-            <div id="doneList" class="list-box ${showDone ? "" : "collapsed"}">
-              <div class="list-scroll">
-                ${done.length ? listHtml(done, "done", visitedSet, strictLocked, pinnedSet) : `<div class="empty">Nothing here yet.</div>`}
-              </div>
-            </div>
-            ${showDone ? "" : `<p class="meta-line">Unfollowed list is collapsed.</p>`}
+          <section class="panel list-panel results-panel">
+            ${resultsView
+              ? `
+                <div class="results-detail-head">
+                  <button id="results-back" class="results-back" aria-label="back to lists">
+                    <svg viewBox="0 0 24 24" aria-hidden="true">
+                      <path d="m15 18-6-6 6-6"></path>
+                    </svg>
+                  </button>
+                  <div class="results-detail-title-row">
+                    <h2>${resultsMeta[resultsView].title}</h2>
+                  </div>
+                  <div class="results-detail-meta-row">
+                    <p class="meta-line results-panel-copy">${resultsMeta[resultsView].note}</p>
+                    <span class="results-count">${resultsMeta[resultsView].count}</span>
+                  </div>
+                </div>
+                <div id="${resultsView === "done" ? "doneList" : resultsView === "tbd" ? "tbdList" : "pnfList"}" class="list-box">
+                  <div class="list-scroll">
+                    ${resultsView === "done"
+                      ? (done.length ? listHtml(done, "done", visitedSet, strictLocked, pinnedSet) : `<div class="empty">${resultsMeta.done.empty}</div>`)
+                      : resultsView === "tbd"
+                        ? (tbd.length ? listHtml(tbd, "tbd", visitedSet, strictLocked, pinnedSet) : `<div class="empty">${resultsMeta.tbd.empty}</div>`)
+                        : (pnf.length ? listHtml(pnf, "pnf", visitedSet, strictLocked, pinnedSet) : `<div class="empty">${resultsMeta.pnf.empty}</div>`)}
+                  </div>
+                </div>
+              `
+              : `
+                <div class="section-head">
+                  <h2>organized lists</h2>
+                </div>
+                <p class="meta-line results-panel-copy">review everything you moved out of pending.</p>
+                <div class="results-overview-grid">
+                  <button type="button" class="results-overview-card" data-results-view="done">
+                    <span class="results-overview-body">
+                      <span class="results-overview-text">
+                        <span class="results-overview-title">unfollowed</span>
+                        <span class="results-overview-copy">accounts you already marked done.</span>
+                      </span>
+                      <strong class="results-overview-value">${doneAll.length}</strong>
+                    </span>
+                  </button>
+                  <button type="button" class="results-overview-card" data-results-view="tbd">
+                    <span class="results-overview-body">
+                      <span class="results-overview-text">
+                        <span class="results-overview-title">review later</span>
+                        <span class="results-overview-copy">set aside to review later.</span>
+                      </span>
+                      <strong class="results-overview-value">${tbdAll.length}</strong>
+                    </span>
+                  </button>
+                  <button type="button" class="results-overview-card" data-results-view="pnf">
+                    <span class="results-overview-body">
+                      <span class="results-overview-text">
+                        <span class="results-overview-title">not found</span>
+                        <span class="results-overview-copy">profiles that could not be reached.</span>
+                      </span>
+                      <strong class="results-overview-value">${pnfAll.length}</strong>
+                    </span>
+                  </button>
+                </div>
+              `}
           </section>
 
-          <section class="panel list-panel">
-            <div class="section-head">
-              <h2>To Be Determined</h2>
-              <button id="toggle-tbd" class="mini-btn">${showTbd ? "Hide" : "Show"} (${tbdAll.length})</button>
-            </div>
-            <div id="tbdList" class="list-box ${showTbd ? "" : "collapsed"}">
-              <div class="list-scroll">
-                ${tbd.length ? listHtml(tbd, "tbd", visitedSet, strictLocked, pinnedSet) : `<div class="empty">Nothing in TBD.</div>`}
-              </div>
-            </div>
-            ${showTbd ? "" : `<p class="meta-line">TBD list is collapsed.</p>`}
-          </section>
-
-          <section class="panel list-panel">
-            <div class="section-head">
-              <h2>Not Found</h2>
-              <button id="toggle-pnf" class="mini-btn">${showPnf ? "Hide" : "Show"} (${pnfAll.length})</button>
-            </div>
-            <div id="pnfList" class="list-box ${showPnf ? "" : "collapsed"}">
-              <div class="list-scroll">
-                ${pnf.length ? listHtml(pnf, "pnf", visitedSet, strictLocked, pinnedSet) : `<div class="empty">Nothing in Page Not Found.</div>`}
-              </div>
-            </div>
-            ${showPnf ? "" : `<p class="meta-line">Not found list is collapsed.</p>`}
-          </section>
-
-          <div class="right-footer">
-            <button id="reset-progress" class="danger-btn reset-btn">Reset</button>
-          </div>
         </section>
       </div>
     </div>
@@ -812,7 +853,7 @@ function renderResults({
       unfollowedSet,
       tbdSet,
       pnfSet,
-      visitedSet,
+      visitMap,
       pinnedSet,
       unfollowEvents,
       followedAtByUsername,
@@ -826,6 +867,7 @@ function renderResults({
       showDone: next.showDone,
       showTbd: next.showTbd,
       showPnf: next.showPnf,
+      activeResultsView: next.activeResultsView,
       theme: next.theme
     });
 
@@ -1012,12 +1054,13 @@ function renderResults({
   const getUiState = () => ({
     query: document.getElementById("search-input")?.value || "",
     sort: document.getElementById("sort-select")?.value || "latest",
-    verifyQuery: document.getElementById("verify-input")?.value || "",
+    verifyQuery: "",
     rateNotice,
     safetyMode,
     showDone,
     showTbd,
     showPnf,
+    activeResultsView: resultsView,
     theme: activeTheme
   });
 
@@ -1068,7 +1111,7 @@ function renderResults({
         tbdSet.delete(username);
         pnfSet.delete(username);
         pinnedSet.delete(username);
-        persistSets(unfollowedSet, tbdSet, pnfSet, visitedSet, pinnedSet);
+        persistSets(unfollowedSet, tbdSet, pnfSet, visitMap, pinnedSet);
         rerenderPreservingScroll({ ...getUiState(), safetyMode, rateNotice: "" });
       };
 
@@ -1084,7 +1127,7 @@ function renderResults({
       unfollowedSet.delete(username);
     }
 
-    persistSets(unfollowedSet, tbdSet, pnfSet, visitedSet, pinnedSet);
+    persistSets(unfollowedSet, tbdSet, pnfSet, visitMap, pinnedSet);
     rerenderPreservingScroll({ ...getUiState(), safetyMode, rateNotice: "" });
   };
 
@@ -1114,7 +1157,7 @@ function renderResults({
         setTimeout(() => {
           copyButton.title = original;
           copyButton.classList.remove("copied", "copy-failed");
-        }, 700);
+        }, 420);
       });
       return;
     }
@@ -1144,14 +1187,20 @@ function renderResults({
       return;
     }
 
-    const button = target.closest("button[data-action], button#toggle-done, button#toggle-tbd, button#toggle-pnf, button#toggle-theme, button#toggle-safety, button#verify-check");
+    const resultsTrigger = target.closest("[data-results-view]");
+    if (resultsTrigger instanceof HTMLButtonElement) {
+      rerenderPreservingScroll({ ...getUiState(), activeResultsView: resultsTrigger.dataset.resultsView || "" });
+      return;
+    }
+
+    const button = target.closest("button[data-action], button#results-back, button#toggle-theme, button#toggle-safety");
     const link = target.closest("a.user-link");
     if (link instanceof HTMLAnchorElement) {
       const encoded = link.dataset.openUsername;
       if (encoded) {
         const username = decodeURIComponent(encoded);
-        visitedSet.add(username);
-        persistSets(unfollowedSet, tbdSet, pnfSet, visitedSet, pinnedSet);
+        visitMap[username] = Date.now();
+        persistSets(unfollowedSet, tbdSet, pnfSet, visitMap, pinnedSet);
         const row = link.closest(".user-row");
         if (row) row.classList.add("visited-row");
       }
@@ -1159,19 +1208,9 @@ function renderResults({
     }
     if (!(button instanceof HTMLButtonElement)) return;
 
-    if (button.id === "toggle-done") {
+    if (button.id === "results-back") {
       const ui = getUiState();
-      rerenderPreservingScroll({ ...ui, showDone: !showDone });
-      return;
-    }
-    if (button.id === "toggle-tbd") {
-      const ui = getUiState();
-      rerenderPreservingScroll({ ...ui, showTbd: !showTbd });
-      return;
-    }
-    if (button.id === "toggle-pnf") {
-      const ui = getUiState();
-      rerenderPreservingScroll({ ...ui, showPnf: !showPnf });
+      rerenderPreservingScroll({ ...ui, activeResultsView: "" });
       return;
     }
     if (button.id === "toggle-theme") {
@@ -1188,11 +1227,6 @@ function renderResults({
       rerenderPreservingScroll({ ...getUiState(), safetyMode: nextMode, rateNotice: "" });
       return;
     }
-    if (button.id === "verify-check") {
-      rerenderPreservingScroll(getUiState());
-      return;
-    }
-
     const action = button.dataset.action;
     const encodedUsername = button.dataset.username;
     if (!action || !encodedUsername) return;
@@ -1204,7 +1238,7 @@ function renderResults({
       } else {
         pinnedSet.delete(username);
       }
-      persistSets(unfollowedSet, tbdSet, pnfSet, visitedSet, pinnedSet);
+      persistSets(unfollowedSet, tbdSet, pnfSet, visitMap, pinnedSet);
       animatePendingReorder(getUiState());
       return;
     }
@@ -1230,7 +1264,7 @@ function renderResults({
         unfollowedSet.delete(username);
       }
 
-      persistSets(unfollowedSet, tbdSet, pnfSet, visitedSet, pinnedSet);
+      persistSets(unfollowedSet, tbdSet, pnfSet, visitMap, pinnedSet);
       rerenderPreservingScroll(getUiState());
     });
   };
@@ -1243,7 +1277,6 @@ function renderResults({
       ? (e.target.selectionStart ?? nextQuery.length)
       : nextQuery.length;
     const nextSort = document.getElementById("sort-select")?.value || "latest";
-    const nextVerify = document.getElementById("verify-input")?.value || "";
     setSearchLoadingState(true);
     if (searchDebounceTimer) clearTimeout(searchDebounceTimer);
     searchDebounceTimer = setTimeout(() => {
@@ -1252,7 +1285,7 @@ function renderResults({
       searchDebounceTimer = setTimeout(() => {
         searchDebounceTimer = null;
         rerenderWithSearchFocus(
-          { query: nextQuery, sort: nextSort, verifyQuery: nextVerify, rateNotice, showDone, showTbd, showPnf, theme: activeTheme, safetyMode },
+          { query: nextQuery, sort: nextSort, verifyQuery: "", rateNotice, showDone, showTbd, showPnf, activeResultsView: resultsView, theme: activeTheme, safetyMode },
           caretPos
         );
       }, waitMore);
@@ -1263,28 +1296,9 @@ function renderResults({
   if (sortSelect) sortSelect.onchange = (e) => {
     const nextSort = e.target instanceof HTMLSelectElement ? e.target.value : "latest";
     const nextQuery = document.getElementById("search-input")?.value || "";
-    const nextVerify = document.getElementById("verify-input")?.value || "";
-    rerender({ query: nextQuery, sort: nextSort, verifyQuery: nextVerify, rateNotice, showDone, showTbd, showPnf, theme: activeTheme, safetyMode });
+    rerender({ query: nextQuery, sort: nextSort, verifyQuery: "", rateNotice, showDone, showTbd, showPnf, activeResultsView: resultsView, theme: activeTheme, safetyMode });
   };
 
-  const verifyInput = document.getElementById("verify-input");
-  if (verifyInput) verifyInput.onkeydown = (e) => {
-    if (e.key !== "Enter") return;
-    e.preventDefault();
-    rerender(getUiState());
-  };
-
-  document.getElementById("reset-progress").onclick = () => {
-    if (!window.confirm("Reset checklist, TBD, and Page Not Found lists?")) return;
-    unfollowedSet.clear();
-    tbdSet.clear();
-    pnfSet.clear();
-    visitedSet.clear();
-    pinnedSet.clear();
-    persistSets(unfollowedSet, tbdSet, pnfSet, visitedSet, pinnedSet);
-    saveStrictCooldownUntil(0);
-    rerender({ query: "", sort: "latest", verifyQuery: "", rateNotice: "", safetyMode, showDone: false, showTbd: false, showPnf: false, theme: activeTheme });
-  };
 }
 async function main() {
   try {
@@ -1336,7 +1350,7 @@ async function main() {
     const unfollowedSet = loadSet(STORAGE_KEY_UNFOLLOWED);
     const tbdSet = loadSet(STORAGE_KEY_TBD);
     const pnfSet = loadSet(STORAGE_KEY_PNF);
-    const visitedSet = loadSet(STORAGE_KEY_VISITED);
+    let visitMap = loadVisitMap();
     const pinnedSet = loadSet(STORAGE_KEY_PINNED);
     let unfollowEvents = pruneUnfollowEvents(loadUnfollowEvents());
     const safetyMode = loadSafetyMode();
@@ -1355,15 +1369,15 @@ async function main() {
     for (const username of [...pnfSet]) {
       if (!allSet.has(username) || unfollowedSet.has(username)) pnfSet.delete(username);
     }
-    for (const username of [...visitedSet]) {
-      if (!allSet.has(username)) visitedSet.delete(username);
-    }
+    visitMap = Object.fromEntries(
+      Object.entries(pruneVisitMap(visitMap)).filter(([username]) => allSet.has(username))
+    );
     for (const username of [...pinnedSet]) {
       const isPending = allSet.has(username) && !unfollowedSet.has(username) && !tbdSet.has(username) && !pnfSet.has(username);
       if (!isPending) pinnedSet.delete(username);
     }
 
-    persistSets(unfollowedSet, tbdSet, pnfSet, visitedSet, pinnedSet);
+    persistSets(unfollowedSet, tbdSet, pnfSet, visitMap, pinnedSet);
     saveUnfollowEvents(unfollowEvents);
 
     renderResults({
@@ -1371,7 +1385,7 @@ async function main() {
       unfollowedSet,
       tbdSet,
       pnfSet,
-      visitedSet,
+      visitMap,
       pinnedSet,
       unfollowEvents,
       followedAtByUsername,

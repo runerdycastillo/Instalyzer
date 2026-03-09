@@ -40,6 +40,28 @@ This matters because:
 - they are not guaranteed to be the same as the live Instagram app counts at viewing time
 - the export may contain date-ranged data in some sections without exposing one universal archive-level range field
 
+### Relationship Tool Range Rule
+
+For relationship tools such as `not following back`, the most important requirement is the broadest possible account-level relationship list, not just good summary metrics.
+
+That means:
+
+- use `JSON`
+- prefer `all time` export range for the most complete follower/following comparison
+- do not assume a shorter range export is safe for relationship tools
+
+Reason:
+
+- insight files can provide stronger totals, but they do not provide the full account roster needed for relationship comparison
+- a shorter export range may produce an incomplete follower relationship list
+- an incomplete relationship list can make `not following back` inaccurate enough to mislead users
+
+Product implication:
+
+- the app should eventually warn users when a dataset appears range-limited for relationship tools
+- the app should treat `not following back` results as lower confidence when the export is not `all time`
+- future onboarding/tutorial copy should explicitly recommend `all time` for relationship tools
+
 ## Trust Tiers
 
 Use this split when deciding what belongs in the overview versus tools or supporting detail.
@@ -78,6 +100,7 @@ Rule:
 
 - if a metric is not trustworthy enough to stand on its own, it should not be a headline overview metric
 - keep ambiguous but useful metrics in tools, secondary sections, or clearly qualified UI
+- relationship tools should prefer the broadest possible roster coverage, even when summary metrics look strong
 
 ## Recommended Dataset Schema
 
