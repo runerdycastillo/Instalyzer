@@ -3,7 +3,15 @@ const STORAGE_KEY_TUTORIAL_UNLOCKED = "ff_tutorial_unlocked_v1";
 const STORAGE_KEY_DATASETS = "ff_guest_datasets_v1";
 const STORAGE_KEY_ACTIVE_DATASET_ID = "ff_active_dataset_id_v1";
 const STORAGE_KEY_UPLOADED_DATA = "ff_uploaded_instagram_data_v1";
+const STORAGE_KEY_UNFOLLOWED = "ig_unfollowed_usernames_v1";
+const STORAGE_KEY_TBD = "ig_tbd_usernames_v1";
+const STORAGE_KEY_PNF = "ig_page_not_found_usernames_v1";
+const STORAGE_KEY_RECENT_VISITS = "ig_recent_visit_timestamps_v1";
+const STORAGE_KEY_PINNED = "ig_pinned_pending_usernames_v1";
+const STORAGE_KEY_UNFOLLOW_EVENTS = "ig_unfollow_events_v1";
+const STORAGE_KEY_STRICT_COOLDOWN_UNTIL = "ig_strict_cooldown_until_v1";
 const MAX_GUEST_DATASETS = 2;
+const EMBED_TOOL_VERSION = "20260309-2";
 let datasets = loadDatasets();
 let activeDatasetId = loadActiveDatasetId();
 let stagedUpload = null;
@@ -12,6 +20,7 @@ let showDatasetNameValidation = false;
 let activeMainView = "landing";
 let openDatasetMenuId = "";
 let activeWorkspaceDetail = "";
+let activeWorkspacePanel = "overview";
 
 function loadTheme() {
   const saved = localStorage.getItem(STORAGE_KEY_THEME);
@@ -113,6 +122,18 @@ function syncPrototypeUploadCache() {
   );
 }
 
+function clearPrototypeToolState() {
+  [
+    STORAGE_KEY_UNFOLLOWED,
+    STORAGE_KEY_TBD,
+    STORAGE_KEY_PNF,
+    STORAGE_KEY_RECENT_VISITS,
+    STORAGE_KEY_PINNED,
+    STORAGE_KEY_UNFOLLOW_EVENTS,
+    STORAGE_KEY_STRICT_COOLDOWN_UNTIL
+  ].forEach((key) => localStorage.removeItem(key));
+}
+
 function formatDatasetDate(value) {
   if (!value) return "not set";
   const date = new Date(`${value}T00:00:00`);
@@ -128,6 +149,43 @@ function formatCount(value) {
 function formatOptionalCount(value, fallback = "Not available") {
   const number = Number(value);
   return Number.isFinite(number) ? number.toLocaleString() : fallback;
+}
+
+function normalizeRangeLabel(value) {
+  return String(value || "").trim().replace(/\s+/g, " ");
+}
+
+function detectRelationshipExportRange(rangeLabel) {
+  const normalized = normalizeRangeLabel(rangeLabel).toLowerCase();
+  if (!normalized) return "unknown";
+  if (/\ball\s*time\b/.test(normalized)) return "all_time";
+  return "limited";
+}
+
+function getNotFollowingBackAccess(rangeLabel) {
+  const detectedRange = detectRelationshipExportRange(rangeLabel);
+
+  if (detectedRange === "all_time") {
+    return {
+      eligible: true,
+      statusLabel: "live",
+      note: "All-time export detected. Relationship results can use the broadest roster available in this dataset."
+    };
+  }
+
+  if (detectedRange === "limited") {
+    return {
+      eligible: false,
+      statusLabel: "locked",
+      note: `This dataset shows "${normalizeRangeLabel(rangeLabel)}". Re-export in JSON with the date range set to all time before using Not Following Back.`
+    };
+  }
+
+  return {
+    eligible: false,
+    statusLabel: "locked",
+    note: "All-time export was not verified for this dataset. Re-export in JSON with the date range set to all time before using Not Following Back."
+  };
 }
 
 function hasMetricValue(value) {
@@ -450,6 +508,8 @@ function getUi() {
     landingView: document.querySelector("[data-landing-view]"),
     workspaceView: document.querySelector("[data-workspace-view]"),
     toolsPanel: document.querySelector("[data-tools-panel]"),
+    notFollowingBackTool: document.querySelector("[data-not-following-back-tool]"),
+    notFollowingBackLock: document.querySelector("[data-not-following-back-lock]"),
     workspaceHead: document.querySelector("[data-workspace-head]"),
     workspaceDatasetName: document.querySelector("[data-workspace-dataset-name]"),
     workspaceDatasetDate: document.querySelector("[data-workspace-dataset-date]"),
@@ -469,6 +529,8 @@ function getUi() {
     workspaceSource: document.querySelector("[data-workspace-source]"),
     workspaceOverviewBody: document.querySelector("[data-workspace-overview-body]"),
     workspaceDetailView: document.querySelector("[data-workspace-detail-view]"),
+    workspaceToolView: document.querySelector("[data-workspace-tool-view]"),
+    workspaceToolFrame: document.querySelector("[data-workspace-tool-frame]"),
     workspaceDetailKicker: document.querySelector("[data-workspace-detail-kicker]"),
     workspaceDetailTitle: document.querySelector("[data-workspace-detail-title]"),
     workspaceDetailCopy: document.querySelector("[data-workspace-detail-copy]"),
@@ -636,6 +698,7 @@ function renameDataset(id) {
 function deleteDataset(id) {
   const dataset = datasets.find((entry) => entry.id === id);
   if (!dataset) return;
+  const deletingActiveDataset = activeDatasetId === id;
 
   const confirmed = window.confirm(`Delete "${dataset.name}"? This removes it from local guest storage.`);
   if (!confirmed) return;
@@ -653,6 +716,10 @@ function deleteDataset(id) {
     activeWorkspaceDetail = "";
   }
 
+  if (deletingActiveDataset) {
+    clearPrototypeToolState();
+  }
+
   saveDatasets();
   syncActiveDataset();
   renderAll();
@@ -661,6 +728,7 @@ function deleteDataset(id) {
 function renderActiveDataset() {
   const ui = getUi();
   const active = getActiveDataset();
+  const showingTool = activeWorkspacePanel === "not-following-back";
   if (active) {
     saveActiveDatasetId(active.id);
     syncPrototypeUploadCache();
@@ -671,9 +739,12 @@ function renderActiveDataset() {
   const showWorkspace = Boolean(active) && activeMainView === "workspace";
   if (ui.landingView instanceof HTMLElement) ui.landingView.hidden = showWorkspace;
   if (ui.workspaceView instanceof HTMLElement) ui.workspaceView.hidden = !showWorkspace;
+  if (ui.workspaceView instanceof HTMLElement) ui.workspaceView.classList.toggle("is-tool-active", showingTool);
   if (ui.toolsPanel instanceof HTMLElement) ui.toolsPanel.hidden = !showWorkspace;
 
   if (!active) return;
+
+  const notFollowingBackAccess = getNotFollowingBackAccess(active.scope?.insightDateRangeLabel);
 
   if (ui.workspaceDatasetName) ui.workspaceDatasetName.textContent = active.name || "active dataset";
   if (ui.workspaceDatasetDate) ui.workspaceDatasetDate.textContent = formatDatasetDate(active.createdAt);
@@ -718,6 +789,49 @@ function renderActiveDataset() {
   if (ui.workspaceAccountsEngaged) ui.workspaceAccountsEngaged.textContent = formatCount(active.metrics?.accountsEngaged);
   if (ui.workspaceCategories) ui.workspaceCategories.textContent = formatCount(active.meta?.categoryCounts?.length);
   if (ui.workspaceSource) ui.workspaceSource.textContent = active.meta?.sourceLabel || "not detected";
+
+  if (ui.notFollowingBackTool instanceof HTMLAnchorElement) {
+    ui.notFollowingBackTool.classList.toggle("is-disabled", !notFollowingBackAccess.eligible);
+    ui.notFollowingBackTool.setAttribute("href", `./index.html?embed=1&bypassEligibility=1&v=${EMBED_TOOL_VERSION}`);
+    ui.notFollowingBackTool.classList.toggle("is-current", showingTool);
+    ui.notFollowingBackTool.setAttribute("aria-disabled", notFollowingBackAccess.eligible ? "false" : "true");
+    ui.notFollowingBackTool.setAttribute(
+      "aria-label",
+      notFollowingBackAccess.eligible
+        ? "Open Not Following Back"
+        : "Open Not Following Back requirements"
+    );
+    ui.notFollowingBackTool.title = notFollowingBackAccess.note;
+  }
+
+  if (ui.notFollowingBackLock instanceof HTMLElement) {
+    ui.notFollowingBackLock.hidden = notFollowingBackAccess.eligible;
+  }
+
+  if (ui.workspaceHead instanceof HTMLElement) {
+    ui.workspaceHead.hidden = showingTool;
+  }
+
+  if (ui.workspaceOverviewBody instanceof HTMLElement) {
+    ui.workspaceOverviewBody.hidden = showingTool || Boolean(getWorkspaceDetailConfig(active, activeWorkspaceDetail));
+  }
+
+  if (ui.workspaceDetailView instanceof HTMLElement) {
+    ui.workspaceDetailView.hidden = showingTool || !Boolean(getWorkspaceDetailConfig(active, activeWorkspaceDetail));
+  }
+
+  if (ui.workspaceToolView instanceof HTMLElement) {
+    ui.workspaceToolView.hidden = !showingTool;
+  }
+
+  if (ui.workspaceToolFrame instanceof HTMLIFrameElement && showingTool) {
+    const nextSrc = `./index.html?embed=1&bypassEligibility=1&datasetId=${encodeURIComponent(active.id)}&v=${EMBED_TOOL_VERSION}`;
+    if (ui.workspaceToolFrame.dataset.src !== nextSrc) {
+      ui.workspaceToolFrame.dataset.src = nextSrc;
+      ui.workspaceToolFrame.src = nextSrc;
+    }
+  }
+
   renderWorkspaceDetail(active, ui);
 }
 
@@ -730,12 +844,14 @@ function renderAll() {
 function showHomePanel() {
   activeMainView = "landing";
   activeWorkspaceDetail = "";
+  activeWorkspacePanel = "overview";
   renderAll();
 }
 
 function showWorkspacePanel() {
   if (!getActiveDataset()) return;
   activeMainView = "workspace";
+  activeWorkspacePanel = "overview";
   renderAll();
 }
 
@@ -951,13 +1067,16 @@ function buildUploadPayload(followerMatches, followingMatches, summaryMeta) {
   const followingData = {
     relationships_following: followingMatches.flatMap((match) => match.entries)
   };
+  const notFollowingBackAccess = getNotFollowingBackAccess(summaryMeta.insightDateRangeLabel);
 
   return {
     followersData,
     followingData,
     profile: summaryMeta.profile,
     scope: {
-      insightDateRangeLabel: summaryMeta.insightDateRangeLabel || ""
+      insightDateRangeLabel: summaryMeta.insightDateRangeLabel || "",
+      relationshipExportRange: detectRelationshipExportRange(summaryMeta.insightDateRangeLabel),
+      notFollowingBackEligible: notFollowingBackAccess.eligible
     },
     metrics: {
       ...buildRelationshipMetrics(
@@ -1135,6 +1254,7 @@ function selectDataset(id) {
   saveActiveDatasetId(id);
   activeMainView = "workspace";
   activeWorkspaceDetail = "";
+  activeWorkspacePanel = "overview";
   renderAll();
 }
 
@@ -1182,6 +1302,13 @@ function getWorkspaceDetailConfig(dataset, detail) {
 }
 
 function renderWorkspaceDetail(dataset, ui = getUi()) {
+  if (activeWorkspacePanel !== "overview") {
+    if (ui.workspaceHead instanceof HTMLElement) ui.workspaceHead.hidden = true;
+    if (ui.workspaceOverviewBody instanceof HTMLElement) ui.workspaceOverviewBody.hidden = true;
+    if (ui.workspaceDetailView instanceof HTMLElement) ui.workspaceDetailView.hidden = true;
+    return;
+  }
+
   const detailConfig = getWorkspaceDetailConfig(dataset, activeWorkspaceDetail);
   const showDetail = Boolean(detailConfig);
 
@@ -1231,6 +1358,9 @@ function renderWorkspaceDetail(dataset, ui = getUi()) {
 function createDatasetFromStage() {
   if (!stagedUpload || datasets.length >= MAX_GUEST_DATASETS) return;
   const ui = getUi();
+  if (ui.createDatasetButton instanceof HTMLButtonElement) {
+    ui.createDatasetButton.disabled = true;
+  }
   const name = ui.detailsNameInput instanceof HTMLInputElement ? ui.detailsNameInput.value.trim() : "";
   if (!name) {
     showDatasetNameValidation = true;
@@ -1262,9 +1392,10 @@ function createDatasetFromStage() {
     syncPrototypeUploadCache();
     return;
   }
+  closeCreateModal();
+  resetUploadUi();
   activeMainView = "workspace";
   selectDataset(dataset.id);
-  closeCreateModal();
 }
 
 function wireUploadFlow() {
@@ -1432,15 +1563,26 @@ function wireWorkspaceDetails() {
     const target = event.target;
     if (!(target instanceof HTMLElement)) return;
 
+    const workspaceTool = target.closest("[data-workspace-tool]");
+    if (workspaceTool instanceof HTMLAnchorElement) {
+      event.preventDefault();
+      activeWorkspacePanel = workspaceTool.dataset.workspaceTool || "overview";
+      activeWorkspaceDetail = "";
+      renderAll();
+      return;
+    }
+
     const backButton = target.closest("[data-workspace-detail-back]");
     if (backButton instanceof HTMLButtonElement) {
       activeWorkspaceDetail = "";
+      activeWorkspacePanel = "overview";
       renderAll();
       return;
     }
 
     const detailTrigger = target.closest("[data-workspace-detail-trigger]");
     if (detailTrigger instanceof HTMLElement) {
+      activeWorkspacePanel = "overview";
       activeWorkspaceDetail = detailTrigger.dataset.workspaceDetailTrigger || "";
       renderAll();
     }
@@ -1455,8 +1597,61 @@ function wireWorkspaceDetails() {
     if (!(detailTrigger instanceof HTMLElement)) return;
 
     event.preventDefault();
+    activeWorkspacePanel = "overview";
     activeWorkspaceDetail = detailTrigger.dataset.workspaceDetailTrigger || "";
     renderAll();
+  });
+}
+
+function wireEmbeddedToolFrame() {
+  window.ffEmbeddedToolDownloadCsv = (filename, csv) => {
+    const safeFilename = String(filename || "export.csv").trim() || "export.csv";
+    const text = String(csv || "");
+    if (!text) return;
+    const blob = new Blob([text], { type: "text/csv;charset=utf-8;" });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = safeFilename;
+    link.style.display = "none";
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
+    setTimeout(() => URL.revokeObjectURL(url), 1000);
+  };
+
+  window.addEventListener("message", (event) => {
+    if (event.origin !== window.location.origin) return;
+    if (!event.data || event.data.type !== "ff-embedded-tool-height") return;
+    const frame = getUi().workspaceToolFrame;
+    if (!(frame instanceof HTMLIFrameElement)) return;
+    const nextHeight = Number(event.data.height || 0);
+    if (!Number.isFinite(nextHeight) || nextHeight <= 0) return;
+    frame.style.height = `${Math.ceil(nextHeight)}px`;
+  });
+
+  window.addEventListener("message", (event) => {
+    if (event.origin !== window.location.origin) return;
+    if (!event.data || event.data.type !== "ff-embedded-tool-back") return;
+    activeWorkspacePanel = "overview";
+    activeWorkspaceDetail = "";
+    renderAll();
+  });
+
+  window.addEventListener("message", (event) => {
+    if (event.origin !== window.location.origin) return;
+    if (!event.data || event.data.type !== "ff-embedded-tool-download") return;
+    window.ffEmbeddedToolDownloadCsv?.(event.data.filename, event.data.csv);
+  });
+
+  document.addEventListener("click", (event) => {
+    if (activeWorkspacePanel !== "not-following-back") return;
+    const frame = getUi().workspaceToolFrame;
+    if (!(frame instanceof HTMLIFrameElement) || !frame.contentWindow) return;
+    const target = event.target;
+    if (!(target instanceof Element)) return;
+    if (target.closest("[data-workspace-tool-view]")) return;
+    frame.contentWindow.postMessage({ type: "ff-embedded-tool-close-popovers" }, window.location.origin);
   });
 }
 
@@ -1484,6 +1679,7 @@ wireModal();
 wireDatasetList();
 wireHomePanelToggle();
 wireWorkspaceDetails();
+wireEmbeddedToolFrame();
 renderAll();
 
 document.getElementById("toggle-theme")?.addEventListener("click", () => {

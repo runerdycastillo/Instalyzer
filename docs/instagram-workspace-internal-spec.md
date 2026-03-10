@@ -153,13 +153,22 @@ Base workspace metrics should stay factual and directly supported by the data.
 
 Recommended base metrics:
 
-- follower count
-- following count
-- mutual count
-- not-following-back count
-- imported file count
-- import date
+- follower total from insights
+- accounts reached
+- profile visits
+- external link taps
+- content interactions
+- accounts engaged
+- impressions
+- detected insight range when available
 - dataset created date
+
+Supporting overview metadata can still include:
+
+- dataset name
+- import source
+- detected categories
+- profile identity fields such as username, display name, and profile photo
 
 Advanced inferred insights such as engagement rate, active hour, or account activity patterns should not be treated as base dataset metrics unless the export clearly supports them. Those belong in tools.
 
@@ -175,15 +184,16 @@ One dataset can power multiple tools.
 
 Current role:
 
-Tool 1 and proof of concept for the platform.
+Tool 1 and proof of concept for the platform. It now runs inside the dataset workspace main panel rather than standing alone as the whole product.
 
 Core capabilities:
 
 - compare following vs followers
 - identify users who do not follow back
 - review/manage results
-- copy/export results
+- export results as CSV
 - support workflow handling
+- apply stricter relationship-tool guidance when a dataset is not verified as `all time`
 
 ### Near-Term Tools
 

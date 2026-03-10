@@ -22,6 +22,150 @@ function escapeHtml(s) {
     .replace(/'/g, "&#039;");
 }
 
+function getListIconSvg(kind) {
+  if (kind === "done") {
+    return `
+      <svg viewBox="0 0 24 24" aria-hidden="true">
+        <path d="m20 6-11 11-5-5"></path>
+      </svg>`;
+  }
+  if (kind === "tbd") {
+    return `
+      <svg viewBox="0 0 24 24" aria-hidden="true">
+        <circle cx="12" cy="12" r="9"></circle>
+        <path d="M12 7v5l3 2"></path>
+      </svg>`;
+  }
+  if (kind === "pnf") {
+    return `
+      <svg viewBox="0 0 24 24" aria-hidden="true">
+        <path d="M16 21a6 6 0 0 0-12 0"></path>
+        <circle cx="10" cy="8" r="4"></circle>
+        <path d="m16 16 5 5"></path>
+        <path d="m21 16-5 5"></path>
+      </svg>`;
+  }
+  if (kind === "pending") {
+    return `
+      <svg viewBox="0 0 24 24" aria-hidden="true">
+        <path d="M4 12h16"></path>
+        <path d="m14 6 6 6-6 6"></path>
+      </svg>`;
+  }
+  return "";
+}
+
+function makeCsvValue(value) {
+  const text = String(value ?? "");
+  if (/[",\n]/.test(text)) {
+    return `"${text.replace(/"/g, "\"\"")}"`;
+  }
+  return text;
+}
+
+function downloadCsv(filename, rows) {
+  const csv = rows.map((row) => row.map(makeCsvValue).join(",")).join("\n");
+  if (isEmbeddedMode() && window.parent && window.parent !== window) {
+    try {
+      if (typeof window.parent.ffEmbeddedToolDownloadCsv === "function") {
+        window.parent.ffEmbeddedToolDownloadCsv(filename, csv);
+        return;
+      }
+    } catch {
+      // Fall through to message-based download fallback.
+    }
+    window.parent.postMessage({
+      type: "ff-embedded-tool-download",
+      filename,
+      csv
+    }, window.location.origin);
+    return;
+  }
+  const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement("a");
+  link.href = url;
+  link.download = filename;
+  link.style.display = "none";
+  document.body.appendChild(link);
+  link.click();
+  link.remove();
+  setTimeout(() => URL.revokeObjectURL(url), 1000);
+}
+
+function makeExportFilename(datasetName, listKey) {
+  const safeName = String(datasetName || "instagram")
+    .trim()
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "") || "instagram";
+  return `${safeName}-${listKey}.csv`;
+}
+
+function renderCountValue(key, value, className = "") {
+  const classes = className ? ` class="${className}"` : "";
+  return `<strong${classes} data-count-key="${escapeHtml(key)}" data-count-value="${escapeHtml(String(value))}">${escapeHtml(String(value))}</strong>`;
+}
+
+function splitCountPrefix(fromValue, toValue) {
+  const fromText = String(fromValue);
+  const toText = String(toValue);
+  let prefixLength = 0;
+
+  while (
+    prefixLength < fromText.length &&
+    prefixLength < toText.length &&
+    fromText[prefixLength] === toText[prefixLength]
+  ) {
+    prefixLength += 1;
+  }
+
+  return {
+    prefix: toText.slice(0, prefixLength),
+    fromSuffix: fromText.slice(prefixLength),
+    toSuffix: toText.slice(prefixLength)
+  };
+}
+
+function normalizeRangeLabel(value) {
+  return String(value || "").trim().replace(/\s+/g, " ");
+}
+
+function hasEligibilityBypass() {
+  try {
+    const params = new URLSearchParams(window.location.search);
+    return params.get("bypassEligibility") === "1";
+  } catch {
+    return false;
+  }
+}
+
+function isEmbeddedMode() {
+  try {
+    const params = new URLSearchParams(window.location.search);
+    return params.get("embed") === "1";
+  } catch {
+    return false;
+  }
+}
+
+function notifyEmbeddedHeight() {
+  if (!isEmbeddedMode() || window.parent === window) return;
+  requestAnimationFrame(() => {
+    const height = Math.max(
+      document.documentElement?.scrollHeight || 0,
+      document.body?.scrollHeight || 0
+    );
+    window.parent.postMessage({ type: "ff-embedded-tool-height", height }, window.location.origin);
+  });
+}
+
+function applyEmbeddedDocumentMode() {
+  const embedded = isEmbeddedMode();
+  document.documentElement.classList.toggle("is-embedded-tool", embedded);
+  document.body?.classList.toggle("is-embedded-tool", embedded);
+}
+
 function sortUsernames(arr, order, followedAtByUsername = {}) {
   const sorted = [...arr];
 
@@ -59,8 +203,11 @@ const RECENT_VISIT_WINDOW_MS = 15 * 60 * 1000;
 const SEARCH_DEBOUNCE_MS = 180;
 const SEARCH_SKELETON_MIN_MS = 650;
 const SEARCH_SKELETON_ROWS = 7;
+const PENDING_LIST_EXTRA_ROWS_HEIGHT = 174;
 let safetyTickerId = null;
 let searchDebounceTimer = null;
+let defaultPendingListHeight = 0;
+let exportMenuOpen = false;
 
 function loadSet(key) {
   try {
@@ -148,6 +295,8 @@ async function loadInstagramDataset() {
         return {
           followersData: parsed.followersData,
           followingData: parsed.followingData,
+          datasetName: parsed.datasetName || "",
+          scope: parsed.scope || {},
           source: "upload"
         };
       }
@@ -211,21 +360,44 @@ function getStrictCooldownRemaining(now = Date.now()) {
   return Math.max(0, until - now);
 }
 
-function getSafetyStatusHtml(safetyMode, rate, cooldownRemaining) {
-  if (safetyMode === "risk") return "risk mode active";
+function getSafetyDisplayState(safetyMode, rate, cooldownRemaining) {
+  if (safetyMode === "risk") {
+    return {
+      used90: 0,
+      used24: 0,
+      remaining90: LIMIT_90_MIN,
+      remaining24: LIMIT_24_HOUR,
+      canUnfollow: true,
+      wait90: 0,
+      wait24: 0,
+      waitText: "",
+      cooldownRemaining: 0
+    };
+  }
+
+  return {
+    ...rate,
+    cooldownRemaining
+  };
+}
+
+function getSafetyModeHtml(safetyMode) {
+  return safetyMode === "risk"
+    ? `safety mode: <span class="status-risk-word">off</span>`
+    : `safety mode: <span class="status-ready-word">on</span>`;
+}
+
+function getSafetyLockHtml(safetyMode, rate, cooldownRemaining) {
+  if (safetyMode !== "strict") return "";
 
   if (cooldownRemaining > 0) {
-    const clamped = Math.max(0, Math.min(WINDOW_90_MIN_MS, cooldownRemaining));
-    const ringDeg = Math.round((clamped / WINDOW_90_MIN_MS) * 360);
-    return `<span class="safety-status-with-ring"><span class="status-ring" style="--ring-deg:${ringDeg}deg" aria-hidden="true"></span><span>strict mode: <span class="status-locked-word">locked ${msToClock(cooldownRemaining)}</span></span></span>`;
+    return `<span class="status-locked-word">locked ${msToClock(cooldownRemaining)}</span>`;
   }
 
-  if (rate.canUnfollow) {
-    return 'strict mode: <span class="status-ready-word">ready</span>';
-  }
+  if (rate.canUnfollow) return "";
 
   const waitMs = rate.wait90 > 0 ? rate.wait90 : rate.wait24;
-  return `strict mode: <span class="status-locked-word">locked ${msToClock(waitMs)}</span>`;
+  return `<span class="status-locked-word">locked ${msToClock(waitMs)}</span>`;
 }
 
 function stopSafetyTicker() {
@@ -237,14 +409,21 @@ function stopSafetyTicker() {
 
 function updateSafetyStatus(safetyMode) {
   const statusEl = document.getElementById("safety-status");
+  const lockEl = document.getElementById("safety-lock-status");
   if (!statusEl) return;
 
   const events = pruneUnfollowEvents(loadUnfollowEvents());
   saveUnfollowEvents(events);
   const rate = getRateState(events);
   const cooldownRemaining = getStrictCooldownRemaining();
-  updateSafetyMeters(rate, safetyMode, cooldownRemaining);
-  statusEl.innerHTML = getSafetyStatusHtml(safetyMode, rate, cooldownRemaining);
+  const displayRate = getSafetyDisplayState(safetyMode, rate, cooldownRemaining);
+  updateSafetyMeters(displayRate, safetyMode, displayRate.cooldownRemaining);
+  statusEl.innerHTML = getSafetyModeHtml(safetyMode);
+  if (lockEl instanceof HTMLElement) {
+    const lockHtml = getSafetyLockHtml(safetyMode, displayRate, displayRate.cooldownRemaining);
+    lockEl.innerHTML = lockHtml;
+    lockEl.hidden = !lockHtml;
+  }
 }
 
 function updateSafetyMeters(rate, safetyMode = "strict", cooldownRemaining = 0) {
@@ -272,6 +451,15 @@ function persistSets(unfollowedSet, tbdSet, pnfSet, visitMap, pinnedSet) {
   saveSet(STORAGE_KEY_PNF, pnfSet);
   saveVisitMap(pruneVisitMap(visitMap));
   saveSet(STORAGE_KEY_PINNED, pinnedSet);
+}
+
+function hasSafetyProgress() {
+  return pruneUnfollowEvents(loadUnfollowEvents()).length > 0 || getStrictCooldownRemaining() > 0;
+}
+
+function clearSafetyProgress() {
+  saveUnfollowEvents([]);
+  saveStrictCooldownUntil(0);
 }
 
 function loadTheme() {
@@ -316,7 +504,7 @@ function setSafetyToggleButton(safetyMode) {
   if (!(button instanceof HTMLButtonElement)) return;
 
   const locked = safetyMode === "strict";
-  const label = locked ? "strict mode on" : "risk mode on";
+  const label = locked ? "safety mode on" : "safety mode off";
   button.setAttribute("aria-label", label);
   button.removeAttribute("title");
   button.setAttribute("data-tip", label);
@@ -433,17 +621,23 @@ function listHtml(arr, type, visitedSet, strictActionLocked = false, pinnedSet =
 
       const tbdButton =
         type === "pending"
-          ? `<button class="mini-btn" data-action="to-tbd" data-username="${encodedUser}">later</button>`
+          ? `<button class="row-action-btn" data-action="to-tbd" data-username="${encodedUser}" aria-label="Move @${safeUser} to review later" title="Move to review later">
+              ${getListIconSvg("tbd")}
+            </button>`
           : "";
 
       const pendingButton =
         type === "tbd" || type === "pnf"
-          ? `<button class="mini-btn" data-action="to-pending" data-username="${encodedUser}">pending</button>`
+          ? `<button class="row-action-btn" data-action="to-pending" data-username="${encodedUser}" aria-label="Move @${safeUser} back to pending" title="Move back to pending">
+              ${getListIconSvg("pending")}
+            </button>`
           : "";
 
       const pnfButton =
         type === "pending"
-          ? `<button class="mini-btn" data-action="to-pnf" data-username="${encodedUser}">not found</button>`
+          ? `<button class="row-action-btn" data-action="to-pnf" data-username="${encodedUser}" aria-label="Move @${safeUser} to not found" title="Move to not found">
+              ${getListIconSvg("pnf")}
+            </button>`
           : "";
       const pinButton =
         type === "pending"
@@ -466,7 +660,7 @@ function listHtml(arr, type, visitedSet, strictActionLocked = false, pinnedSet =
       const pinnedClass = pinned ? " pinned-row" : "";
       const disableUnfollow = strictActionLocked && type !== "done";
       const rowControl = disableUnfollow
-        ? `<span class="row-lock" aria-label="Locked in strict mode" title="Locked in strict mode">
+        ? `<span class="row-lock" aria-label="Locked while safety mode is on" title="Locked while safety mode is on">
             <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
               <rect x="4" y="11" width="16" height="10" rx="2"></rect>
               <path d="M8 11V8a4 4 0 0 1 8 0v3"></path>
@@ -550,10 +744,34 @@ function renderError(message) {
       </div>
     </section>
   `;
+  notifyEmbeddedHeight();
+}
+
+function renderNotFollowingBackBlocked(datasetName, rangeLabel) {
+  const root = document.getElementById("root") || document.body;
+  const safeDatasetName = escapeHtml(datasetName || "this dataset");
+  const safeRangeLabel = normalizeRangeLabel(rangeLabel);
+  const rangeCopy = safeRangeLabel
+    ? `Detected range: ${escapeHtml(safeRangeLabel)}.`
+    : "Detected range: not verified.";
+
+  root.innerHTML = `
+    <section class="app-shell panel" style="max-width:920px; margin: 24px auto;">
+      <h1>not following back</h1>
+      <div class="error-box">
+        <p><strong>${safeDatasetName} is not eligible for this tool.</strong></p>
+        <p>Not Following Back is limited to datasets imported with an all-time export so the relationship list is as complete as possible.</p>
+        <p>${rangeCopy}</p>
+        <p>Go back to the dataset workspace and re-import the export in JSON with the date range set to all time.</p>
+      </div>
+    </section>
+  `;
+  notifyEmbeddedHeight();
 }
 
 function renderResults({
   all,
+  datasetName = "",
   unfollowedSet,
   tbdSet,
   pnfSet,
@@ -574,6 +792,7 @@ function renderResults({
   activeResultsView = "",
   theme = "light"
 }) {
+  exportMenuOpen = false;
   const root = document.getElementById("root") || document.body;
   if (searchDebounceTimer) {
     clearTimeout(searchDebounceTimer);
@@ -604,10 +823,8 @@ function renderResults({
   const flaggedSet = new Set(all);
   const rateStateRaw = getRateState(unfollowEvents);
   const strictCooldownRemaining = getStrictCooldownRemaining();
-  const strictLocked = strictCooldownRemaining > 0 || !rateStateRaw.canUnfollow;
-  const rateState = safetyMode === "risk"
-    ? { ...rateStateRaw, canUnfollow: true, waitText: "" }
-    : rateStateRaw;
+  const rateState = getSafetyDisplayState(safetyMode, rateStateRaw, strictCooldownRemaining);
+  const strictLocked = safetyMode === "strict" && (strictCooldownRemaining > 0 || !rateStateRaw.canUnfollow);
   const dailySegmentCount = 6;
   const filledDailySegments = Math.min(dailySegmentCount, Math.floor(rateState.used24 / 10));
   const ninetyFillPct = safetyMode === "strict" && strictCooldownRemaining > 0
@@ -616,6 +833,7 @@ function renderResults({
   const pendingSafetyCount = safetyMode === "strict" && strictCooldownRemaining > 0
     ? LIMIT_90_MIN
     : Math.min(LIMIT_90_MIN, rateState.used90);
+  const showPendingSafetyChip = safetyMode === "strict";
   const pendingSafetyDotsHtml = Array.from({ length: LIMIT_90_MIN }, (_, i) =>
     `<span class="pending-safety-dot ${i < pendingSafetyCount ? "is-filled" : ""}" style="--dot-index:${i};"></span>`
   ).join("");
@@ -633,14 +851,50 @@ function renderResults({
   };
   const currentSortLabel = sortLabelByValue[sort] || sortLabelByValue.az;
   const resultsView = activeResultsView || "";
+  const embeddedMode = isEmbeddedMode();
   const resultsMeta = {
-    done: { title: "unfollowed", count: doneAll.length, empty: "nothing here yet.", note: "accounts you already marked done." },
-    tbd: { title: "review later", count: tbdAll.length, empty: "nothing in review later.", note: "set aside to review later." },
-    pnf: { title: "not found", count: pnfAll.length, empty: "nothing in page not found.", note: "profiles that could not be reached." }
+    done: { title: "unfollowed", icon: getListIconSvg("done"), count: doneAll.length, empty: "nothing here yet.", note: "accounts you already marked done." },
+    tbd: { title: "review later", icon: getListIconSvg("tbd"), count: tbdAll.length, empty: "nothing in review later.", note: "set aside to review later." },
+    pnf: { title: "not found", icon: getListIconSvg("pnf"), count: pnfAll.length, empty: "nothing in page not found.", note: "profiles that could not be reached." }
   };
+  const exportOptions = [
+    { key: "all", label: "not following back", count: all.length },
+    { key: "pending", label: "pending", count: pendingAll.length },
+    { key: "done", label: "unfollowed", count: doneAll.length },
+    { key: "tbd", label: "review later", count: tbdAll.length },
+    { key: "pnf", label: "not found", count: pnfAll.length }
+  ];
+  const exportMenuHtml = `
+    <div class="export-menu-shell${exportMenuOpen ? " is-open" : ""}">
+      <button
+        type="button"
+        class="mini-btn export-trigger"
+        data-export-trigger
+        aria-expanded="${exportMenuOpen ? "true" : "false"}"
+        aria-haspopup="menu"
+        aria-label="download csv"
+        title="download csv"
+      >
+        <svg viewBox="0 0 24 24" aria-hidden="true">
+          <path d="M12 3v11"></path>
+          <path d="m7 11 5 5 5-5"></path>
+          <path d="M5 21h14"></path>
+        </svg>
+      </button>
+      <div class="export-menu panel" role="menu" aria-label="Export lists"${exportMenuOpen ? "" : " hidden"}>
+        ${exportOptions.map((option) => `
+          <button type="button" class="export-option" data-export-list="${option.key}" role="menuitem">
+            <span>${option.label}</span>
+            <strong>${option.count}</strong>
+          </button>
+        `).join("")}
+      </div>
+    </div>
+  `;
 
   root.innerHTML = `
-    <div class="app-page">
+    <div class="app-page${embeddedMode ? " is-embedded-tool" : ""}">
+      ${embeddedMode ? "" : `
       <nav class="top-nav panel" aria-label="Primary">
         <div class="top-nav-brand">
           <button type="button" class="top-nav-home top-nav-profile" aria-label="Profile">
@@ -660,16 +914,18 @@ function renderResults({
             <span class="theme-fallback">${activeTheme === "dark" ? "sun" : "moon"}</span>
           </button>
         </div>
-      </nav>
+      </nav>`}
 
       <section id="safety-panel" class="app-shell panel">
         <div class="title-row">
           <div class="title-action-left">
-            <a href="./home.html" class="title-back-link theme-btn" aria-label="Back to overview" title="Back to overview">
+            ${embeddedMode
+              ? `<button type="button" class="title-back-link theme-btn" data-embedded-back aria-label="Back to overview" title="Back to overview">`
+              : `<a href="./home.html" class="title-back-link theme-btn" aria-label="Back to overview" title="Back to overview">`}
               <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
                 <path d="m15 18-6-6 6-6"></path>
               </svg>
-            </a>
+            ${embeddedMode ? `</button>` : `</a>`}
           </div>
           <div class="title-action-right">
             <button id="toggle-safety" class="mini-btn theme-btn" aria-label="Safety mode"></button>
@@ -680,7 +936,8 @@ function renderResults({
         <div class="limit-box ${safetyMode === "strict" && strictLocked ? "limit-box-warning" : ""}">
           <div class="limit-head">
             <b>safety system</b>
-            <span id="safety-status">${getSafetyStatusHtml(safetyMode, rateStateRaw, strictCooldownRemaining)}</span>
+            <span id="safety-lock-status"${getSafetyLockHtml(safetyMode, rateState, rateState.cooldownRemaining) ? "" : " hidden"}>${getSafetyLockHtml(safetyMode, rateState, rateState.cooldownRemaining)}</span>
+            <span id="safety-status">${getSafetyModeHtml(safetyMode)}</span>
           </div>
           <div class="limit-row">
             <div id="limit-90-label">90 min: ${rateState.used90}/${LIMIT_90_MIN}</div>
@@ -697,20 +954,20 @@ function renderResults({
             </div>
           </div>
           <p class="meta-line safety-mode-copy">${escapeHtml(rateNotice || (safetyMode === "strict"
-            ? "strict mode pauses for 90 minutes after 10 unfollows to reduce account risk."
-            : "risk mode removes the pause. use carefully."))}</p>
+            ? "safety mode on pauses for 90 minutes after 10 unfollows to reduce account risk."
+            : "safety mode off removes the pause. use carefully."))}</p>
         </div>
 
       </section>
 
-      <section id="search-panel" class="panel search-panel">
-        <div class="stats-row tool-stats-row">
-          <div><span class="stats-label-help" data-tip="all flagged accounts currently in this sweep." tabindex="0">total</span><strong>${all.length}</strong></div>
-          <div><span class="stats-label-help" data-tip="not checked yet." tabindex="0">pending</span><strong>${pendingAll.length}</strong></div>
-          <div><span class="stats-label-help" data-tip="accounts you already marked done." tabindex="0">unfollowed</span><strong>${doneAll.length}</strong></div>
-          <div><span class="stats-label-help" data-tip="set aside to review later." tabindex="0">review later</span><strong>${tbdAll.length}</strong></div>
-          <div><span class="stats-label-help" data-tip="profile could not be reached." tabindex="0">not found</span><strong>${pnfAll.length}</strong></div>
-        </div>
+        <section id="search-panel" class="panel search-panel">
+          <div class="stats-row tool-stats-row">
+          <div><span class="stats-label-help" data-tip="all flagged accounts currently in this sweep." tabindex="0">total</span>${renderCountValue("total", all.length)}</div>
+          <div><span class="stats-label-help" data-tip="not checked yet." tabindex="0">pending</span>${renderCountValue("pending", pendingAll.length)}</div>
+          <div><span class="stats-label-help" data-tip="accounts you already marked done." tabindex="0">unfollowed</span>${renderCountValue("done", doneAll.length)}</div>
+          <div><span class="stats-label-help" data-tip="set aside to review later." tabindex="0">review later</span>${renderCountValue("tbd", tbdAll.length)}</div>
+          <div><span class="stats-label-help" data-tip="profile could not be reached." tabindex="0">not found</span>${renderCountValue("pnf", pnfAll.length)}</div>
+          </div>
         ${dataLine ? `<p class="meta-line search-panel-headline tool-summary-line">${dataLine}</p>` : ""}
       </section>
 
@@ -723,14 +980,14 @@ function renderResults({
               <span class="pending-heading-tools">
               <span class="pending-flow">
                 <span class="pending-step">
-                  <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M14 3h7v7"></path><path d="M10 14 21 3"></path><path d="M21 14v7h-7"></path><path d="M3 10V3h7"></path><path d="m3 3 7 7"></path></svg>
+                  <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3.5" y="3.5" width="17" height="17" rx="5"></rect><circle cx="12" cy="12" r="4"></circle><circle cx="17.6" cy="6.4" r="1"></circle></svg>
                   open
               </span>
               <span class="pending-sep" aria-hidden="true">
                 <svg viewBox="0 0 24 24"><path d="m9 6 6 6-6 6"></path></svg>
               </span>
               <span class="pending-step">
-                <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 12h16"></path><path d="m14 6 6 6-6 6"></path></svg>
+                <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20 12H4"></path><path d="m10 6-6 6 6 6"></path></svg>
                 unfollow
               </span>
               <span class="pending-sep" aria-hidden="true">
@@ -741,9 +998,11 @@ function renderResults({
                   check
                 </span>
               </span>
-              <span class="pending-safety-chip" aria-label="90 minute safety counter">
-                <span class="pending-safety-ring" aria-hidden="true">${pendingSafetyDotsHtml}</span>
-              </span>
+              ${showPendingSafetyChip
+                ? `<span class="pending-safety-chip" aria-label="90 minute safety counter">
+                    <span class="pending-safety-ring" aria-hidden="true">${pendingSafetyDotsHtml}</span>
+                  </span>`
+                : ""}
               </span>
           </h2>
           <div class="toolbar pending-toolbar">
@@ -767,7 +1026,7 @@ function renderResults({
           <p id="search-status" class="meta-line search-status"></p>
           <div id="pendingList" class="list-box">
             <div class="list-scroll">
-              ${safetyMode === "strict" && strictLocked ? `<p class="lock-banner">unfollow is locked right now. you can still move users to tbd or not found.</p>` : ""}
+              ${safetyMode === "strict" && strictLocked ? `<p class="lock-banner">unfollow is locked right now. you can still move users to review later or not found.</p>` : ""}
               ${pending.length ? listHtml(pending, "pending", visitedSet, strictLocked, pinnedSet) : `<div class="empty">no pending users.</div>`}
             </div>
           </div>
@@ -784,6 +1043,7 @@ function renderResults({
                     </svg>
                   </button>
                   <div class="results-detail-title-row">
+                    <span class="list-title-icon" aria-hidden="true">${resultsMeta[resultsView].icon}</span>
                     <h2>${resultsMeta[resultsView].title}</h2>
                   </div>
                   <div class="results-detail-meta-row">
@@ -803,35 +1063,36 @@ function renderResults({
               `
               : `
                 <div class="section-head">
-                  <h2>organized lists</h2>
+                  <h2>lists</h2>
+                  ${exportMenuHtml}
                 </div>
                 <p class="meta-line results-panel-copy">review everything you moved out of pending.</p>
                 <div class="results-overview-grid">
                   <button type="button" class="results-overview-card" data-results-view="done">
                     <span class="results-overview-body">
                       <span class="results-overview-text">
-                        <span class="results-overview-title">unfollowed</span>
+                        <span class="results-overview-title"><span class="list-title-icon" aria-hidden="true">${resultsMeta.done.icon}</span><span>unfollowed</span></span>
                         <span class="results-overview-copy">accounts you already marked done.</span>
                       </span>
-                      <strong class="results-overview-value">${doneAll.length}</strong>
+                      ${renderCountValue("done", doneAll.length, "results-overview-value")}
                     </span>
                   </button>
                   <button type="button" class="results-overview-card" data-results-view="tbd">
                     <span class="results-overview-body">
                       <span class="results-overview-text">
-                        <span class="results-overview-title">review later</span>
+                        <span class="results-overview-title"><span class="list-title-icon" aria-hidden="true">${resultsMeta.tbd.icon}</span><span>review later</span></span>
                         <span class="results-overview-copy">set aside to review later.</span>
                       </span>
-                      <strong class="results-overview-value">${tbdAll.length}</strong>
+                      ${renderCountValue("tbd", tbdAll.length, "results-overview-value")}
                     </span>
                   </button>
                   <button type="button" class="results-overview-card" data-results-view="pnf">
                     <span class="results-overview-body">
                       <span class="results-overview-text">
-                        <span class="results-overview-title">not found</span>
+                        <span class="results-overview-title"><span class="list-title-icon" aria-hidden="true">${resultsMeta.pnf.icon}</span><span>not found</span></span>
                         <span class="results-overview-copy">profiles that could not be reached.</span>
                       </span>
-                      <strong class="results-overview-value">${pnfAll.length}</strong>
+                      ${renderCountValue("pnf", pnfAll.length, "results-overview-value")}
                     </span>
                   </button>
                 </div>
@@ -842,14 +1103,38 @@ function renderResults({
       </div>
     </div>
   `;
+  notifyEmbeddedHeight();
   setThemeToggleButton(activeTheme);
   setNavLogo(activeTheme);
   setSafetyToggleButton(safetyMode);
   startSafetyTicker(safetyMode);
 
+  const syncExportMenuUi = (open) => {
+    exportMenuOpen = open;
+    document.querySelectorAll(".export-menu-shell").forEach((shell) => {
+      if (!(shell instanceof HTMLElement)) return;
+      shell.classList.toggle("is-open", open);
+      const trigger = shell.querySelector("[data-export-trigger]");
+      const menu = shell.querySelector(".export-menu");
+      if (trigger instanceof HTMLButtonElement) {
+        trigger.setAttribute("aria-expanded", open ? "true" : "false");
+      }
+      if (menu instanceof HTMLElement) {
+        menu.hidden = !open;
+      }
+    });
+  };
+
+  window.addEventListener("message", (event) => {
+    if (event.origin !== window.location.origin) return;
+    if (!event.data || event.data.type !== "ff-embedded-tool-close-popovers") return;
+    if (exportMenuOpen) syncExportMenuUi(false);
+  });
+
   const rerender = (next) =>
     renderResults({
       all,
+      datasetName,
       unfollowedSet,
       tbdSet,
       pnfSet,
@@ -871,10 +1156,69 @@ function renderResults({
       theme: next.theme
     });
 
+  const animateCountTargets = (changes) => {
+    if (!changes?.length) return;
+
+    requestAnimationFrame(() => {
+      for (const change of changes) {
+        const targets = document.querySelectorAll(`[data-count-key="${change.key}"]`);
+        targets.forEach((target) => {
+          if (!(target instanceof HTMLElement)) return;
+          if (Number(target.dataset.countValue) !== change.to) return;
+
+          const oldValue = String(change.from);
+          const newValue = String(change.to);
+          const { prefix, fromSuffix, toSuffix } = splitCountPrefix(oldValue, newValue);
+          target.dataset.countValue = newValue;
+          if (!fromSuffix || !toSuffix) {
+            target.textContent = newValue;
+            return;
+          }
+
+          target.innerHTML = `
+            <span class="count-odometer" aria-hidden="true">
+              ${prefix ? `<span class="count-odometer-prefix">${escapeHtml(prefix)}</span>` : ""}
+              <span class="count-roll is-animating">
+                <span class="count-roll-track">
+                  <span class="count-roll-value is-old">${escapeHtml(fromSuffix)}</span>
+                  <span class="count-roll-value is-new">${escapeHtml(toSuffix)}</span>
+                </span>
+              </span>
+            </span>
+            <span class="visually-hidden">${escapeHtml(newValue)}</span>
+          `;
+
+          const track = target.querySelector(".count-roll-track");
+          if (!(track instanceof HTMLElement)) {
+            target.textContent = newValue;
+            return;
+          }
+
+          requestAnimationFrame(() => {
+            track.style.transform = "translateY(-50%)";
+          });
+
+          track.addEventListener(
+            "transitionend",
+            () => {
+              target.textContent = newValue;
+            },
+            { once: true }
+          );
+        });
+      }
+    });
+  };
+
   const syncPendingListHeight = () => {
     if (window.matchMedia("(max-width: 640px)").matches) {
       const pendingListMobile = document.getElementById("pendingList");
-      pendingListMobile?.style.setProperty("--pending-list-height", "390px");
+      const mobileHeight = 390 + PENDING_LIST_EXTRA_ROWS_HEIGHT;
+      if (defaultPendingListHeight <= 0) {
+        defaultPendingListHeight = mobileHeight;
+      }
+      pendingListMobile?.style.setProperty("--pending-list-height", `${defaultPendingListHeight}px`);
+      document.documentElement.style.setProperty("--results-list-box-height", `${defaultPendingListHeight + 2}px`);
       return;
     }
 
@@ -887,10 +1231,22 @@ function renderResults({
     const rightHeight = rightColumn.getBoundingClientRect().height;
     const leftHeight = leftPanel.getBoundingClientRect().height;
     const pendingHeight = pendingList.getBoundingClientRect().height;
+    const pendingRect = pendingList.getBoundingClientRect();
     const chromeHeight = Math.max(0, leftHeight - pendingHeight);
 
-    const targetHeight = Math.max(220, Math.round(rightHeight - chromeHeight));
-    pendingList.style.setProperty("--pending-list-height", `${targetHeight}px`);
+    const measuredHeight = Math.max(220, Math.round(rightHeight - chromeHeight + PENDING_LIST_EXTRA_ROWS_HEIGHT));
+    if (defaultPendingListHeight <= 0) {
+      defaultPendingListHeight = measuredHeight;
+    }
+    pendingList.style.setProperty("--pending-list-height", `${defaultPendingListHeight}px`);
+    const resultsPanel = document.querySelector(".results-panel");
+    const activeResultsList = resultsPanel?.querySelector("#doneList, #tbdList, #pnfList");
+    if (resultsPanel instanceof HTMLElement && activeResultsList instanceof HTMLElement) {
+      resultsPanel.style.height = "";
+    } else if (resultsPanel instanceof HTMLElement) {
+      resultsPanel.style.height = "";
+    }
+    document.documentElement.style.setProperty("--results-list-box-height", `${Math.round(pendingRect.height)}px`);
   };
 
   syncPendingListHeight();
@@ -931,6 +1287,13 @@ function renderResults({
     restoreListScroll(scrollState);
   };
 
+  const rerenderWithCountRoll = (next, changes) => {
+    const scrollState = captureListScroll();
+    rerender(next);
+    restoreListScroll(scrollState);
+    animateCountTargets(changes);
+  };
+
   const animatePendingReorder = (next) => {
     const pendingBefore = document.getElementById("pendingList");
     const beforeRows = pendingBefore
@@ -969,7 +1332,7 @@ function renderResults({
 
       row.style.transition = "none";
       row.style.transform = `translateY(${dy}px)`;
-      row.style.opacity = "0.55";
+      row.style.opacity = "0.72";
       movedRows.push(row);
     }
 
@@ -977,7 +1340,7 @@ function renderResults({
 
     requestAnimationFrame(() => {
       for (const row of movedRows) {
-        row.style.transition = "transform 280ms cubic-bezier(0.22, 1, 0.36, 1), opacity 280ms ease";
+        row.style.transition = "transform 180ms cubic-bezier(0.24, 0.84, 0.32, 1), opacity 180ms ease";
         row.style.transform = "translateY(0)";
         row.style.opacity = "1";
         row.addEventListener(
@@ -1014,7 +1377,7 @@ function renderResults({
 
     if (targetList) {
       targetList.classList.add("list-receive");
-      setTimeout(() => targetList.classList.remove("list-receive"), 280);
+      setTimeout(() => targetList.classList.remove("list-receive"), 180);
     }
 
     if (!row) {
@@ -1022,9 +1385,8 @@ function renderResults({
       return;
     }
 
-    const dirClass = action === "to-pending" ? "move-left" : "move-right";
-    row.classList.add("row-moving", dirClass);
-    row.addEventListener("animationend", () => onDone(), { once: true });
+    row.classList.add("is-acknowledging");
+    setTimeout(() => onDone(), 85);
   };
 
   const setSearchLoadingState = (isLoading) => {
@@ -1076,7 +1438,9 @@ function renderResults({
 
     if (el.checked) {
       const latestEvents = pruneUnfollowEvents(loadUnfollowEvents());
-      saveUnfollowEvents(latestEvents);
+      if (safetyMode === "strict") {
+        saveUnfollowEvents(latestEvents);
+      }
       const stateNow = getRateState(latestEvents);
       const strictCooldownRemaining = getStrictCooldownRemaining();
       if (safetyMode === "strict" && (strictCooldownRemaining > 0 || !stateNow.canUnfollow)) {
@@ -1092,19 +1456,21 @@ function renderResults({
       const doneList = document.getElementById("doneList");
       if (doneList) {
         doneList.classList.add("list-receive");
-        setTimeout(() => doneList.classList.remove("list-receive"), 280);
+        setTimeout(() => doneList.classList.remove("list-receive"), 180);
       }
 
       const commitChecked = () => {
-        latestEvents.push(Date.now());
-        const nextEvents = pruneUnfollowEvents(latestEvents);
-        saveUnfollowEvents(nextEvents);
-        unfollowEvents = nextEvents;
         if (safetyMode === "strict") {
+          latestEvents.push(Date.now());
+          const nextEvents = pruneUnfollowEvents(latestEvents);
+          saveUnfollowEvents(nextEvents);
+          unfollowEvents = nextEvents;
           const nextState = getRateState(nextEvents);
           if (nextState.used90 >= LIMIT_90_MIN) {
             saveStrictCooldownUntil(Date.now() + WINDOW_90_MIN_MS);
           }
+        } else {
+          unfollowEvents = [];
         }
 
         unfollowedSet.add(username);
@@ -1116,8 +1482,8 @@ function renderResults({
       };
 
       if (row) {
-        row.classList.add("row-moving", "move-right");
-        row.addEventListener("animationend", () => commitChecked(), { once: true });
+        row.classList.add("is-acknowledging");
+        setTimeout(() => commitChecked(), 85);
         return;
       }
 
@@ -1140,6 +1506,12 @@ function renderResults({
       sortDropdown.classList.remove("is-open");
       if (sortTriggerEl instanceof HTMLButtonElement) {
         sortTriggerEl.setAttribute("aria-expanded", "false");
+      }
+    }
+    if (!target.closest(".export-menu-shell")) {
+      if (exportMenuOpen) {
+        syncExportMenuUi(false);
+        return;
       }
     }
 
@@ -1187,9 +1559,57 @@ function renderResults({
       return;
     }
 
+    const exportTrigger = target.closest("[data-export-trigger]");
+    if (exportTrigger instanceof HTMLButtonElement) {
+      syncExportMenuUi(!exportMenuOpen);
+      return;
+    }
+
+    const exportOption = target.closest("[data-export-list]");
+    if (exportOption instanceof HTMLButtonElement) {
+      const listKey = exportOption.dataset.exportList || "";
+      const exportMap = {
+        all,
+        pending: pendingAll,
+        done: doneAll,
+        tbd: tbdAll,
+        pnf: pnfAll
+      };
+      const listLabelMap = {
+        all: "not-following-back",
+        pending: "pending",
+        done: "unfollowed",
+        tbd: "review-later",
+        pnf: "not-found"
+      };
+      const usernames = exportMap[listKey];
+      if (Array.isArray(usernames)) {
+        const rows = [
+          ["username", "list", "profile_url"],
+          ...usernames.map((username) => [
+            username,
+            listLabelMap[listKey] || listKey,
+            `https://www.instagram.com/${username}/`
+          ])
+        ];
+        downloadCsv(makeExportFilename(datasetName, listLabelMap[listKey] || listKey), rows);
+      }
+      syncExportMenuUi(false);
+      return;
+    }
+
     const resultsTrigger = target.closest("[data-results-view]");
     if (resultsTrigger instanceof HTMLButtonElement) {
+      exportMenuOpen = false;
       rerenderPreservingScroll({ ...getUiState(), activeResultsView: resultsTrigger.dataset.resultsView || "" });
+      return;
+    }
+
+    const embeddedBack = target.closest("[data-embedded-back]");
+    if (embeddedBack instanceof HTMLButtonElement) {
+      if (window.parent !== window) {
+        window.parent.postMessage({ type: "ff-embedded-tool-back" }, window.location.origin);
+      }
       return;
     }
 
@@ -1210,6 +1630,7 @@ function renderResults({
 
     if (button.id === "results-back") {
       const ui = getUiState();
+      exportMenuOpen = false;
       rerenderPreservingScroll({ ...ui, activeResultsView: "" });
       return;
     }
@@ -1223,8 +1644,24 @@ function renderResults({
     }
     if (button.id === "toggle-safety") {
       const nextMode = safetyMode === "strict" ? "risk" : "strict";
+      let nextRateNotice = "";
+
+      if (safetyMode === "strict" && nextMode === "risk") {
+        const shouldWarn = hasSafetyProgress();
+        if (shouldWarn) {
+          const confirmed = window.confirm(
+            "Turn safety mode off? The current safety bar progress will be reset."
+          );
+          if (!confirmed) return;
+
+          clearSafetyProgress();
+          unfollowEvents = [];
+          nextRateNotice = "safety mode off. safety bar progress was reset.";
+        }
+      }
+
       saveSafetyMode(nextMode);
-      rerenderPreservingScroll({ ...getUiState(), safetyMode: nextMode, rateNotice: "" });
+      rerenderPreservingScroll({ ...getUiState(), safetyMode: nextMode, rateNotice: nextRateNotice });
       return;
     }
     const action = button.dataset.action;
@@ -1244,6 +1681,13 @@ function renderResults({
     }
 
     animateMove(action, button, () => {
+      const beforeCounts = {
+        pending: pendingAll.length,
+        done: doneAll.length,
+        tbd: tbdAll.length,
+        pnf: pnfAll.length
+      };
+
       if (action === "to-tbd") {
         tbdSet.add(username);
         unfollowedSet.delete(username);
@@ -1265,7 +1709,16 @@ function renderResults({
       }
 
       persistSets(unfollowedSet, tbdSet, pnfSet, visitMap, pinnedSet);
-      rerenderPreservingScroll(getUiState());
+      const afterCounts = {
+        pending: all.filter((u) => !unfollowedSet.has(u) && !tbdSet.has(u) && !pnfSet.has(u)).length,
+        done: all.filter((u) => unfollowedSet.has(u)).length,
+        tbd: all.filter((u) => tbdSet.has(u) && !unfollowedSet.has(u) && !pnfSet.has(u)).length,
+        pnf: all.filter((u) => pnfSet.has(u) && !unfollowedSet.has(u)).length
+      };
+      const changes = Object.entries(afterCounts)
+        .filter(([key, value]) => beforeCounts[key] !== value)
+        .map(([key, value]) => ({ key, from: beforeCounts[key], to: value }));
+      rerenderWithCountRoll(getUiState(), changes);
     });
   };
 
@@ -1302,8 +1755,15 @@ function renderResults({
 }
 async function main() {
   try {
+    applyEmbeddedDocumentMode();
     const dataset = await loadInstagramDataset();
     const { followersData, followingData } = dataset;
+    const bypassEligibility = hasEligibilityBypass();
+
+    if (dataset.source === "upload" && dataset.scope?.notFollowingBackEligible !== true && !bypassEligibility) {
+      renderNotFollowingBackBlocked(dataset.datasetName, dataset.scope?.insightDateRangeLabel);
+      return;
+    }
 
     const followerEntries = extractEntries(followersData, "relationships_followers");
     const followingEntries = extractEntries(followingData, "relationships_following");
@@ -1353,7 +1813,8 @@ async function main() {
     let visitMap = loadVisitMap();
     const pinnedSet = loadSet(STORAGE_KEY_PINNED);
     let unfollowEvents = pruneUnfollowEvents(loadUnfollowEvents());
-    const safetyMode = loadSafetyMode();
+    const safetyMode = "strict";
+    saveSafetyMode(safetyMode);
     if (getStrictCooldownRemaining() <= 0) {
       saveStrictCooldownUntil(0);
     }
@@ -1382,6 +1843,7 @@ async function main() {
 
     renderResults({
       all: notFollowingBackAll,
+      datasetName: dataset.datasetName || "",
       unfollowedSet,
       tbdSet,
       pnfSet,
@@ -1407,6 +1869,7 @@ async function main() {
         following: followingParsed.stats
       }
     });
+
   } catch (err) {
     const msg = err instanceof Error ? err.message : String(err);
     renderError(msg);

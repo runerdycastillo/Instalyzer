@@ -59,7 +59,6 @@
                 </script>
             </div>
             <div class="top-nav-links">
-                <a href="./index.html" class="top-nav-link">open prototype</a>
                 <button id="toggle-theme" class="mini-btn theme-btn top-nav-theme-btn" aria-label="Toggle theme"></button>
             </div>
         </nav>
@@ -407,6 +406,16 @@
 
                     <p class="dataset-detail-note" data-workspace-detail-note hidden></p>
                 </section>
+
+                <section class="workspace-tool-view" data-workspace-tool-view hidden aria-label="Workspace tool view">
+                    <iframe
+                        class="workspace-tool-frame"
+                        data-workspace-tool-frame
+                        title="Not Following Back"
+                        loading="lazy"
+                        scrolling="no"
+                    ></iframe>
+                </section>
             </section>
             </div>
 
@@ -417,7 +426,13 @@
                 </div>
 
                 <div class="tools-sidebar-list workspace-tool-list">
-                    <a href="./index.html" class="workspace-tool-pill is-live" aria-label="Open Not Following Back">
+                    <a
+                        href="./index.html"
+                        class="workspace-tool-pill is-live"
+                        data-not-following-back-tool
+                        data-workspace-tool="not-following-back"
+                        aria-label="Open Not Following Back"
+                    >
                         <span class="workspace-tool-icon" aria-hidden="true">
                             <svg viewBox="0 0 24 24">
                                 <path d="M12 3v12"></path>
@@ -428,9 +443,13 @@
                         <span class="workspace-tool-copy">
                             <strong>not following back</strong>
                         </span>
-                        <span class="workspace-tool-status is-live">live</span>
+                        <span class="workspace-tool-lock" data-not-following-back-lock aria-label="locked" hidden>
+                            <svg viewBox="0 0 24 24" aria-hidden="true">
+                                <rect x="5" y="11" width="14" height="10" rx="2"></rect>
+                                <path d="M8 11V8a4 4 0 0 1 8 0v3"></path>
+                            </svg>
+                        </span>
                     </a>
-
                     <div class="workspace-tool-pill" aria-label="Ghost Followers coming soon">
                         <span class="workspace-tool-icon" aria-hidden="true">
                             <svg viewBox="0 0 24 24">

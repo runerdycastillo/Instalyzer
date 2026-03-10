@@ -15,14 +15,15 @@ What already exists:
 - marketing-style homepage
 - dataset upload and staging flow
 - local dataset creation
-- active dataset handoff into the current tool
+- dataset workspace overview with embedded Tool 1 flow
 - Tool 1: `Not Following Back`
+- export guidance and relationship-tool range gating
 
 What is still provisional:
 
 - product naming
 - final page structure
-- real dataset schema
+- home/workspace copy polish
 - future tool feasibility
 - SaaS app architecture
 - auth, accounts, billing, and backend processing
@@ -84,7 +85,8 @@ Export settings guidance for this phase:
 - `JSON` is required for the current product
 - `HTML` support is a possible future compatibility feature
 - `medium` media quality is the recommended default
-- date range should be chosen based on what the user wants to analyze
+- `all time` should be recommended for relationship tools such as `Not Following Back`
+- shorter date ranges may still be useful for future insight-style tools
 
 ## Phase 2: Next.js Migration
 
