@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>f&f | home</title>
+    <title>Instalyzer | Instagram dataset workspace</title>
     <script>
         (() => {
             const saved = localStorage.getItem("ig_theme_v1");
@@ -12,9 +12,9 @@
             window.__initialTheme = theme;
         })();
     </script>
-    <link rel="icon" type="image/png" href="./assets/favicon.png">
-    <link rel="preload" as="image" href="./assets/f&f-logo.png">
-    <link rel="preload" as="image" href="./assets/f&f-logo-light.png">
+    <link rel="icon" type="image/png" href="./assets/logo/instaylzer-favicon.png?v=3">
+    <link rel="shortcut icon" type="image/png" href="./assets/logo/instaylzer-favicon.png?v=3">
+    <link rel="preload" as="image" href="./assets/logo/instaylzer-logo.png">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@500;600;700&family=Source+Sans+3:wght@400;500;600;700&family=IBM+Plex+Mono:wght@500&display=swap" rel="stylesheet">
@@ -46,15 +46,13 @@
             </div>
             <div class="top-nav-center">
                 <button type="button" class="top-nav-logo-link is-current" data-show-home aria-label="Show home panel">
-                    <img id="home-nav-logo" src="./assets/f&f-logo.png" alt="f&f logo" class="top-nav-logo" width="96" height="96" />
+                    <img id="home-nav-logo" src="./assets/logo/instaylzer-logo.png" alt="Instalyzer logo" class="top-nav-logo" width="96" height="96" />
                 </button>
                 <script>
                     (() => {
                         const logo = document.getElementById("home-nav-logo");
                         if (!logo) return;
-                        logo.src = window.__initialTheme === "light"
-                            ? "./assets/f&f-logo-light.png"
-                            : "./assets/f&f-logo.png";
+                        logo.src = "./assets/logo/instaylzer-logo.png";
                     })();
                 </script>
             </div>
@@ -66,7 +64,7 @@
         <div class="dataset-workspace">
             <aside class="dataset-sidebar panel" aria-label="Datasets">
                     <div class="dataset-sidebar-head">
-                        <p class="section-kicker">guest mode</p>
+                        <p class="section-kicker">Instalyzer guest mode</p>
                         <h2 class="dataset-sidebar-title">datasets</h2>
                     </div>
 
@@ -115,10 +113,10 @@
                                 </div>
                             </div>
                         </div>
-                        <h1 id="hero-title" class="hero-title">turn your instagram export into tools</h1>
-                        <p class="hero-eyebrow">dataset-first workflow</p>
+                        <h1 id="hero-title" class="hero-title">Instalyzer turns your Instagram export into a reusable workspace</h1>
+                        <p class="hero-eyebrow">upload once. run multiple tools.</p>
                         <p class="hero-copy">
-                            import your export, name the dataset, then open the tools.
+                            Build a dataset from your Instagram export, keep the account context intact, and open analysis tools whenever you need them.
                         </p>
                         <div class="hero-flow" aria-label="Product flow">
                             <span class="hero-flow-item">
@@ -258,7 +256,7 @@
                 <div class="dataset-overview-body" data-workspace-overview-body>
                     <div class="dataset-overview-intro">
                         <p class="dataset-overview-copy">
-                            current account stats from this imported instagram export.
+                            Trusted account and insight metrics extracted from this imported Instagram dataset.
                         </p>
                     </div>
 
@@ -483,9 +481,9 @@
         </div>
         <footer class="site-footer panel" aria-label="Site footer">
             <button type="button" class="site-footer-brand is-current" data-show-home aria-label="Show home panel">
-                <img id="home-footer-logo" src="./assets/f&f-logo.png" alt="f&f logo" class="site-footer-logo" width="72" height="72" />
+                <img id="home-footer-logo" src="./assets/logo/instaylzer-logo.png" alt="Instalyzer logo" class="site-footer-logo" width="72" height="72" />
             </button>
-            <p class="site-footer-copy">f&amp;f &copy; 2026</p>
+            <p class="site-footer-copy">Instalyzer &copy; 2026</p>
             <div class="site-footer-spacer" aria-hidden="true"></div>
         </footer>
     </div>

@@ -36,7 +36,7 @@ function applyTheme(theme) {
 }
 
 function getNavLogoSrc(theme) {
-  return theme === "light" ? "./assets/f&f-logo-light.png" : "./assets/f&f-logo.png";
+  return "./assets/logo/instaylzer-logo.png";
 }
 
 function setNavLogo(theme) {
@@ -286,7 +286,7 @@ function getPreferredDisplayName(profile, datasetName) {
   const fallbackName = String(datasetName || "").trim();
   if (fallbackName) return fallbackName;
 
-  return "display name not found";
+  return "profile name not found";
 }
 
 function extractUsernameFromHref(href) {

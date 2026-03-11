@@ -476,7 +476,7 @@ function saveTheme(theme) {
 }
 
 function getNavLogoSrc(theme) {
-  return theme === "light" ? "./assets/f&f-logo-light.png" : "./assets/f&f-logo.png";
+  return "./assets/logo/instaylzer-logo.png";
 }
 
 function setNavLogo(theme) {
@@ -906,7 +906,7 @@ function renderResults({
         </div>
         <div class="top-nav-center">
           <a href="./home.html" class="top-nav-logo-link" aria-label="Home">
-            <img src="${getNavLogoSrc(activeTheme)}" alt="f&f logo" class="top-nav-logo" width="96" height="96" />
+            <img src="${getNavLogoSrc(activeTheme)}" alt="Instalyzer logo" class="top-nav-logo" width="96" height="96" />
           </a>
         </div>
         <div class="top-nav-links">
