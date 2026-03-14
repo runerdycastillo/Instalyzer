@@ -96,14 +96,60 @@ Purpose:
 
 Explain the platform, drive dataset creation, and preview tool value.
 
-Core sections:
+Recommended section order:
 
 - hero
-- primary CTA: `Create Dataset` / `Upload Export`
-- secondary CTA: `Explore Tools`
-- short "how it works" section
 - tool preview section
-- tutorial/help section
+- short "how it works" section
+- example insights / outputs section
+- pricing / CTA section
+
+Homepage rules:
+
+- the hero should act like a true landing-page hero, not a boxed dashboard card
+- the hero background can span the full viewport width under the nav
+- hero copy should stay concise and conversion-focused
+- the dataset sidebar should not appear on the landing hero; keep that for overview/workspace context
+- the homepage should move from:
+  - problem
+  - to tools
+  - to explanation
+  - to conversion
+
+How `how it works` should be scoped:
+
+- do not split `how it works` and `tutorial` into two separate major homepage sections if they repeat the same job
+- keep one stronger explanatory section that covers:
+  - export your Instagram data
+  - upload it
+  - create a dataset
+  - unlock tools
+- treat tutorial/help as supporting content inside or attached to `how it works`, not as a separate primary landing-page block
+
+Why tools should appear immediately after the hero:
+
+- tools are the real hook
+- users are more likely to think:
+  - `I want to see who is not following me back`
+- not:
+  - `I want an Instagram dataset workspace`
+- the landing page should quickly communicate:
+  - `upload your export -> unlock these tools`
+
+Tools section presentation direction:
+
+- do not present tools as plain text-only cards
+- make the tools feel like mini dashboards or believable product previews
+- show fake-but-plausible preview UI for each tool state so the section feels concrete
+- connect each tool preview back to:
+  - what the tool does
+  - what data it uses
+  - what output the user gets
+
+Pricing / CTA note:
+
+- pricing can be introduced as a mock or placeholder conversion section for now
+- even before final pricing is decided, the section should still function as a strong bottom-of-page CTA
 
 ### Datasets List
 

@@ -57,12 +57,13 @@
                 </script>
             </div>
             <div class="top-nav-links">
+                <button type="button" class="top-nav-link" data-show-workspace>overview</button>
                 <button id="toggle-theme" class="mini-btn theme-btn top-nav-theme-btn" aria-label="Toggle theme"></button>
             </div>
         </nav>
 
-        <div class="dataset-workspace">
-            <aside class="dataset-sidebar panel" aria-label="Datasets">
+        <div class="dataset-workspace" data-dataset-workspace>
+            <aside class="dataset-sidebar panel" data-dataset-sidebar aria-label="Datasets">
                     <div class="dataset-sidebar-head">
                         <p class="section-kicker">Instalyzer guest mode</p>
                         <h2 class="dataset-sidebar-title">datasets</h2>
@@ -74,7 +75,7 @@
 
                     <div class="dataset-list-shell">
                         <div class="dataset-list-head">
-                            <h3 class="dataset-list-title">saved datasets</h3>
+                            <h3 class="dataset-list-title">saved</h3>
                             <span class="dataset-list-count" data-dataset-count>0</span>
                         </div>
                         <div class="dataset-list" data-dataset-list></div>
@@ -87,64 +88,137 @@
             </aside>
 
             <div class="dataset-main-column">
-            <main class="panel landing-shell dataset-main" data-landing-view aria-label="Home landing page">
+            <main class="landing-shell dataset-main" data-landing-view aria-label="Home landing page">
                     <section class="hero-section" aria-labelledby="hero-title">
-                        <div class="hero-ambient" aria-hidden="true">
-                            <img src="./assets/logo-arrows.png" alt="" class="hero-logo-arrows" />
-                            <div class="hero-stage-card hero-stage-card-back"></div>
-                            <div class="hero-stage-card hero-stage-card-front">
-                                <div class="hero-stage-bar"></div>
-                                <div class="hero-stage-icons">
-                                    <span class="hero-stage-icon">
-                                        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3v12"></path><path d="m7 10 5 5 5-5"></path><path d="M5 21h14"></path></svg>
-                                    </span>
-                                    <span class="hero-stage-icon">
-                                        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><path d="M7 10 12 15 17 10"></path><path d="M12 15V3"></path></svg>
-                                    </span>
-                                    <span class="hero-stage-icon">
-                                        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 11h6"></path><path d="M9 15h4"></path><rect x="4" y="4" width="16" height="16" rx="3"></rect></svg>
-                                    </span>
-                                </div>
-                                <div class="hero-stage-grid">
-                                    <span></span>
-                                    <span></span>
-                                    <span></span>
-                                    <span></span>
-                                </div>
+                        <div class="hero-content">
+                            <p class="hero-eyebrow">instagram dataset workspace</p>
+                            <h1 id="hero-title" class="hero-title">
+                                <span class="hero-title-line">Unlock powerful tools</span>
+                                <span class="hero-title-line">from your Instagram export</span>
+                            </h1>
+                            <p class="hero-copy">
+                                upload once and instantly see who is not following you back, discover ghost followers, and uncover engagement insights.
+                            </p>
+                            <div class="hero-actions">
+                                <button type="button" class="hero-btn hero-btn-primary" data-open-create-modal>create dataset</button>
+                                <a href="#tutorial-section" class="hero-btn hero-btn-secondary">see how it works</a>
                             </div>
-                        </div>
-                        <h1 id="hero-title" class="hero-title">Instalyzer turns your Instagram export into a reusable workspace</h1>
-                        <p class="hero-eyebrow">upload once. run multiple tools.</p>
-                        <p class="hero-copy">
-                            Build a dataset from your Instagram export, keep the account context intact, and open analysis tools whenever you need them.
-                        </p>
-                        <div class="hero-flow" aria-label="Product flow">
-                            <span class="hero-flow-item">
-                                <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3v12"></path><path d="m7 10 5 5 5-5"></path><path d="M5 21h14"></path></svg>
-                                import
-                            </span>
-                            <span class="hero-flow-sep" aria-hidden="true">
-                                <svg viewBox="0 0 24 24"><path d="m9 6 6 6-6 6"></path></svg>
-                            </span>
-                            <span class="hero-flow-item">
-                                <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 20h16"></path><path d="M7 20v-9"></path><path d="M12 20V4"></path><path d="M17 20v-6"></path></svg>
-                                review metadata
-                            </span>
-                            <span class="hero-flow-sep" aria-hidden="true">
-                                <svg viewBox="0 0 24 24"><path d="m9 6 6 6-6 6"></path></svg>
-                            </span>
-                            <span class="hero-flow-item">
-                                <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 11h6"></path><path d="M9 15h4"></path><rect x="4" y="4" width="16" height="16" rx="3"></rect></svg>
-                                launch tools
-                            </span>
-                        </div>
-                        <div class="hero-actions">
-                            <button type="button" class="hero-btn hero-btn-primary" data-open-create-modal>create dataset</button>
-                            <a href="#tutorial-section" class="hero-btn hero-btn-secondary">see how it works</a>
                         </div>
                     </section>
 
-                    <section id="tutorial-section" class="landing-placeholder-section" aria-label="Tutorial preview">
+                    <section class="landing-tools-section panel" data-reveal aria-labelledby="tools-section-title">
+                        <div class="section-intro">
+                            <p class="section-kicker">available tools</p>
+                            <h2 id="tools-section-title" class="section-title">analyze your instagram export</h2>
+                            <p class="section-copy">
+                                upload once, build a reusable dataset, and unlock tools for relationships, reach, growth, and engagement.
+                            </p>
+                        </div>
+
+                        <div class="tools-grid" aria-label="Instalyzer tools">
+                            <article class="tool-preview-card">
+                                <div class="tool-preview-top">
+                                    <span class="tool-preview-icon" aria-hidden="true">
+                                        <svg viewBox="0 0 24 24"><path d="M6 15c2.2 0 3.8-1.8 6-1.8S15.8 15 18 15"></path><path d="M4 6h16"></path><path d="M8 6v12"></path><path d="M16 6v12"></path></svg>
+                                    </span>
+                                    <span class="tool-tier-badge is-free">free</span>
+                                </div>
+                                <h3 class="tool-preview-title">not following back</h3>
+                                <p class="tool-preview-copy">see which accounts you follow that are not following you back.</p>
+                            </article>
+
+                            <article class="tool-preview-card">
+                                <div class="tool-preview-top">
+                                    <span class="tool-preview-icon" aria-hidden="true">
+                                        <svg viewBox="0 0 24 24"><path d="M7 7h10"></path><path d="M7 12h10"></path><path d="M7 17h10"></path><path d="M5 7h.01"></path><path d="M5 12h.01"></path><path d="M5 17h.01"></path></svg>
+                                    </span>
+                                    <span class="tool-tier-badge is-free">free</span>
+                                </div>
+                                <h3 class="tool-preview-title">export overview</h3>
+                                <p class="tool-preview-copy">scan the dataset basics, core totals, and trusted import signals in one place.</p>
+                            </article>
+
+                            <article class="tool-preview-card">
+                                <div class="tool-preview-top">
+                                    <span class="tool-preview-icon" aria-hidden="true">
+                                        <svg viewBox="0 0 24 24"><path d="M4 12s3-5 8-5 8 5 8 5-3 5-8 5-8-5-8-5Z"></path><circle cx="12" cy="12" r="2.5"></circle></svg>
+                                    </span>
+                                    <span class="tool-tier-badge is-free">free</span>
+                                </div>
+                                <h3 class="tool-preview-title">visibility snapshot</h3>
+                                <p class="tool-preview-copy">get a quick read on the account visibility signals included in the export.</p>
+                            </article>
+
+                            <article class="tool-preview-card">
+                                <div class="tool-preview-top">
+                                    <span class="tool-preview-icon" aria-hidden="true">
+                                        <svg viewBox="0 0 24 24"><path d="M12 5v14"></path><path d="M5 12h14"></path><circle cx="12" cy="12" r="8"></circle></svg>
+                                    </span>
+                                    <span class="tool-tier-badge is-basic">basic</span>
+                                </div>
+                                <h3 class="tool-preview-title">ghost followers</h3>
+                                <p class="tool-preview-copy">spot followers with little or no visible engagement across your account activity.</p>
+                            </article>
+
+                            <article class="tool-preview-card">
+                                <div class="tool-preview-top">
+                                    <span class="tool-preview-icon" aria-hidden="true">
+                                        <svg viewBox="0 0 24 24"><path d="M5 17 9 13l3 3 7-8"></path><path d="M5 5v12h14"></path></svg>
+                                    </span>
+                                    <span class="tool-tier-badge is-basic">basic</span>
+                                </div>
+                                <h3 class="tool-preview-title">activity insights</h3>
+                                <p class="tool-preview-copy">review key engagement and interaction signals from your exported insights.</p>
+                            </article>
+
+                            <article class="tool-preview-card">
+                                <div class="tool-preview-top">
+                                    <span class="tool-preview-icon" aria-hidden="true">
+                                        <svg viewBox="0 0 24 24"><path d="M12 4a8 8 0 1 0 8 8"></path><path d="M12 4v8h8"></path></svg>
+                                    </span>
+                                    <span class="tool-tier-badge is-basic">basic</span>
+                                </div>
+                                <h3 class="tool-preview-title">audience insights</h3>
+                                <p class="tool-preview-copy">understand follower totals, audience movement, and account-level audience signals.</p>
+                            </article>
+
+                            <article class="tool-preview-card">
+                                <div class="tool-preview-top">
+                                    <span class="tool-preview-icon" aria-hidden="true">
+                                        <svg viewBox="0 0 24 24"><path d="M6 18V9"></path><path d="M12 18V5"></path><path d="M18 18v-6"></path></svg>
+                                    </span>
+                                    <span class="tool-tier-badge is-premium">premium</span>
+                                </div>
+                                <h3 class="tool-preview-title">growth summary</h3>
+                                <p class="tool-preview-copy">track follower change and export-range growth trends in one clear view.</p>
+                            </article>
+
+                            <article class="tool-preview-card">
+                                <div class="tool-preview-top">
+                                    <span class="tool-preview-icon" aria-hidden="true">
+                                        <svg viewBox="0 0 24 24"><path d="M4 12s3-5 8-5 8 5 8 5-3 5-8 5-8-5-8-5Z"></path><circle cx="12" cy="12" r="2.5"></circle></svg>
+                                    </span>
+                                    <span class="tool-tier-badge is-premium">premium</span>
+                                </div>
+                                <h3 class="tool-preview-title">visibility summary</h3>
+                                <p class="tool-preview-copy">see how reach and impressions reflect your account&apos;s overall visibility.</p>
+                            </article>
+
+                            <article class="tool-preview-card">
+                                <div class="tool-preview-top">
+                                    <span class="tool-preview-icon" aria-hidden="true">
+                                        <svg viewBox="0 0 24 24"><path d="M12 4v16"></path><path d="M4 12h16"></path><path d="M7 7l10 10"></path></svg>
+                                    </span>
+                                    <span class="tool-tier-badge is-premium">premium</span>
+                                </div>
+                                <h3 class="tool-preview-title">engagement summary</h3>
+                                <p class="tool-preview-copy">measure interactions, engaged accounts, and overall content response in one place.</p>
+                            </article>
+
+                        </div>
+                    </section>
+
+                    <section id="tutorial-section" class="landing-placeholder-section panel" data-reveal aria-label="Tutorial preview">
                 <div class="section-intro">
                     <p class="section-kicker">desktop walkthrough</p>
                     <h2 class="section-title">how to export your instagram data</h2>
@@ -239,6 +313,16 @@
                             </p>
                         </div>
                     </div>
+                    </section>
+
+                    <section class="landing-placeholder-section panel" data-reveal aria-label="Pricing placeholder">
+                        <div class="section-intro">
+                            <p class="section-kicker">pricing</p>
+                            <h2 class="section-title">pick the right plan for your workflow</h2>
+                            <p class="section-copy">
+                                pricing section placeholder for tomorrow&apos;s pass. we&apos;ll define the tier breakdown, tool access, and final conversion copy next.
+                            </p>
+                        </div>
                     </section>
             </main>
             <section class="panel dataset-overview-shell" data-workspace-view hidden aria-label="Dataset workspace overview">

@@ -978,31 +978,33 @@ function renderResults({
                 <span>pending</span>
               </span>
               <span class="pending-heading-tools">
-              <span class="pending-flow">
-                <span class="pending-step">
-                  <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3.5" y="3.5" width="17" height="17" rx="5"></rect><circle cx="12" cy="12" r="4"></circle><circle cx="17.6" cy="6.4" r="1"></circle></svg>
-                  open
-              </span>
-              <span class="pending-sep" aria-hidden="true">
-                <svg viewBox="0 0 24 24"><path d="m9 6 6 6-6 6"></path></svg>
-              </span>
-              <span class="pending-step">
-                <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20 12H4"></path><path d="m10 6-6 6 6 6"></path></svg>
-                unfollow
-              </span>
-              <span class="pending-sep" aria-hidden="true">
-                <svg viewBox="0 0 24 24"><path d="m9 6 6 6-6 6"></path></svg>
-              </span>
-                <span class="pending-step">
-                  <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m20 6-11 11-5-5"></path></svg>
-                  check
+                <span class="pending-flow">
+                  <span class="pending-step">
+                    <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3.5" y="3.5" width="17" height="17" rx="5"></rect><circle cx="12" cy="12" r="4"></circle><circle cx="17.6" cy="6.4" r="1"></circle></svg>
+                    open
+                  </span>
+                  <span class="pending-sep" aria-hidden="true">
+                    <svg viewBox="0 0 24 24"><path d="m9 6 6 6-6 6"></path></svg>
+                  </span>
+                  <span class="pending-step">
+                    <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20 12H4"></path><path d="m10 6-6 6 6 6"></path></svg>
+                    unfollow
+                  </span>
+                  <span class="pending-sep" aria-hidden="true">
+                    <svg viewBox="0 0 24 24"><path d="m9 6 6 6-6 6"></path></svg>
+                  </span>
+                  <span class="pending-step">
+                    <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m20 6-11 11-5-5"></path></svg>
+                    check
+                  </span>
                 </span>
-              </span>
-              ${showPendingSafetyChip
-                ? `<span class="pending-safety-chip" aria-label="90 minute safety counter">
-                    <span class="pending-safety-ring" aria-hidden="true">${pendingSafetyDotsHtml}</span>
-                  </span>`
-                : ""}
+                <span class="pending-heading-status">
+                  ${showPendingSafetyChip
+                    ? `<span class="pending-safety-chip" aria-label="90 minute safety counter">
+                        <span class="pending-safety-ring" aria-hidden="true">${pendingSafetyDotsHtml}</span>
+                      </span>`
+                    : ""}
+                </span>
               </span>
           </h2>
           <div class="toolbar pending-toolbar">
@@ -1047,8 +1049,8 @@ function renderResults({
                     <h2>${resultsMeta[resultsView].title}</h2>
                   </div>
                   <div class="results-detail-meta-row">
-                    <p class="meta-line results-panel-copy">${resultsMeta[resultsView].note}</p>
                     <span class="results-count">${resultsMeta[resultsView].count}</span>
+                    <p class="meta-line results-panel-copy">${resultsMeta[resultsView].note}</p>
                   </div>
                 </div>
                 <div id="${resultsView === "done" ? "doneList" : resultsView === "tbd" ? "tbdList" : "pnfList"}" class="list-box">
@@ -1250,6 +1252,11 @@ function renderResults({
   };
 
   syncPendingListHeight();
+
+  const handleToolLayoutResize = () => {
+    syncPendingListHeight();
+  };
+  window.onresize = handleToolLayoutResize;
 
   const getListScroller = (id) => {
     const list = document.getElementById(id);

@@ -2,6 +2,7 @@ const STORAGE_KEY_THEME = "ig_theme_v1";
 const STORAGE_KEY_TUTORIAL_UNLOCKED = "ff_tutorial_unlocked_v1";
 const STORAGE_KEY_DATASETS = "ff_guest_datasets_v1";
 const STORAGE_KEY_ACTIVE_DATASET_ID = "ff_active_dataset_id_v1";
+const STORAGE_KEY_ACTIVE_MAIN_VIEW = "ff_active_main_view_v1";
 const STORAGE_KEY_UPLOADED_DATA = "ff_uploaded_instagram_data_v1";
 const STORAGE_KEY_UNFOLLOWED = "ig_unfollowed_usernames_v1";
 const STORAGE_KEY_TBD = "ig_tbd_usernames_v1";
@@ -66,6 +67,33 @@ function setTutorialUnlocked(unlocked) {
   shell.classList.toggle("is-locked", !unlocked);
 }
 
+function wireScrollReveal() {
+  const revealItems = Array.from(document.querySelectorAll("[data-reveal]"));
+  if (!revealItems.length) return;
+
+  const prefersReducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+  if (prefersReducedMotion || !("IntersectionObserver" in window)) {
+    revealItems.forEach((item) => item.classList.add("is-visible"));
+    return;
+  }
+
+  const observer = new IntersectionObserver(
+    (entries) => {
+      entries.forEach((entry) => {
+        if (!entry.isIntersecting) return;
+        entry.target.classList.add("is-visible");
+        observer.unobserve(entry.target);
+      });
+    },
+    {
+      threshold: 0.16,
+      rootMargin: "0px 0px -8% 0px"
+    }
+  );
+
+  revealItems.forEach((item) => observer.observe(item));
+}
+
 function loadDatasets() {
   try {
     const raw = localStorage.getItem(STORAGE_KEY_DATASETS);
@@ -91,6 +119,16 @@ function saveActiveDatasetId(id) {
   } else {
     localStorage.removeItem(STORAGE_KEY_ACTIVE_DATASET_ID);
   }
+}
+
+function loadActiveMainView() {
+  const saved = localStorage.getItem(STORAGE_KEY_ACTIVE_MAIN_VIEW);
+  return saved === "workspace" ? "workspace" : "landing";
+}
+
+function saveActiveMainView(view) {
+  activeMainView = view === "workspace" ? "workspace" : "landing";
+  localStorage.setItem(STORAGE_KEY_ACTIVE_MAIN_VIEW, activeMainView);
 }
 
 function getActiveDataset() {
@@ -502,6 +540,8 @@ async function resolveProfilePhotoDataUrl(profilePhotoPath, expandedFiles, sourc
 
 function getUi() {
   return {
+    datasetWorkspace: document.querySelector("[data-dataset-workspace]"),
+    datasetSidebar: document.querySelector("[data-dataset-sidebar]"),
     datasetList: document.querySelector("[data-dataset-list]"),
     datasetCount: document.querySelector("[data-dataset-count]"),
     datasetLimitCopy: document.querySelector("[data-dataset-limit-copy]"),
@@ -729,6 +769,14 @@ function renderActiveDataset() {
   const ui = getUi();
   const active = getActiveDataset();
   const showingTool = activeWorkspacePanel === "not-following-back";
+  document.querySelectorAll("[data-show-workspace]").forEach((button) => {
+    if (!(button instanceof HTMLButtonElement)) return;
+    const canShowWorkspace = Boolean(active);
+    button.disabled = !canShowWorkspace;
+    button.setAttribute("aria-disabled", String(!canShowWorkspace));
+    button.classList.toggle("is-disabled", !canShowWorkspace);
+  });
+
   if (active) {
     saveActiveDatasetId(active.id);
     syncPrototypeUploadCache();
@@ -737,6 +785,13 @@ function renderActiveDataset() {
   }
 
   const showWorkspace = Boolean(active) && activeMainView === "workspace";
+  if (ui.datasetWorkspace instanceof HTMLElement) {
+    ui.datasetWorkspace.classList.toggle("is-landing-view", !showWorkspace);
+    ui.datasetWorkspace.classList.toggle("is-workspace-view", showWorkspace);
+  }
+  if (ui.datasetSidebar instanceof HTMLElement) {
+    ui.datasetSidebar.hidden = !showWorkspace;
+  }
   if (ui.landingView instanceof HTMLElement) ui.landingView.hidden = showWorkspace;
   if (ui.workspaceView instanceof HTMLElement) ui.workspaceView.hidden = !showWorkspace;
   if (ui.workspaceView instanceof HTMLElement) ui.workspaceView.classList.toggle("is-tool-active", showingTool);
@@ -836,13 +891,19 @@ function renderActiveDataset() {
 }
 
 function renderAll() {
+  const canShowWorkspace = Boolean(getActiveDataset());
+  if (activeMainView === "workspace" && !canShowWorkspace) {
+    saveActiveMainView("landing");
+  } else {
+    saveActiveMainView(activeMainView);
+  }
   updateGuestLimitUi();
   renderDatasetList();
   renderActiveDataset();
 }
 
 function showHomePanel() {
-  activeMainView = "landing";
+  saveActiveMainView("landing");
   activeWorkspaceDetail = "";
   activeWorkspacePanel = "overview";
   renderAll();
@@ -850,7 +911,7 @@ function showHomePanel() {
 
 function showWorkspacePanel() {
   if (!getActiveDataset()) return;
-  activeMainView = "workspace";
+  saveActiveMainView("workspace");
   activeWorkspacePanel = "overview";
   renderAll();
 }
@@ -1252,7 +1313,7 @@ async function processSelectedFiles(fileList) {
 
 function selectDataset(id) {
   saveActiveDatasetId(id);
-  activeMainView = "workspace";
+  saveActiveMainView("workspace");
   activeWorkspaceDetail = "";
   activeWorkspacePanel = "overview";
   renderAll();
@@ -1394,7 +1455,7 @@ function createDatasetFromStage() {
   }
   closeCreateModal();
   resetUploadUi();
-  activeMainView = "workspace";
+  saveActiveMainView("workspace");
   selectDataset(dataset.id);
 }
 
@@ -1556,6 +1617,10 @@ function wireHomePanelToggle() {
   document.querySelectorAll("[data-show-home]").forEach((button) => {
     button.addEventListener("click", showHomePanel);
   });
+
+  document.querySelectorAll("[data-show-workspace]").forEach((button) => {
+    button.addEventListener("click", showWorkspacePanel);
+  });
 }
 
 function wireWorkspaceDetails() {
@@ -1673,13 +1738,17 @@ setNavLogo(activeTheme);
 setThemeToggleButton(activeTheme);
 setTutorialUnlocked(localStorage.getItem(STORAGE_KEY_TUTORIAL_UNLOCKED) === "true");
 syncActiveDataset();
-activeMainView = getActiveDataset() ? "workspace" : "landing";
+activeMainView = loadActiveMainView();
+if (activeMainView === "workspace" && !getActiveDataset()) {
+  activeMainView = "landing";
+}
 wireUploadFlow();
 wireModal();
 wireDatasetList();
 wireHomePanelToggle();
 wireWorkspaceDetails();
 wireEmbeddedToolFrame();
+wireScrollReveal();
 renderAll();
 
 document.getElementById("toggle-theme")?.addEventListener("click", () => {
