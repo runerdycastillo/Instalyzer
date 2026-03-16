@@ -24,16 +24,6 @@
 </head>
 <body>
     <div class="page-shell">
-    <div class="bg-hex bg-hex-1" aria-hidden="true"></div>
-    <div class="bg-hex bg-hex-2" aria-hidden="true"></div>
-    <div class="bg-hex bg-hex-3" aria-hidden="true"></div>
-    <div class="bg-hex bg-hex-4" aria-hidden="true"></div>
-    <div class="bg-hex bg-hex-5" aria-hidden="true"></div>
-    <div class="bg-hex bg-hex-6" aria-hidden="true"></div>
-    <div class="bg-hex bg-hex-7" aria-hidden="true"></div>
-    <div class="bg-hex bg-hex-8" aria-hidden="true"></div>
-    <div class="bg-hex bg-hex-9" aria-hidden="true"></div>
-    <div class="bg-hex bg-hex-10" aria-hidden="true"></div>
     <div class="app-page">
         <nav class="top-nav panel" aria-label="Primary">
             <div class="top-nav-brand">
@@ -58,6 +48,7 @@
             </div>
             <div class="top-nav-links">
                 <button type="button" class="top-nav-link" data-show-workspace>overview</button>
+                <a href="./export-guide.html" class="top-nav-link">help</a>
                 <button id="toggle-theme" class="mini-btn theme-btn top-nav-theme-btn" aria-label="Toggle theme"></button>
             </div>
         </nav>
@@ -100,222 +91,213 @@
                                 upload once and instantly see who is not following you back, discover ghost followers, and uncover engagement insights.
                             </p>
                             <div class="hero-actions">
-                                <button type="button" class="hero-btn hero-btn-primary" data-open-create-modal>create dataset</button>
-                                <a href="#tutorial-section" class="hero-btn hero-btn-secondary">see how it works</a>
+                                <button type="button" class="hero-btn hero-btn-primary" data-open-create-modal>get started</button>
+                                <a href="#tutorial-section" class="hero-btn hero-btn-secondary">how it works</a>
+                            </div>
+                        </div>
+                        <a href="#tools-section" class="hero-scroll-cue" aria-label="Scroll to tools section">
+                            <span class="hero-scroll-mouse" aria-hidden="true">
+                                <span class="hero-scroll-wheel"></span>
+                            </span>
+                            <span class="hero-scroll-text">scroll to explore</span>
+                        </a>
+                    </section>
+
+                    <section id="tools-section" class="landing-tools-section" data-reveal aria-labelledby="tools-section-title">
+                        <div class="section-intro tools-section-intro">
+                            <p class="section-kicker">dataset tools</p>
+                            <h2 id="tools-section-title" class="section-title">tools unlocked by your instagram export</h2>
+                            <p class="section-copy">
+                                upload your instagram export once to unlock relationship, audience, and growth insights.
+                            </p>
+                        </div>
+
+                        <div class="tier-columns-grid" aria-label="Instalyzer tool tiers">
+                            <article class="tier-column tier-column-free">
+                                <div class="tier-column-head">
+                                    <span class="tier-column-label">free</span>
+                                </div>
+                                <div class="tier-tool-list">
+                                    <article class="tier-tool-row">
+                                        <span class="tier-tool-icon" aria-hidden="true">
+                                            <svg viewBox="0 0 24 24"><path d="M6 15c2.2 0 3.8-1.8 6-1.8S15.8 15 18 15"></path><path d="M4 6h16"></path><path d="M8 6v12"></path><path d="M16 6v12"></path></svg>
+                                        </span>
+                                        <div class="tier-tool-body">
+                                            <h3 class="tier-tool-title">not following back</h3>
+                                            <p class="tier-tool-copy">See which accounts don&apos;t follow you back.</p>
+                                        </div>
+                                    </article>
+                                    <article class="tier-tool-row">
+                                        <span class="tier-tool-icon" aria-hidden="true">
+                                            <svg viewBox="0 0 24 24"><path d="M7 7h10"></path><path d="M7 12h10"></path><path d="M7 17h10"></path><path d="M5 7h.01"></path><path d="M5 12h.01"></path><path d="M5 17h.01"></path></svg>
+                                        </span>
+                                        <div class="tier-tool-body">
+                                            <h3 class="tier-tool-title">export overview</h3>
+                                            <p class="tier-tool-copy">Quick summary of your dataset.</p>
+                                        </div>
+                                    </article>
+                                    <article class="tier-tool-row">
+                                        <span class="tier-tool-icon" aria-hidden="true">
+                                            <svg viewBox="0 0 24 24"><path d="M4 12s3-5 8-5 8 5 8 5-3 5-8 5-8-5-8-5Z"></path><circle cx="12" cy="12" r="2.5"></circle></svg>
+                                        </span>
+                                        <div class="tier-tool-body">
+                                            <h3 class="tier-tool-title">visibility snapshot</h3>
+                                            <p class="tier-tool-copy">Instant read on account visibility signals.</p>
+                                        </div>
+                                    </article>
+                                </div>
+                            </article>
+
+                            <article class="tier-column tier-column-basic">
+                                <div class="tier-column-head">
+                                    <span class="tier-column-label">basic</span>
+                                </div>
+                                <div class="tier-tool-list">
+                                    <article class="tier-tool-row">
+                                        <span class="tier-tool-icon" aria-hidden="true">
+                                            <svg viewBox="0 0 24 24"><path d="M12 5v14"></path><path d="M5 12h14"></path><circle cx="12" cy="12" r="8"></circle></svg>
+                                        </span>
+                                        <div class="tier-tool-body">
+                                            <h3 class="tier-tool-title">ghost followers</h3>
+                                            <p class="tier-tool-copy">Spot followers who never interact.</p>
+                                        </div>
+                                    </article>
+                                    <article class="tier-tool-row">
+                                        <span class="tier-tool-icon" aria-hidden="true">
+                                            <svg viewBox="0 0 24 24"><path d="M5 17 9 13l3 3 7-8"></path><path d="M5 5v12h14"></path></svg>
+                                        </span>
+                                        <div class="tier-tool-body">
+                                            <h3 class="tier-tool-title">activity insights</h3>
+                                            <p class="tier-tool-copy">Understand engagement across your posts.</p>
+                                        </div>
+                                    </article>
+                                    <article class="tier-tool-row">
+                                        <span class="tier-tool-icon" aria-hidden="true">
+                                            <svg viewBox="0 0 24 24"><path d="M12 4a8 8 0 1 0 8 8"></path><path d="M12 4v8h8"></path></svg>
+                                        </span>
+                                        <div class="tier-tool-body">
+                                            <h3 class="tier-tool-title">audience insights</h3>
+                                            <p class="tier-tool-copy">Track follower movement and growth.</p>
+                                        </div>
+                                    </article>
+                                </div>
+                            </article>
+
+                            <article class="tier-column tier-column-premium">
+                                <span class="tier-column-badge">most popular</span>
+                                <div class="tier-column-head">
+                                    <span class="tier-column-label">premium</span>
+                                </div>
+                                <div class="tier-tool-list">
+                                    <article class="tier-tool-row">
+                                        <span class="tier-tool-icon" aria-hidden="true">
+                                            <svg viewBox="0 0 24 24"><path d="M6 18V9"></path><path d="M12 18V5"></path><path d="M18 18v-6"></path></svg>
+                                        </span>
+                                        <div class="tier-tool-body">
+                                            <h3 class="tier-tool-title">growth summary</h3>
+                                            <p class="tier-tool-copy">Track follower growth trends.</p>
+                                        </div>
+                                    </article>
+                                    <article class="tier-tool-row">
+                                        <span class="tier-tool-icon" aria-hidden="true">
+                                            <svg viewBox="0 0 24 24"><path d="M4 12s3-5 8-5 8 5 8 5-3 5-8 5-8-5-8-5Z"></path><circle cx="12" cy="12" r="2.5"></circle></svg>
+                                        </span>
+                                        <div class="tier-tool-body">
+                                            <h3 class="tier-tool-title">visibility summary</h3>
+                                            <p class="tier-tool-copy">Understand reach and impressions.</p>
+                                        </div>
+                                    </article>
+                                    <article class="tier-tool-row">
+                                        <span class="tier-tool-icon" aria-hidden="true">
+                                            <svg viewBox="0 0 24 24"><path d="M12 4v16"></path><path d="M4 12h16"></path><path d="M7 7l10 10"></path></svg>
+                                        </span>
+                                        <div class="tier-tool-body">
+                                            <h3 class="tier-tool-title">engagement summary</h3>
+                                            <p class="tier-tool-copy">Measure overall interaction performance.</p>
+                                        </div>
+                                    </article>
+                                </div>
+                            </article>
+                        </div>
+                        <div class="tier-columns-meta">
+                            <p class="tier-columns-note">more tools included in each tier</p>
+                            <a href="#pricing-section" class="tier-columns-link">view pricing</a>
+                        </div>
+                    </section>
+
+                    <section id="tutorial-section" class="landing-placeholder-section panel how-it-works-section" data-reveal aria-labelledby="how-it-works-title">
+                        <div class="section-intro">
+                            <p class="section-kicker">how it works</p>
+                            <h2 id="how-it-works-title" class="section-title">turn your instagram export into insights</h2>
+                            <p class="section-copy">
+                                a quick three-step flow: bring in your export, let Instalyzer process the data, then explore the relationship and growth tools it unlocks.
+                            </p>
+                        </div>
+
+                        <div class="how-it-works-grid" aria-label="How Instalyzer works">
+                            <article class="how-it-works-card">
+                                <span class="how-it-works-icon" aria-hidden="true">
+                                    <svg viewBox="0 0 24 24"><path d="M12 3v12"></path><path d="m7 10 5 5 5-5"></path><path d="M5 19h14"></path></svg>
+                                </span>
+                                <span class="how-it-works-step">step 1</span>
+                                <h3 class="how-it-works-card-title">upload your instagram export</h3>
+                                <p class="how-it-works-card-copy">download your data from instagram, then upload the export here to start building your dataset.</p>
+                            </article>
+
+                            <article class="how-it-works-card">
+                                <span class="how-it-works-icon" aria-hidden="true">
+                                    <svg viewBox="0 0 24 24"><path d="M6 19V9"></path><path d="M12 19V5"></path><path d="M18 19v-7"></path></svg>
+                                </span>
+                                <span class="how-it-works-step">step 2</span>
+                                <h3 class="how-it-works-card-title">we analyze your network</h3>
+                                <p class="how-it-works-card-copy">Instalyzer processes follower, following, and engagement signals from your export into a reusable workspace.</p>
+                            </article>
+
+                            <article class="how-it-works-card">
+                                <span class="how-it-works-icon" aria-hidden="true">
+                                    <svg viewBox="0 0 24 24"><path d="M5 17 9 13l3 3 7-8"></path><path d="M5 5v12h14"></path></svg>
+                                </span>
+                                <span class="how-it-works-step">step 3</span>
+                                <h3 class="how-it-works-card-title">get powerful insights</h3>
+                                <p class="how-it-works-card-copy">discover who does not follow you back, spot ghost followers, and unlock more account insights over time.</p>
+                            </article>
+                        </div>
+
+                        <div class="how-it-works-help">
+                            <p class="how-it-works-help-copy">Need help exporting your data?</p>
+                            <a href="./export-guide.html" class="how-it-works-help-link">how to download your instagram data</a>
+                        </div>
+                    </section>
+
+                    <section class="landing-placeholder-section panel results-preview-section" data-reveal aria-labelledby="results-preview-title">
+                        <div class="section-intro">
+                            <p class="section-kicker">results preview</p>
+                            <h2 id="results-preview-title" class="section-title">show users what their insights will look like</h2>
+                            <p class="section-copy">
+                                placeholder for a lightweight demo section between how it works and pricing. likely candidates: overview preview, relationship results preview, or a tool summary snapshot.
+                            </p>
+                        </div>
+
+                        <div class="results-preview-placeholder" aria-hidden="true">
+                            <div class="results-preview-shell">
+                                <div class="results-preview-panel">
+                                    <span class="results-preview-label">overview preview</span>
+                                    <div class="results-preview-lines">
+                                        <span></span>
+                                        <span></span>
+                                        <span></span>
+                                    </div>
+                                </div>
+                                <div class="results-preview-side">
+                                    <span class="results-preview-chip">tool result</span>
+                                    <span class="results-preview-chip">growth card</span>
+                                    <span class="results-preview-chip">relationship card</span>
+                                </div>
                             </div>
                         </div>
                     </section>
 
-                    <section class="landing-tools-section panel" data-reveal aria-labelledby="tools-section-title">
-                        <div class="section-intro">
-                            <p class="section-kicker">available tools</p>
-                            <h2 id="tools-section-title" class="section-title">analyze your instagram export</h2>
-                            <p class="section-copy">
-                                upload once, build a reusable dataset, and unlock tools for relationships, reach, growth, and engagement.
-                            </p>
-                        </div>
-
-                        <div class="tools-grid" aria-label="Instalyzer tools">
-                            <article class="tool-preview-card">
-                                <div class="tool-preview-top">
-                                    <span class="tool-preview-icon" aria-hidden="true">
-                                        <svg viewBox="0 0 24 24"><path d="M6 15c2.2 0 3.8-1.8 6-1.8S15.8 15 18 15"></path><path d="M4 6h16"></path><path d="M8 6v12"></path><path d="M16 6v12"></path></svg>
-                                    </span>
-                                    <span class="tool-tier-badge is-free">free</span>
-                                </div>
-                                <h3 class="tool-preview-title">not following back</h3>
-                                <p class="tool-preview-copy">see which accounts you follow that are not following you back.</p>
-                            </article>
-
-                            <article class="tool-preview-card">
-                                <div class="tool-preview-top">
-                                    <span class="tool-preview-icon" aria-hidden="true">
-                                        <svg viewBox="0 0 24 24"><path d="M7 7h10"></path><path d="M7 12h10"></path><path d="M7 17h10"></path><path d="M5 7h.01"></path><path d="M5 12h.01"></path><path d="M5 17h.01"></path></svg>
-                                    </span>
-                                    <span class="tool-tier-badge is-free">free</span>
-                                </div>
-                                <h3 class="tool-preview-title">export overview</h3>
-                                <p class="tool-preview-copy">scan the dataset basics, core totals, and trusted import signals in one place.</p>
-                            </article>
-
-                            <article class="tool-preview-card">
-                                <div class="tool-preview-top">
-                                    <span class="tool-preview-icon" aria-hidden="true">
-                                        <svg viewBox="0 0 24 24"><path d="M4 12s3-5 8-5 8 5 8 5-3 5-8 5-8-5-8-5Z"></path><circle cx="12" cy="12" r="2.5"></circle></svg>
-                                    </span>
-                                    <span class="tool-tier-badge is-free">free</span>
-                                </div>
-                                <h3 class="tool-preview-title">visibility snapshot</h3>
-                                <p class="tool-preview-copy">get a quick read on the account visibility signals included in the export.</p>
-                            </article>
-
-                            <article class="tool-preview-card">
-                                <div class="tool-preview-top">
-                                    <span class="tool-preview-icon" aria-hidden="true">
-                                        <svg viewBox="0 0 24 24"><path d="M12 5v14"></path><path d="M5 12h14"></path><circle cx="12" cy="12" r="8"></circle></svg>
-                                    </span>
-                                    <span class="tool-tier-badge is-basic">basic</span>
-                                </div>
-                                <h3 class="tool-preview-title">ghost followers</h3>
-                                <p class="tool-preview-copy">spot followers with little or no visible engagement across your account activity.</p>
-                            </article>
-
-                            <article class="tool-preview-card">
-                                <div class="tool-preview-top">
-                                    <span class="tool-preview-icon" aria-hidden="true">
-                                        <svg viewBox="0 0 24 24"><path d="M5 17 9 13l3 3 7-8"></path><path d="M5 5v12h14"></path></svg>
-                                    </span>
-                                    <span class="tool-tier-badge is-basic">basic</span>
-                                </div>
-                                <h3 class="tool-preview-title">activity insights</h3>
-                                <p class="tool-preview-copy">review key engagement and interaction signals from your exported insights.</p>
-                            </article>
-
-                            <article class="tool-preview-card">
-                                <div class="tool-preview-top">
-                                    <span class="tool-preview-icon" aria-hidden="true">
-                                        <svg viewBox="0 0 24 24"><path d="M12 4a8 8 0 1 0 8 8"></path><path d="M12 4v8h8"></path></svg>
-                                    </span>
-                                    <span class="tool-tier-badge is-basic">basic</span>
-                                </div>
-                                <h3 class="tool-preview-title">audience insights</h3>
-                                <p class="tool-preview-copy">understand follower totals, audience movement, and account-level audience signals.</p>
-                            </article>
-
-                            <article class="tool-preview-card">
-                                <div class="tool-preview-top">
-                                    <span class="tool-preview-icon" aria-hidden="true">
-                                        <svg viewBox="0 0 24 24"><path d="M6 18V9"></path><path d="M12 18V5"></path><path d="M18 18v-6"></path></svg>
-                                    </span>
-                                    <span class="tool-tier-badge is-premium">premium</span>
-                                </div>
-                                <h3 class="tool-preview-title">growth summary</h3>
-                                <p class="tool-preview-copy">track follower change and export-range growth trends in one clear view.</p>
-                            </article>
-
-                            <article class="tool-preview-card">
-                                <div class="tool-preview-top">
-                                    <span class="tool-preview-icon" aria-hidden="true">
-                                        <svg viewBox="0 0 24 24"><path d="M4 12s3-5 8-5 8 5 8 5-3 5-8 5-8-5-8-5Z"></path><circle cx="12" cy="12" r="2.5"></circle></svg>
-                                    </span>
-                                    <span class="tool-tier-badge is-premium">premium</span>
-                                </div>
-                                <h3 class="tool-preview-title">visibility summary</h3>
-                                <p class="tool-preview-copy">see how reach and impressions reflect your account&apos;s overall visibility.</p>
-                            </article>
-
-                            <article class="tool-preview-card">
-                                <div class="tool-preview-top">
-                                    <span class="tool-preview-icon" aria-hidden="true">
-                                        <svg viewBox="0 0 24 24"><path d="M12 4v16"></path><path d="M4 12h16"></path><path d="M7 7l10 10"></path></svg>
-                                    </span>
-                                    <span class="tool-tier-badge is-premium">premium</span>
-                                </div>
-                                <h3 class="tool-preview-title">engagement summary</h3>
-                                <p class="tool-preview-copy">measure interactions, engaged accounts, and overall content response in one place.</p>
-                            </article>
-
-                        </div>
-                    </section>
-
-                    <section id="tutorial-section" class="landing-placeholder-section panel" data-reveal aria-label="Tutorial preview">
-                <div class="section-intro">
-                    <p class="section-kicker">desktop walkthrough</p>
-                    <h2 class="section-title">how to export your instagram data</h2>
-                    <p class="section-copy">
-                        follow the steps, download your export, then come back here.
-                    </p>
-                </div>
-
-                <div class="tutorial-lock-shell is-locked" data-tutorial-shell>
-                    <div class="tutorial-lock-overlay" data-tutorial-overlay>
-                        <span class="tutorial-prestep-badge">before you start</span>
-                        <h3 class="tutorial-prestep-title">log into instagram on desktop first</h3>
-                        <p class="tutorial-prestep-copy">
-                            sign into the instagram account you want to export in this browser first, then unlock the walkthrough and continue step by step.
-                        </p>
-                        <div class="tutorial-lock-actions">
-                            <a href="https://www.instagram.com/" target="_blank" rel="noopener noreferrer" class="hero-btn hero-btn-secondary">go to instagram</a>
-                            <button type="button" class="hero-btn hero-btn-primary" data-tutorial-unlock>already logged in</button>
-                        </div>
-                    </div>
-
-                    <div class="tutorial-written-guide" aria-label="Instagram export tutorial" data-tutorial-carousel>
-                        <div class="tutorial-guide-header">
-                            <p class="tutorial-guide-kicker">written walkthrough</p>
-                            <h3 class="tutorial-guide-title">request your export, then <button type="button" class="tutorial-guide-link" data-open-create-modal>upload</button> it here</h3>
-                            <p class="tutorial-guide-copy">
-                                these steps are for instagram on desktop.
-                            </p>
-                        </div>
-
-                        <ol class="tutorial-step-list">
-                            <li class="tutorial-step-card">
-                                <div class="tutorial-step-topline">
-                                    <span class="tutorial-step-number">01</span>
-                                    <span class="tutorial-step-label">open your profile menu</span>
-                                </div>
-                                <p class="tutorial-step-copy">
-                                    go to your instagram <strong>profile</strong> on desktop and click the <strong>three-line menu</strong> in the lower-left sidebar.
-                                </p>
-                            </li>
-                            <li class="tutorial-step-card">
-                                <div class="tutorial-step-topline">
-                                    <span class="tutorial-step-number">02</span>
-                                    <span class="tutorial-step-label">open settings</span>
-                                </div>
-                                <p class="tutorial-step-copy">
-                                    choose <strong>settings</strong>, then open the <strong>accounts center</strong> area if instagram sends you there.
-                                </p>
-                            </li>
-                            <li class="tutorial-step-card">
-                                <div class="tutorial-step-topline">
-                                    <span class="tutorial-step-number">03</span>
-                                    <span class="tutorial-step-label">find your information</span>
-                                </div>
-                                <p class="tutorial-step-copy">
-                                    click <strong>your information and permissions</strong>, then select <strong>download your information</strong>.
-                                </p>
-                            </li>
-                            <li class="tutorial-step-card">
-                                <div class="tutorial-step-topline">
-                                    <span class="tutorial-step-number">04</span>
-                                    <span class="tutorial-step-label">choose the account and format</span>
-                                </div>
-                                <p class="tutorial-step-copy">
-                                    pick the instagram <strong>account</strong> you want to export, choose the <strong>data range</strong> you need, and select <strong>json</strong> format, not html, before creating the file.
-                                </p>
-                            </li>
-                            <li class="tutorial-step-card">
-                                <div class="tutorial-step-topline">
-                                    <span class="tutorial-step-number">05</span>
-                                    <span class="tutorial-step-label">download the archive</span>
-                                </div>
-                                <p class="tutorial-step-copy">
-                                    once instagram finishes preparing the <strong>export</strong>, download the <strong>zip</strong> directly from the page.
-                                </p>
-                            </li>
-                            <li class="tutorial-step-card">
-                                <div class="tutorial-step-topline">
-                                    <span class="tutorial-step-number">06</span>
-                                    <span class="tutorial-step-label">come back and upload it here</span>
-                                </div>
-                                <p class="tutorial-step-copy">
-                                    return to this page, click <strong>create dataset</strong>, and import the downloaded <strong>export</strong> to build your dataset.
-                                </p>
-                            </li>
-                        </ol>
-
-                        <div class="tutorial-note">
-                            <p class="tutorial-note-title">quick note</p>
-                            <p class="tutorial-note-copy">
-                                if instagram changes the wording, look for the path that mentions your information, permissions, or downloading your data.
-                            </p>
-                        </div>
-                    </div>
-                    </section>
-
-                    <section class="landing-placeholder-section panel" data-reveal aria-label="Pricing placeholder">
+                    <section id="pricing-section" class="landing-placeholder-section panel" data-reveal aria-label="Pricing placeholder">
                         <div class="section-intro">
                             <p class="section-kicker">pricing</p>
                             <h2 class="section-title">pick the right plan for your workflow</h2>
@@ -637,6 +619,9 @@
                         <div class="upload-actions">
                             <button type="button" class="hero-btn hero-btn-primary" data-upload-trigger="files">choose export</button>
                         </div>
+                        <p class="upload-help-link-row">
+                            <a href="./export-guide.html" class="guide-inline-link">don&apos;t have your export yet? how to download your instagram data</a>
+                        </p>
                     </div>
 
                     <p id="upload-status" class="visually-hidden" data-upload-status aria-live="polite" aria-atomic="true">

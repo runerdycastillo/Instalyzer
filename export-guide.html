@@ -1,0 +1,182 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Instalyzer | Export guide</title>
+    <script>
+        (() => {
+            const saved = localStorage.getItem("ig_theme_v1");
+            const theme = saved === "dark" ? "dark" : "light";
+            document.documentElement.dataset.theme = theme;
+        })();
+    </script>
+    <link rel="icon" type="image/png" href="./assets/logo/instaylzer-favicon.png?v=3">
+    <link rel="shortcut icon" type="image/png" href="./assets/logo/instaylzer-favicon.png?v=3">
+    <link rel="preload" as="image" href="./assets/logo/instaylzer-logo.png">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@500;600;700&family=Source+Sans+3:wght@400;500;600;700&family=IBM+Plex+Mono:wght@500&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="./styles/styles.css">
+</head>
+<body>
+    <div class="page-shell guide-page">
+        <div class="bg-hex bg-hex-1" aria-hidden="true"></div>
+        <div class="bg-hex bg-hex-2" aria-hidden="true"></div>
+        <div class="bg-hex bg-hex-3" aria-hidden="true"></div>
+        <div class="bg-hex bg-hex-4" aria-hidden="true"></div>
+        <div class="bg-hex bg-hex-5" aria-hidden="true"></div>
+        <div class="bg-hex bg-hex-6" aria-hidden="true"></div>
+        <div class="bg-hex bg-hex-7" aria-hidden="true"></div>
+        <div class="bg-hex bg-hex-8" aria-hidden="true"></div>
+        <div class="bg-hex bg-hex-9" aria-hidden="true"></div>
+        <div class="bg-hex bg-hex-10" aria-hidden="true"></div>
+
+        <div class="app-page">
+            <nav class="top-nav panel" aria-label="Primary">
+                <div class="top-nav-brand">
+                    <a href="./home.html" class="top-nav-home" aria-label="Back to home">
+                        <svg viewBox="0 0 24 24" aria-hidden="true">
+                            <path d="m15 18-6-6 6-6"></path>
+                        </svg>
+                    </a>
+                </div>
+                <div class="top-nav-center">
+                    <a href="./home.html" class="top-nav-logo-link is-current" aria-label="Go to Instalyzer home">
+                        <img src="./assets/logo/instaylzer-logo.png" alt="Instalyzer logo" class="top-nav-logo" width="96" height="96" />
+                    </a>
+                </div>
+                <div class="top-nav-links">
+                    <a href="./home.html" class="top-nav-link">home</a>
+                    <a href="./home.html#tutorial-section" class="top-nav-link">how it works</a>
+                    <button id="toggle-theme" class="mini-btn theme-btn top-nav-theme-btn" aria-label="Toggle theme"></button>
+                </div>
+            </nav>
+
+            <main class="guide-shell">
+                <section class="guide-hero panel">
+                    <p class="section-kicker">export guide</p>
+                    <h1 class="section-title">how to download your instagram data</h1>
+                    <p class="section-copy guide-hero-copy">
+                        This page is the detailed walkthrough for getting your Instagram export. The landing page stays focused on the product story; this guide handles the step-by-step help.
+                    </p>
+                    <div class="guide-actions">
+                        <a href="https://www.instagram.com/" target="_blank" rel="noopener noreferrer" class="hero-btn hero-btn-secondary">open instagram</a>
+                        <a href="./home.html" class="hero-btn hero-btn-primary">back to Instalyzer</a>
+                    </div>
+                </section>
+
+                <section class="guide-grid" aria-label="Instagram export guide">
+                    <div class="guide-panel">
+                        <h2 class="guide-panel-title">written walkthrough</h2>
+                        <p class="guide-panel-copy">
+                            These steps are for Instagram on desktop. Once your file is ready, come back to <a href="./home.html" class="guide-inline-link">Instalyzer</a> and upload it to start analyzing your dataset.
+                        </p>
+
+                        <ol class="guide-step-list">
+                            <li class="guide-step-card">
+                                <div class="guide-step-topline">
+                                    <span class="guide-step-number">01</span>
+                                    <span class="guide-step-label">open your profile menu</span>
+                                </div>
+                                <p class="guide-step-copy">Go to your Instagram <strong>profile</strong> on desktop and click the <strong>three-line menu</strong> in the lower-left sidebar.</p>
+                            </li>
+                            <li class="guide-step-card">
+                                <div class="guide-step-topline">
+                                    <span class="guide-step-number">02</span>
+                                    <span class="guide-step-label">open settings</span>
+                                </div>
+                                <p class="guide-step-copy">Choose <strong>settings</strong>, then open the <strong>accounts center</strong> area if Instagram sends you there.</p>
+                            </li>
+                            <li class="guide-step-card">
+                                <div class="guide-step-topline">
+                                    <span class="guide-step-number">03</span>
+                                    <span class="guide-step-label">find your information</span>
+                                </div>
+                                <p class="guide-step-copy">Click <strong>your information and permissions</strong>, then select <strong>download your information</strong>.</p>
+                            </li>
+                            <li class="guide-step-card">
+                                <div class="guide-step-topline">
+                                    <span class="guide-step-number">04</span>
+                                    <span class="guide-step-label">choose the account and format</span>
+                                </div>
+                                <p class="guide-step-copy">Pick the Instagram <strong>account</strong> you want to export, choose the <strong>data range</strong> you need, and select <strong>JSON</strong> format before creating the file.</p>
+                            </li>
+                            <li class="guide-step-card">
+                                <div class="guide-step-topline">
+                                    <span class="guide-step-number">05</span>
+                                    <span class="guide-step-label">download the archive</span>
+                                </div>
+                                <p class="guide-step-copy">Once Instagram finishes preparing the export, download the <strong>zip</strong> directly from the page.</p>
+                            </li>
+                            <li class="guide-step-card">
+                                <div class="guide-step-topline">
+                                    <span class="guide-step-number">06</span>
+                                    <span class="guide-step-label">come back and upload it here</span>
+                                </div>
+                                <p class="guide-step-copy">Return to <strong>Instalyzer</strong>, click <strong>get started</strong>, and upload the downloaded export to build your dataset.</p>
+                            </li>
+                        </ol>
+
+                        <div class="guide-note">
+                            <h3 class="guide-side-title">quick note</h3>
+                            <p class="guide-note-copy">If Instagram changes the wording, look for paths related to <strong>your information</strong>, <strong>permissions</strong>, or <strong>downloading your data</strong>.</p>
+                        </div>
+                    </div>
+
+                    <aside class="guide-side-stack">
+                        <div class="guide-side-card">
+                            <h3 class="guide-side-title">recommended export settings</h3>
+                            <ul class="guide-side-list">
+                                <li><strong>Format:</strong> JSON</li>
+                                <li><strong>Date range:</strong> all time for relationship tools</li>
+                                <li><strong>Best use:</strong> upload once, reuse the dataset across tools</li>
+                            </ul>
+                        </div>
+
+                        <div class="guide-side-card">
+                            <h3 class="guide-side-title">what this page will grow into</h3>
+                            <p class="guide-side-copy">This is the dedicated help surface, so it can later include screenshots, short video guidance, and visual callouts without making the homepage feel too instructional.</p>
+                        </div>
+
+                        <div class="guide-side-card">
+                            <h3 class="guide-side-title">ready once your file is downloaded?</h3>
+                            <p class="guide-side-copy">Head back to the main product surface and upload your export to start exploring follower, visibility, and growth tools.</p>
+                            <a href="./home.html" class="guide-inline-link">return to Instalyzer</a>
+                        </div>
+                    </aside>
+                </section>
+            </main>
+        </div>
+    </div>
+
+    <script>
+        (() => {
+            const STORAGE_KEY_THEME = "ig_theme_v1";
+
+            const button = document.getElementById("toggle-theme");
+            if (!(button instanceof HTMLButtonElement)) return;
+
+            const setButton = (theme) => {
+                const label = theme === "dark" ? "Switch to light mode" : "Switch to dark mode";
+                button.setAttribute("aria-label", label);
+                button.setAttribute("title", label);
+                button.innerHTML =
+                    theme === "dark"
+                        ? '<svg viewBox="0 0 24 24" width="21" height="21" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="4"></circle><path d="M12 2v2"></path><path d="M12 20v2"></path><path d="m4.93 4.93 1.41 1.41"></path><path d="m17.66 17.66 1.41 1.41"></path><path d="M2 12h2"></path><path d="M20 12h2"></path><path d="m6.34 17.66-1.41 1.41"></path><path d="m19.07 4.93-1.41 1.41"></path></svg>'
+                        : '<svg viewBox="0 0 24 24" width="21" height="21" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9"></path></svg>';
+            };
+
+            let activeTheme = document.documentElement.dataset.theme === "dark" ? "dark" : "light";
+            setButton(activeTheme);
+
+            button.addEventListener("click", () => {
+                activeTheme = activeTheme === "dark" ? "light" : "dark";
+                document.documentElement.dataset.theme = activeTheme;
+                localStorage.setItem(STORAGE_KEY_THEME, activeTheme);
+                setButton(activeTheme);
+            });
+        })();
+    </script>
+</body>
+</html>

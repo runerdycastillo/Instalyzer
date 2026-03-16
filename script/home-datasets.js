@@ -1,5 +1,4 @@
 const STORAGE_KEY_THEME = "ig_theme_v1";
-const STORAGE_KEY_TUTORIAL_UNLOCKED = "ff_tutorial_unlocked_v1";
 const STORAGE_KEY_DATASETS = "ff_guest_datasets_v1";
 const STORAGE_KEY_ACTIVE_DATASET_ID = "ff_active_dataset_id_v1";
 const STORAGE_KEY_ACTIVE_MAIN_VIEW = "ff_active_main_view_v1";
@@ -61,12 +60,6 @@ function setThemeToggleButton(theme) {
       : `<svg viewBox="0 0 24 24" width="21" height="21" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9"></path></svg>`;
 }
 
-function setTutorialUnlocked(unlocked) {
-  const shell = document.querySelector("[data-tutorial-shell]");
-  if (!(shell instanceof HTMLElement)) return;
-  shell.classList.toggle("is-locked", !unlocked);
-}
-
 function wireScrollReveal() {
   const revealItems = Array.from(document.querySelectorAll("[data-reveal]"));
   if (!revealItems.length) return;
@@ -92,6 +85,30 @@ function wireScrollReveal() {
   );
 
   revealItems.forEach((item) => observer.observe(item));
+}
+
+function wireHeroScrollCue() {
+  const scrollCue = document.querySelector(".hero-scroll-cue");
+  if (!(scrollCue instanceof HTMLAnchorElement)) return;
+
+  scrollCue.addEventListener("click", (event) => {
+    const targetId = scrollCue.getAttribute("href");
+    if (!targetId?.startsWith("#")) return;
+
+    const section = document.querySelector(targetId);
+    if (!(section instanceof HTMLElement)) return;
+
+    event.preventDefault();
+
+    const centeredTarget = section.querySelector(".tier-columns-grid");
+    const nextTarget = centeredTarget instanceof HTMLElement ? centeredTarget : section;
+    const prefersReducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+    nextTarget.scrollIntoView({
+      behavior: prefersReducedMotion ? "auto" : "smooth",
+      block: "center"
+    });
+  });
 }
 
 function loadDatasets() {
@@ -1736,7 +1753,6 @@ function syncActiveDataset() {
 applyTheme(activeTheme);
 setNavLogo(activeTheme);
 setThemeToggleButton(activeTheme);
-setTutorialUnlocked(localStorage.getItem(STORAGE_KEY_TUTORIAL_UNLOCKED) === "true");
 syncActiveDataset();
 activeMainView = loadActiveMainView();
 if (activeMainView === "workspace" && !getActiveDataset()) {
@@ -1748,6 +1764,7 @@ wireDatasetList();
 wireHomePanelToggle();
 wireWorkspaceDetails();
 wireEmbeddedToolFrame();
+wireHeroScrollCue();
 wireScrollReveal();
 renderAll();
 
@@ -1757,9 +1774,4 @@ document.getElementById("toggle-theme")?.addEventListener("click", () => {
   saveTheme(activeTheme);
   setNavLogo(activeTheme);
   setThemeToggleButton(activeTheme);
-});
-
-document.querySelector("[data-tutorial-unlock]")?.addEventListener("click", () => {
-  localStorage.setItem(STORAGE_KEY_TUTORIAL_UNLOCKED, "true");
-  setTutorialUnlocked(true);
 });
