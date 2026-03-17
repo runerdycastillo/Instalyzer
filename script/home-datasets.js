@@ -111,6 +111,134 @@ function wireHeroScrollCue() {
   });
 }
 
+function wireHeroSectionLinks() {
+  const heroSectionLinks = Array.from(document.querySelectorAll('.hero-section a[href^="#"]'));
+  if (!heroSectionLinks.length) return;
+
+  heroSectionLinks.forEach((link) => {
+    if (!(link instanceof HTMLAnchorElement) || link.classList.contains("hero-scroll-cue")) return;
+
+    link.addEventListener("click", (event) => {
+      const targetId = link.getAttribute("href");
+      if (!targetId?.startsWith("#")) return;
+
+      const section = document.querySelector(targetId);
+      if (!(section instanceof HTMLElement)) return;
+
+      event.preventDefault();
+
+      const prefersReducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+      if (targetId === "#tutorial-section") {
+        const sectionRect = section.getBoundingClientRect();
+        const absoluteTop = window.scrollY + sectionRect.top;
+        const offset = Math.max(0, (window.innerHeight - section.offsetHeight) / 2 - 36);
+
+        window.scrollTo({
+          top: Math.max(0, absoluteTop - offset),
+          behavior: prefersReducedMotion ? "auto" : "smooth"
+        });
+        return;
+      }
+
+      section.scrollIntoView({
+        behavior: prefersReducedMotion ? "auto" : "smooth",
+        block: "center"
+      });
+    });
+  });
+}
+
+function wireLandingSectionLinks() {
+  const landingSectionLinks = Array.from(document.querySelectorAll('.tier-columns-link[href^="#"]'));
+  if (!landingSectionLinks.length) return;
+
+  landingSectionLinks.forEach((link) => {
+    if (!(link instanceof HTMLAnchorElement)) return;
+
+    link.addEventListener("click", (event) => {
+      const targetId = link.getAttribute("href");
+      if (!targetId?.startsWith("#")) return;
+
+      const section = document.querySelector(targetId);
+      if (!(section instanceof HTMLElement)) return;
+
+      event.preventDefault();
+
+      const prefersReducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+      const sectionRect = section.getBoundingClientRect();
+      const absoluteTop = window.scrollY + sectionRect.top;
+      const offset = Math.max(0, (window.innerHeight - section.offsetHeight) / 2 - 28);
+
+      window.scrollTo({
+        top: Math.max(0, absoluteTop - offset),
+        behavior: prefersReducedMotion ? "auto" : "smooth"
+      });
+    });
+  });
+}
+
+function wireResultsPreviewCountUp() {
+  const section = document.querySelector(".results-preview-section");
+  if (!(section instanceof HTMLElement)) return;
+
+  const valueNodes = Array.from(section.querySelectorAll("[data-countup-target]"));
+  if (!valueNodes.length) return;
+
+  const prefersReducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+  if (prefersReducedMotion || !("IntersectionObserver" in window)) {
+    valueNodes.forEach((node) => {
+      if (!(node instanceof HTMLElement)) return;
+      const target = Number(node.dataset.countupTarget || 0);
+      node.textContent = Number.isFinite(target) ? target.toLocaleString() : "0";
+    });
+    return;
+  }
+
+  const animateValue = (node, target, duration = 800) => {
+    const start = performance.now();
+    const safeTarget = Math.max(0, target);
+
+    const step = (timestamp) => {
+      const elapsed = timestamp - start;
+      const progress = Math.min(elapsed / duration, 1);
+      const eased = 1 - Math.pow(1 - progress, 3);
+      const nextValue = Math.round(safeTarget * eased);
+      node.textContent = nextValue.toLocaleString();
+
+      if (progress < 1) {
+        window.requestAnimationFrame(step);
+      } else {
+        node.textContent = safeTarget.toLocaleString();
+      }
+    };
+
+    window.requestAnimationFrame(step);
+  };
+
+  const observer = new IntersectionObserver(
+    (entries) => {
+      entries.forEach((entry) => {
+        if (!entry.isIntersecting) return;
+
+        valueNodes.forEach((node, index) => {
+          if (!(node instanceof HTMLElement)) return;
+          const target = Number(node.dataset.countupTarget || 0);
+          if (!Number.isFinite(target)) return;
+
+          window.setTimeout(() => animateValue(node, target), index * 60);
+        });
+
+        observer.disconnect();
+      });
+    },
+    {
+      threshold: 0.3
+    }
+  );
+
+  observer.observe(section);
+}
+
 function loadDatasets() {
   try {
     const raw = localStorage.getItem(STORAGE_KEY_DATASETS);
@@ -917,6 +1045,7 @@ function renderAll() {
   updateGuestLimitUi();
   renderDatasetList();
   renderActiveDataset();
+  delete document.documentElement.dataset.bootMainView;
 }
 
 function showHomePanel() {
@@ -1765,6 +1894,9 @@ wireHomePanelToggle();
 wireWorkspaceDetails();
 wireEmbeddedToolFrame();
 wireHeroScrollCue();
+wireHeroSectionLinks();
+wireLandingSectionLinks();
+wireResultsPreviewCountUp();
 wireScrollReveal();
 renderAll();
 

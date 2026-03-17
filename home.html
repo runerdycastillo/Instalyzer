@@ -12,6 +12,29 @@
             window.__initialTheme = theme;
         })();
     </script>
+    <script>
+        (() => {
+            const STORAGE_KEY_DATASETS = "ff_guest_datasets_v1";
+            const STORAGE_KEY_ACTIVE_DATASET_ID = "ff_active_dataset_id_v1";
+            const STORAGE_KEY_ACTIVE_MAIN_VIEW = "ff_active_main_view_v1";
+
+            let datasets = [];
+            try {
+                const raw = localStorage.getItem(STORAGE_KEY_DATASETS);
+                const parsed = raw ? JSON.parse(raw) : [];
+                datasets = Array.isArray(parsed) ? parsed : [];
+            } catch {
+                datasets = [];
+            }
+
+            const activeDatasetId = localStorage.getItem(STORAGE_KEY_ACTIVE_DATASET_ID) || "";
+            const hasDataset = datasets.some((dataset) => dataset?.id === activeDatasetId) || datasets.length > 0;
+            const savedView = localStorage.getItem(STORAGE_KEY_ACTIVE_MAIN_VIEW);
+            const initialView = savedView === "workspace" && hasDataset ? "workspace" : "landing";
+
+            document.documentElement.dataset.bootMainView = initialView;
+        })();
+    </script>
     <link rel="icon" type="image/png" href="./assets/logo/instaylzer-favicon.png?v=3">
     <link rel="shortcut icon" type="image/png" href="./assets/logo/instaylzer-favicon.png?v=3">
     <link rel="preload" as="image" href="./assets/logo/instaylzer-logo.png">
@@ -184,7 +207,6 @@
                             </article>
 
                             <article class="tier-column tier-column-premium">
-                                <span class="tier-column-badge">most popular</span>
                                 <div class="tier-column-head">
                                     <span class="tier-column-label">premium</span>
                                 </div>
@@ -220,90 +242,269 @@
                             </article>
                         </div>
                         <div class="tier-columns-meta">
-                            <p class="tier-columns-note">more tools included in each tier</p>
+                            <p class="tier-columns-note"><span class="tier-columns-note-mark" aria-hidden="true">+</span><span>more tools unlock as you upgrade</span></p>
                             <a href="#pricing-section" class="tier-columns-link">view pricing</a>
                         </div>
                     </section>
 
-                    <section id="tutorial-section" class="landing-placeholder-section panel how-it-works-section" data-reveal aria-labelledby="how-it-works-title">
-                        <div class="section-intro">
+                    <section id="tutorial-section" class="how-it-works-section" data-reveal aria-labelledby="how-it-works-title">
+                        <div class="section-intro how-it-works-intro">
                             <p class="section-kicker">how it works</p>
                             <h2 id="how-it-works-title" class="section-title">turn your instagram export into insights</h2>
                             <p class="section-copy">
-                                a quick three-step flow: bring in your export, let Instalyzer process the data, then explore the relationship and growth tools it unlocks.
+                                upload your export, analyze your network, and explore the insights.
                             </p>
                         </div>
 
                         <div class="how-it-works-grid" aria-label="How Instalyzer works">
                             <article class="how-it-works-card">
-                                <span class="how-it-works-icon" aria-hidden="true">
-                                    <svg viewBox="0 0 24 24"><path d="M12 3v12"></path><path d="m7 10 5 5 5-5"></path><path d="M5 19h14"></path></svg>
-                                </span>
                                 <span class="how-it-works-step">step 1</span>
-                                <h3 class="how-it-works-card-title">upload your instagram export</h3>
-                                <p class="how-it-works-card-copy">download your data from instagram, then upload the export here to start building your dataset.</p>
+                                <span class="how-it-works-icon" aria-hidden="true">
+                                    <svg viewBox="0 0 24 24"><path d="M12 4v11"></path><path d="m7.5 10.5 4.5 4.5 4.5-4.5"></path><path d="M5 19h14"></path></svg>
+                                </span>
+                                <h3 class="how-it-works-card-title">upload your export</h3>
+                                <p class="how-it-works-card-copy">download your instagram data and upload the export file.</p>
                             </article>
 
+                            <span class="how-it-works-chevron how-it-works-chevron-after-step-1" aria-hidden="true"></span>
+
                             <article class="how-it-works-card">
-                                <span class="how-it-works-icon" aria-hidden="true">
-                                    <svg viewBox="0 0 24 24"><path d="M6 19V9"></path><path d="M12 19V5"></path><path d="M18 19v-7"></path></svg>
-                                </span>
                                 <span class="how-it-works-step">step 2</span>
+                                <span class="how-it-works-icon" aria-hidden="true">
+                                    <svg viewBox="0 0 24 24"><path d="M5 18h14"></path><path d="M7 15V9"></path><path d="M12 15V6"></path><path d="M17 15v-4"></path><path d="M8 8h10"></path></svg>
+                                </span>
                                 <h3 class="how-it-works-card-title">we analyze your network</h3>
-                                <p class="how-it-works-card-copy">Instalyzer processes follower, following, and engagement signals from your export into a reusable workspace.</p>
+                                <p class="how-it-works-card-copy">instalyzer processes your followers, following, and engagement signals.</p>
                             </article>
 
+                            <span class="how-it-works-chevron how-it-works-chevron-after-step-2" aria-hidden="true"></span>
+
                             <article class="how-it-works-card">
-                                <span class="how-it-works-icon" aria-hidden="true">
-                                    <svg viewBox="0 0 24 24"><path d="M5 17 9 13l3 3 7-8"></path><path d="M5 5v12h14"></path></svg>
-                                </span>
                                 <span class="how-it-works-step">step 3</span>
+                                <span class="how-it-works-icon" aria-hidden="true">
+                                    <svg viewBox="0 0 24 24"><path d="M5 18V8"></path><path d="M5 18h14"></path><path d="m8 14 3-3 3 2 4-5"></path><circle cx="18" cy="8" r="1.5"></circle></svg>
+                                </span>
                                 <h3 class="how-it-works-card-title">get powerful insights</h3>
-                                <p class="how-it-works-card-copy">discover who does not follow you back, spot ghost followers, and unlock more account insights over time.</p>
+                                <p class="how-it-works-card-copy">see ghost followers, unfollows, and growth signals instantly.</p>
                             </article>
                         </div>
 
                         <div class="how-it-works-help">
-                            <p class="how-it-works-help-copy">Need help exporting your data?</p>
+                            <p class="how-it-works-help-copy">need help exporting your data?</p>
                             <a href="./export-guide.html" class="how-it-works-help-link">how to download your instagram data</a>
                         </div>
                     </section>
 
-                    <section class="landing-placeholder-section panel results-preview-section" data-reveal aria-labelledby="results-preview-title">
-                        <div class="section-intro">
+                    <section class="results-preview-section" data-reveal aria-labelledby="results-preview-title">
+                        <div class="section-intro results-preview-intro">
                             <p class="section-kicker">results preview</p>
-                            <h2 id="results-preview-title" class="section-title">show users what their insights will look like</h2>
+                            <h2 id="results-preview-title" class="section-title">the dashboard behind your export</h2>
                             <p class="section-copy">
-                                placeholder for a lightweight demo section between how it works and pricing. likely candidates: overview preview, relationship results preview, or a tool summary snapshot.
+                                analyze followers, engagement, and growth signals from your instagram data.
                             </p>
                         </div>
 
-                        <div class="results-preview-placeholder" aria-hidden="true">
+                        <div class="results-preview-stage" aria-hidden="true">
                             <div class="results-preview-shell">
-                                <div class="results-preview-panel">
-                                    <span class="results-preview-label">overview preview</span>
-                                    <div class="results-preview-lines">
-                                        <span></span>
-                                        <span></span>
-                                        <span></span>
+                                <article class="results-preview-panel">
+                                    <p class="results-preview-label">account overview</p>
+
+                                    <div class="results-preview-profile">
+                                        <div class="results-preview-avatar" aria-hidden="true">
+                                            <svg viewBox="0 0 24 24"><path d="M12 12a3.75 3.75 0 1 0-3.75-3.75A3.75 3.75 0 0 0 12 12Z"></path><path d="M5.5 19a6.5 6.5 0 0 1 13 0"></path></svg>
+                                        </div>
+                                        <div class="results-preview-profile-copy">
+                                            <span class="results-preview-profile-handle">@username</span>
+                                            <strong>creator profile</strong>
+                                            <span>last 90 days</span>
+                                        </div>
                                     </div>
+
+                                    <div class="results-preview-metrics">
+                                        <article class="results-preview-metric">
+                                            <span>followers</span>
+                                            <strong data-countup-target="2184">2,184</strong>
+                                        </article>
+                                        <article class="results-preview-metric">
+                                            <span>accounts reached</span>
+                                            <strong data-countup-target="12430">12,430</strong>
+                                        </article>
+                                        <article class="results-preview-metric">
+                                            <span>profile visits</span>
+                                            <strong data-countup-target="1287">1,287</strong>
+                                        </article>
+                                        <article class="results-preview-metric">
+                                            <span>content interactions</span>
+                                            <strong data-countup-target="436">436</strong>
+                                        </article>
+                                        <article class="results-preview-metric">
+                                            <span>impressions</span>
+                                            <strong data-countup-target="48920">48,920</strong>
+                                        </article>
+                                        <article class="results-preview-metric">
+                                            <span>accounts engaged</span>
+                                            <strong data-countup-target="823">823</strong>
+                                        </article>
+                                    </div>
+                                </article>
+
+                                <aside class="results-preview-side">
+                                    <p class="results-preview-side-kicker">tools unlocked</p>
+                                    <div class="results-preview-pill-stack">
+                                        <span class="results-preview-pill is-free">not following back</span>
+                                        <span class="results-preview-pill is-basic">ghost followers</span>
+                                        <span class="results-preview-pill is-basic">activity insights</span>
+                                        <span class="results-preview-pill is-premium">growth summary</span>
+                                    </div>
+                                </aside>
+                            </div>
+                        </div>
+
+                        <div class="results-preview-cta">
+                            <p class="results-preview-cta-copy">ready to unlock your instagram insights?</p>
+                            <button type="button" class="results-preview-cta-link" data-open-create-modal>instalyze your export</button>
+                        </div>
+                    </section>
+
+                    <section id="pricing-section" class="pricing-section" data-reveal aria-labelledby="pricing-title">
+                        <div class="section-intro pricing-intro">
+                            <p class="section-kicker">pricing</p>
+                            <h2 id="pricing-title" class="section-title">pick the right plan for your workflow</h2>
+                            <p class="section-copy">
+                                start free, unlock more tools as you grow, and upgrade when you want deeper insights.
+                            </p>
+                        </div>
+
+                        <div class="pricing-grid" aria-label="Pricing plans">
+                            <article class="pricing-card pricing-card-free">
+                                <div class="pricing-card-head">
+                                    <p class="pricing-card-tier">free</p>
+                                    <p class="pricing-card-price"><span>$0</span></p>
                                 </div>
-                                <div class="results-preview-side">
-                                    <span class="results-preview-chip">tool result</span>
-                                    <span class="results-preview-chip">growth card</span>
-                                    <span class="results-preview-chip">relationship card</span>
+                                <p class="pricing-card-copy">start with the core relationship workflow and preview what your export can unlock.</p>
+                                <ul class="pricing-feature-list">
+                                    <li>not following back</li>
+                                    <li>export overview</li>
+                                    <li>visibility snapshot</li>
+                                </ul>
+                                <button type="button" class="pricing-card-btn" data-open-create-modal>start free</button>
+                            </article>
+
+                            <article class="pricing-card pricing-card-basic is-featured">
+                                <div class="pricing-card-badge">most popular</div>
+                                <div class="pricing-card-head">
+                                    <p class="pricing-card-tier">basic</p>
+                                    <p class="pricing-card-price"><span>$3.99</span><small>/ month</small></p>
                                 </div>
+                                <p class="pricing-card-copy">unlock the most useful creator tools in one lightweight monthly plan.</p>
+                                <ul class="pricing-feature-list">
+                                    <li>ghost followers</li>
+                                    <li>activity insights</li>
+                                    <li>audience insights</li>
+                                </ul>
+                                <button type="button" class="pricing-card-btn pricing-card-btn-featured">upgrade to basic</button>
+                            </article>
+
+                            <article class="pricing-card pricing-card-premium">
+                                <div class="pricing-card-head">
+                                    <p class="pricing-card-tier">premium</p>
+                                    <p class="pricing-card-price"><span>$7.99</span><small>/ month</small></p>
+                                </div>
+                                <p class="pricing-card-copy">go deeper with premium summary tools and the most polished reporting layer.</p>
+                                <ul class="pricing-feature-list">
+                                    <li>growth summary</li>
+                                    <li>visibility summary</li>
+                                    <li>engagement summary</li>
+                                </ul>
+                                <button type="button" class="pricing-card-btn pricing-card-btn-premium">unlock premium</button>
+                            </article>
+                        </div>
+
+                        <div class="pricing-footer">
+                            <p class="pricing-reassurance">cancel anytime. no instagram login required. your export stays private.</p>
+                            <div class="pricing-footer-cta">
+                                <p class="pricing-footer-copy">need help choosing a plan?</p>
+                                <a href="#tools-section" class="pricing-footer-link">compare tools</a>
                             </div>
                         </div>
                     </section>
 
-                    <section id="pricing-section" class="landing-placeholder-section panel" data-reveal aria-label="Pricing placeholder">
-                        <div class="section-intro">
-                            <p class="section-kicker">pricing</p>
-                            <h2 class="section-title">pick the right plan for your workflow</h2>
+                    <section class="faq-section" data-reveal aria-labelledby="faq-title">
+                        <div class="section-intro faq-intro">
+                            <p class="section-kicker">faq</p>
+                            <h2 id="faq-title" class="section-title">common questions before you upload</h2>
                             <p class="section-copy">
-                                pricing section placeholder for tomorrow&apos;s pass. we&apos;ll define the tier breakdown, tool access, and final conversion copy next.
+                                everything you need to know about your export, privacy, and how your data is handled.
                             </p>
+                        </div>
+
+                        <div class="faq-placeholder-list">
+                            <div class="faq-placeholder-column">
+                                <details class="faq-placeholder-item" open>
+                                    <summary class="faq-placeholder-head">
+                                        <span>how do i download my data?</span>
+                                        <span class="faq-placeholder-plus" aria-hidden="true"></span>
+                                    </summary>
+                                    <p class="faq-placeholder-answer">request your export from instagram in your account settings. once downloaded, upload the zip file here to start analyzing your data.</p>
+                                </details>
+                                <details class="faq-placeholder-item">
+                                    <summary class="faq-placeholder-head">
+                                        <span>is my data stored on your servers?</span>
+                                        <span class="faq-placeholder-plus" aria-hidden="true"></span>
+                                    </summary>
+                                    <p class="faq-placeholder-answer">your export is processed securely and is not permanently stored. your data stays private and is only used to generate your insights.</p>
+                                </details>
+                                <details class="faq-placeholder-item">
+                                    <summary class="faq-placeholder-head">
+                                        <span>what happens after i upload?</span>
+                                        <span class="faq-placeholder-plus" aria-hidden="true"></span>
+                                    </summary>
+                                    <p class="faq-placeholder-answer">we analyze your followers, activity, and engagement data to generate a personalized dashboard with insights and tools.</p>
+                                </details>
+                            </div>
+                            <div class="faq-placeholder-column">
+                                <details class="faq-placeholder-item">
+                                    <summary class="faq-placeholder-head">
+                                        <span>do i need to log into instagram?</span>
+                                        <span class="faq-placeholder-plus" aria-hidden="true"></span>
+                                    </summary>
+                                    <p class="faq-placeholder-answer">no. you never log into instagram through our platform. we only use the export file you provide.</p>
+                                </details>
+                                <details class="faq-placeholder-item">
+                                    <summary class="faq-placeholder-head">
+                                        <span>what file format is supported?</span>
+                                        <span class="faq-placeholder-plus" aria-hidden="true"></span>
+                                    </summary>
+                                    <p class="faq-placeholder-answer">we support the official instagram export zip file. no additional setup or formatting is required.</p>
+                                </details>
+                                <details class="faq-placeholder-item">
+                                    <summary class="faq-placeholder-head">
+                                        <span>can i cancel anytime?</span>
+                                        <span class="faq-placeholder-plus" aria-hidden="true"></span>
+                                    </summary>
+                                    <p class="faq-placeholder-answer">yes. all paid plans can be canceled anytime. you&apos;ll keep access until the end of your billing period.</p>
+                                </details>
+                            </div>
+                        </div>
+
+                        <div class="faq-footer">
+                            <p class="faq-footer-copy">still have questions?</p>
+                            <a href="#" class="faq-footer-link">contact support</a>
+                        </div>
+                    </section>
+
+                    <section class="final-cta-section" data-reveal aria-labelledby="final-cta-title">
+                        <div class="section-intro final-cta-intro">
+                            <p class="section-kicker">final step</p>
+                            <h2 id="final-cta-title" class="section-title">ready to analyze your instagram data?</h2>
+                            <p class="section-copy">
+                                upload your export and get instant insights - no login required, your data stays private.
+                            </p>
+                        </div>
+
+                        <div class="final-cta-placeholder" aria-hidden="true">
+                            <button type="button" class="final-cta-placeholder-btn" data-open-create-modal>instalyze your export</button>
+                            <p class="final-cta-placeholder-trust">no instagram login required • cancel anytime • your data stays private</p>
                         </div>
                     </section>
             </main>
