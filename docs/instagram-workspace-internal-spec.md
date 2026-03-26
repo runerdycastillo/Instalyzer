@@ -224,6 +224,40 @@ Architecture:
 
 One dataset can power multiple tools.
 
+### Tier Planning Direction
+
+Do not force an even tool split such as:
+
+- free = 3 tools
+- basic = 3 tools
+- premium = 3 tools
+
+That structure is easy to mock visually, but it weakens the feeling of upgrade value.
+
+The better current planning direction is:
+
+- free = `1-2` core tools
+- basic = `4-5` practical creator tools
+- premium = `7-9` total tools, advanced summaries, or richer reporting layers
+
+Reason:
+
+- free should prove value without giving away too much
+- basic should feel like the first real unlock
+- premium should feel like a broader toolkit, not just a slightly different card row
+
+Important rule:
+
+- do not promise tool counts that the export data cannot realistically support
+- use this as a pricing and packaging direction, not a hard feature guarantee
+- only list tools in tiers once the data support and product definition are defensible
+
+Practical interpretation for Instalyzer:
+
+- free should likely center on relationship proof-of-value tools
+- basic should unlock the first genuinely useful creator insight set
+- premium should combine the broadest tool access with stronger summary/report outputs
+
 ### MVP Tool
 
 `Not Following Back`

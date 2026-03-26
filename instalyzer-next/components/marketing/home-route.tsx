@@ -1,5 +1,7 @@
 import { Fragment } from "react";
 import Link from "next/link";
+import { FaqAccordion } from "@/components/marketing/faq-accordion";
+import { HeroScrollLink } from "@/components/marketing/hero-scroll-link";
 import { MarketingScrollReveal } from "@/components/marketing/marketing-scroll-reveal";
 
 const toolTiers = [
@@ -180,6 +182,84 @@ const resultsPreviewPills = [
   { label: "growth summary", className: "is-premium" },
 ] as const;
 
+const pricingPlans = [
+  {
+    cardClassName: "pricing-card-free",
+    tier: "free",
+    price: "$0",
+    billingLabel: null,
+    copy:
+      "start with the core relationship workflow and preview what your export can unlock.",
+    features: ["not following back", "export overview", "visibility snapshot"],
+    ctaLabel: "start free",
+    ctaClassName: "",
+    badge: null,
+  },
+  {
+    cardClassName: "pricing-card-basic",
+    tier: "basic",
+    price: "$3.99",
+    billingLabel: "/ month",
+    copy:
+      "unlock the most useful creator tools in one lightweight monthly plan.",
+    features: ["ghost followers", "activity insights", "audience insights"],
+    ctaLabel: "upgrade to basic",
+    ctaClassName: "pricing-card-btn-featured",
+    badge: "most popular",
+    featured: true,
+  },
+  {
+    cardClassName: "pricing-card-premium",
+    tier: "premium",
+    price: "$7.99",
+    billingLabel: "/ month",
+    copy:
+      "go deeper with premium summary tools and the most polished reporting layer.",
+    features: ["growth summary", "visibility summary", "engagement summary"],
+    ctaLabel: "unlock premium",
+    ctaClassName: "pricing-card-btn-premium",
+    badge: null,
+  },
+] as const;
+
+const faqColumns = [
+  [
+    {
+      question: "how do i download my data?",
+      answer:
+        "request your export from instagram in your account settings. once downloaded, upload the zip file here to start analyzing your data.",
+      startsOpen: true,
+    },
+    {
+      question: "is my data stored on your servers?",
+      answer:
+        "your export is processed securely and is not permanently stored. your data stays private and is only used to generate your insights.",
+    },
+    {
+      question: "what happens after i upload?",
+      answer:
+        "we analyze your followers, activity, and engagement data to generate a personalized dashboard with insights and tools.",
+    },
+  ],
+  [
+    {
+      question: "do i need to log into instagram?",
+      answer:
+        "no. you never log into instagram through our platform. we only use the export file you provide.",
+    },
+    {
+      question: "what file format is supported?",
+      answer:
+        "we support the official instagram export zip file. no additional setup or formatting is required.",
+    },
+    {
+      question: "can i cancel anytime?",
+      answer:
+        "yes. all paid plans can be canceled anytime. you'll keep access until the end of your billing period.",
+    },
+  ],
+] as const;
+
 export function MarketingHomeRoute() {
   return (
     <main className="landing-shell" aria-label="Home landing page">
@@ -210,12 +290,16 @@ export function MarketingHomeRoute() {
           </div>
         </div>
 
-        <a href="#tools-section" className="hero-scroll-cue" aria-label="Scroll to tools section">
+        <HeroScrollLink
+          targetId="tools-section"
+          className="hero-scroll-cue"
+          ariaLabel="Scroll to tools section"
+        >
           <span className="hero-scroll-mouse" aria-hidden="true">
             <span className="hero-scroll-wheel" />
           </span>
           <span className="hero-scroll-text">scroll to explore</span>
-        </a>
+        </HeroScrollLink>
       </section>
 
       <section
@@ -224,40 +308,42 @@ export function MarketingHomeRoute() {
         aria-labelledby="tools-section-title"
         data-reveal
       >
-        <div className="section-intro tools-section-intro">
-          <p className="section-kicker">dataset tools</p>
-          <h2 id="tools-section-title" className="section-title">
-            tools unlocked by your instagram export
-          </h2>
-          <p className="section-copy">
-            upload your instagram export once to unlock relationship, audience, and
-            growth insights.
-          </p>
-        </div>
+        <div id="tools-scroll-target" className="section-scroll-target">
+          <div className="section-intro tools-section-intro">
+            <p className="section-kicker">dataset tools</p>
+            <h2 id="tools-section-title" className="section-title">
+              tools unlocked by your instagram export
+            </h2>
+            <p className="section-copy">
+              upload your instagram export once to unlock relationship, audience, and
+              growth insights.
+            </p>
+          </div>
 
-        <div className="tier-columns-grid" aria-label="Instalyzer tool tiers">
-          {toolTiers.map((tier) => (
-            <article key={tier.label} className={`tier-column ${tier.tierClassName}`}>
-              <div className="tier-column-head">
-                <span className="tier-column-label">{tier.label}</span>
-              </div>
+          <div className="tier-columns-grid" aria-label="Instalyzer tool tiers">
+            {toolTiers.map((tier) => (
+              <article key={tier.label} className={`tier-column ${tier.tierClassName}`}>
+                <div className="tier-column-head">
+                  <span className="tier-column-label">{tier.label}</span>
+                </div>
 
-              <div className="tier-tool-list">
-                {tier.tools.map((tool) => (
-                  <article key={tool.title} className="tier-tool-row">
-                    <span className="tier-tool-icon" aria-hidden="true">
-                      {tool.icon}
-                    </span>
+                <div className="tier-tool-list">
+                  {tier.tools.map((tool) => (
+                    <article key={tool.title} className="tier-tool-row">
+                      <span className="tier-tool-icon" aria-hidden="true">
+                        {tool.icon}
+                      </span>
 
-                    <div className="tier-tool-body">
-                      <h3 className="tier-tool-title">{tool.title}</h3>
-                      <p className="tier-tool-copy">{tool.copy}</p>
-                    </div>
-                  </article>
-                ))}
-              </div>
-            </article>
-          ))}
+                      <div className="tier-tool-body">
+                        <h3 className="tier-tool-title">{tool.title}</h3>
+                        <p className="tier-tool-copy">{tool.copy}</p>
+                      </div>
+                    </article>
+                  ))}
+                </div>
+              </article>
+            ))}
+          </div>
         </div>
 
         <div className="tier-columns-meta">
@@ -267,9 +353,13 @@ export function MarketingHomeRoute() {
             </span>
             <span>more tools unlock as you upgrade</span>
           </p>
-          <a href="#pricing-section" className="tier-columns-link">
+          <HeroScrollLink
+            targetId="pricing-scroll-target"
+            className="tier-columns-link"
+            ariaLabel="Scroll to pricing section"
+          >
             view pricing
-          </a>
+          </HeroScrollLink>
         </div>
       </section>
 
@@ -390,6 +480,131 @@ export function MarketingHomeRoute() {
           </Link>
         </div>
       </section>
+
+      <section
+        id="pricing-section"
+        className="pricing-section"
+        aria-labelledby="pricing-title"
+        data-reveal
+      >
+        <div id="pricing-scroll-target" className="section-scroll-target">
+          <div className="section-intro pricing-intro">
+            <p className="section-kicker">pricing</p>
+            <h2 id="pricing-title" className="section-title">
+              pick the right plan for your workflow
+            </h2>
+            <p className="section-copy">
+              start free, unlock more tools as you grow, and upgrade when you want
+              deeper insights.
+            </p>
+          </div>
+
+          <div className="pricing-grid" aria-label="Pricing plans">
+            {pricingPlans.map((plan) => (
+              <article
+                key={plan.tier}
+                className={`pricing-card ${plan.cardClassName}${plan.featured ? " is-featured" : ""}`}
+              >
+                {plan.badge ? <div className="pricing-card-badge">{plan.badge}</div> : null}
+
+                <div className="pricing-card-head">
+                  <p className="pricing-card-tier">{plan.tier}</p>
+                  <p className="pricing-card-price">
+                    <span>{plan.price}</span>
+                    {plan.billingLabel ? <small>{plan.billingLabel}</small> : null}
+                  </p>
+                </div>
+
+                <p className="pricing-card-copy">{plan.copy}</p>
+
+                <ul className="pricing-feature-list">
+                  {plan.features.map((feature) => (
+                    <li key={feature}>{feature}</li>
+                  ))}
+                </ul>
+
+                <Link
+                  href="/app/datasets/new"
+                  className={`pricing-card-btn ${plan.ctaClassName}`.trim()}
+                >
+                  {plan.ctaLabel}
+                </Link>
+              </article>
+            ))}
+          </div>
+        </div>
+
+        <div className="pricing-footer">
+          <p className="pricing-reassurance">
+            cancel anytime. no instagram login required. your export stays private.
+          </p>
+
+          <div className="pricing-footer-cta">
+            <p className="pricing-footer-copy">need help choosing a plan?</p>
+            <HeroScrollLink
+              targetId="tools-scroll-target"
+              className="pricing-footer-link"
+              ariaLabel="Scroll to tools section"
+            >
+              compare tools
+            </HeroScrollLink>
+          </div>
+        </div>
+      </section>
+
+      <section className="faq-section" aria-labelledby="faq-title" data-reveal>
+        <div className="section-intro faq-intro">
+          <p className="section-kicker">faq</p>
+          <h2 id="faq-title" className="section-title">
+            common questions before you upload
+          </h2>
+          <p className="section-copy">
+            everything you need to know about your export, privacy, and how your
+            data is handled.
+          </p>
+        </div>
+
+        <FaqAccordion columns={faqColumns} />
+
+        <div className="faq-footer">
+          <p className="faq-footer-copy">still have questions?</p>
+          <a href="#" className="faq-footer-link">
+            contact support
+          </a>
+        </div>
+      </section>
+
+      <section
+        className="final-cta-section"
+        aria-labelledby="final-cta-title"
+        data-reveal
+      >
+        <div className="section-intro final-cta-intro">
+          <p className="section-kicker">final step</p>
+          <h2 id="final-cta-title" className="section-title">
+            ready to analyze your instagram data?
+          </h2>
+          <p className="section-copy">
+            upload your export and get instant insights - no login required, your
+            data stays private.
+          </p>
+        </div>
+
+        <div className="final-cta-placeholder">
+          <Link href="/app/datasets/new" className="final-cta-placeholder-btn">
+            instalyze your export
+          </Link>
+          <p
+            className="final-cta-placeholder-trust"
+            aria-label="no instagram login required, cancel anytime, your data stays private"
+          >
+            <span>no instagram login required</span>
+            <span>cancel anytime</span>
+            <span>your data stays private</span>
+          </p>
+        </div>
+      </section>
     </main>
   );
 }
+
