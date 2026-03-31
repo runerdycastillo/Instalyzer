@@ -1,7 +1,5 @@
 import type { Metadata } from "next";
-import { cookies } from "next/headers";
 import { IBM_Plex_Mono, Source_Sans_3 } from "next/font/google";
-import Script from "next/script";
 import { ThemeProvider } from "@/components/layout/theme-provider";
 import "./globals.css";
 
@@ -27,11 +25,9 @@ export default async function RootLayout({
 }: Readonly<{
   children: React.ReactNode;
 }>) {
-  const cookieStore = await cookies();
-  const savedTheme = cookieStore.get("ig_theme_v1")?.value;
-  const initialTheme = savedTheme === "dark" ? "dark" : "light";
-  const initialBg = initialTheme === "dark" ? "#171b21" : "#f6f8fc";
-  const initialInk = initialTheme === "dark" ? "#e7edf7" : "#1f2937";
+  const initialTheme = "dark" as const;
+  const initialBg = "#171b21";
+  const initialInk = "#e7edf7";
 
   return (
     <html
@@ -42,39 +38,10 @@ export default async function RootLayout({
       suppressHydrationWarning
     >
       <head>
-        <meta name="color-scheme" content={initialTheme === "dark" ? "dark" : "light"} />
+        <meta name="color-scheme" content="dark" />
       </head>
       <body style={{ backgroundColor: initialBg, color: initialInk }}>
-        <Script id="instalyzer-theme-init" strategy="beforeInteractive">
-          {`
-            (function() {
-              function applyTheme(theme) {
-                document.documentElement.dataset.theme = theme;
-                document.documentElement.style.backgroundColor =
-                  theme === "dark" ? "#171b21" : "#f6f8fc";
-                document.documentElement.style.colorScheme =
-                  theme === "dark" ? "dark" : "light";
-
-                if (document.body) {
-                  document.body.style.backgroundColor =
-                    theme === "dark" ? "#171b21" : "#f6f8fc";
-                  document.body.style.color =
-                    theme === "dark" ? "#e7edf7" : "#1f2937";
-                }
-              }
-
-              try {
-                var savedTheme = window.localStorage.getItem("ig_theme_v1");
-                var theme = savedTheme === "dark" ? "dark" : "light";
-                document.cookie = "ig_theme_v1=" + theme + "; path=/; max-age=31536000; samesite=lax";
-                applyTheme(theme);
-              } catch (error) {
-                applyTheme("light");
-              }
-            })();
-          `}
-        </Script>
-        <ThemeProvider initialTheme={initialTheme}>{children}</ThemeProvider>
+        <ThemeProvider>{children}</ThemeProvider>
       </body>
     </html>
   );

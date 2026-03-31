@@ -7,7 +7,7 @@ Current product context:
 - Product: `Instalyzer`
 - Product type: Instagram dataset workspace
 - Core promise: `Upload once. Use many times.`
-- Current migration stage: Next.js marketing flow is largely in place, while help, dataset creation, workspace routes, and parser extraction are still being built
+- Current launch stage: soft-launch free product with one live tool targeted first, while deeper workspace/tool depth is still being completed
 
 ## How To Use
 
@@ -106,7 +106,7 @@ Review the wording across the app.
 - [ ] Are upload instructions simple and specific to Instagram exports?
 - [ ] Are errors written in normal human language?
 - [ ] Is there any vague or robotic copy?
-- [ ] Is the pricing copy clear?
+- [-] Is the pricing copy clear?
 - [ ] Is the help page easy to understand?
 - [ ] Does the copy explain privacy and data handling clearly enough for a cautious user?
 - [ ] Does the copy avoid overpromising unsupported insights or AI claims?
@@ -133,7 +133,7 @@ Check for technical issues.
 - [ ] Test refresh behavior
 - [ ] Test navigation between pages
 - [ ] Test edge cases with missing or partial data
-- [ ] Test theme toggle behavior across refresh and route changes
+- [-] Test theme toggle behavior across refresh and route changes
 - [ ] Test anchor/scroll behavior across the landing page
 - [ ] Test tool gating behavior for unsupported or incomplete exports
 
@@ -170,7 +170,7 @@ Check if the app feels fast enough.
 
 Check whether the product looks ready for real users.
 
-- [ ] Is pricing visible and understandable?
+- [-] Is pricing visible and understandable?
 - [ ] Is there a Privacy Policy?
 - [ ] Is there a Terms of Service page?
 - [ ] Is there a refund policy if needed?
@@ -263,22 +263,18 @@ At the end of the audit, summarize:
 
 Use this section to keep the document realistic while the app is still being built.
 
-- Current product stage: Next.js migration in progress
+- Current product stage: Next.js soft-launch build in progress
 - Routes/features not built yet:
-  - real `/help` export guide
-  - real dataset creation flow
-  - real datasets index and dataset workspace
   - native `Not Following Back` tool route
   - parser/domain extraction from the static prototype
+  - more post-launch tools beyond Tool 1
 - Known placeholders:
-  - workspace/app routes
-  - help route
   - support/contact flow
 - Audit sections that are not applicable yet:
   - auth/signup review until auth exists
   - billing/refund audit until payment flow exists
-  - deeper dashboard/tool audits until the real workspace is live
-- Next milestone to re-run this audit: after `/help`, dataset creation, and first real workspace flow are implemented
+  - pricing visibility review until paid plans return
+- Next milestone to re-run this audit: after the dataset overview and native `Not Following Back` flow are fully implemented
 
 ## Instalyzer-Specific Risks To Watch
 
@@ -286,4 +282,4 @@ Use this section to keep the document realistic while the app is still being bui
 - Users may not understand the difference between JSON export support now and possible HTML support later
 - The product must feel like a reusable dataset workspace, not just a one-off unfollow checker
 - Privacy and data-handling clarity will matter early because users are uploading personal exports
-- The handoff from marketing pages into the real app flow will feel unfinished until help and dataset creation are fully implemented
+- The handoff from marketing pages into the real app flow will feel unfinished until the dataset overview and Tool 1 are fully implemented

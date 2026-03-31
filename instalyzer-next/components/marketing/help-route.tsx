@@ -1,5 +1,6 @@
 "use client";
 
+import { ChevronLeft, ChevronRight, ExternalLink } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
 import { useState } from "react";
@@ -413,9 +414,7 @@ export function HelpRoute() {
                         aria-label="Previous visual step"
                         onClick={() => activateVisualStep(activeVisualIndex - 1)}
                       >
-                        <svg viewBox="0 0 24 24" aria-hidden="true">
-                          <path d="m15 18-6-6 6-6" />
-                        </svg>
+                        <ChevronLeft aria-hidden="true" strokeWidth={2.1} />
                       </button>
 
                       {visualSteps.map((step, index) => {
@@ -457,9 +456,7 @@ export function HelpRoute() {
                         aria-label="Next visual step"
                         onClick={() => activateVisualStep(activeVisualIndex + 1)}
                       >
-                        <svg viewBox="0 0 24 24" aria-hidden="true">
-                          <path d="m9 6 6 6-6 6" />
-                        </svg>
+                        <ChevronRight aria-hidden="true" strokeWidth={2.1} />
                       </button>
                     </div>
 
@@ -508,11 +505,7 @@ export function HelpRoute() {
                       aria-label="Open Instagram"
                       title="Open Instagram"
                     >
-                      <svg viewBox="0 0 24 24" aria-hidden="true">
-                        <rect x="3.5" y="3.5" width="17" height="17" rx="5" />
-                        <circle cx="12" cy="12" r="4" />
-                        <circle cx="17.6" cy="6.4" r="1" />
-                      </svg>
+                      <ExternalLink aria-hidden="true" strokeWidth={1.9} />
                     </a>
                   ) : null}
                 </div>

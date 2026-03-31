@@ -4,9 +4,9 @@ Use this document for the current build phase, not full launch readiness.
 
 Current milestone focus:
 
-- Finish the Next.js migration for the core user flow
+- Finish the Next.js migration for the soft-launch core user flow
 - Replace placeholder routes with real product surfaces
-- Preserve the static product quality while improving architecture
+- Preserve the static product quality while simplifying toward a free launch
 - Keep momentum without losing track of polish, bugs, and gaps
 
 ## How To Use
@@ -123,8 +123,9 @@ Use this section to track the current migration flow specifically.
 
 - [x] CTA leads into a real dataset creation experience
 - [x] Upload flow accepts the right Instagram export
-- [x] Upload review step is clear
-- [x] Dataset setup step is clear
+- [x] Upload step is clear
+- [x] Dataset creation step is clear
+- [x] Upload-to-create processing handoff feels intentional
 - [x] Dataset workspace is real
 - [ ] Tool 1 works natively in Next
 
@@ -143,13 +144,16 @@ Use this section to track the current migration flow specifically.
 
 ### Fix Next
 
-- [ ] Polish the dataset creation route so the upload step feels more premium and focused
-- Why now: the structure is real now, so the next gains are usability, hierarchy, and trust polish rather than placeholder replacement
+- [ ] Finish the dataset overview so the post-create workspace feels launch-ready
+- Why now: the upload/create handoff is in a much stronger place, so the next gain is making the first dataset landing experience feel equally intentional
 
 ### Watch Soon
 
+- [ ] Implement the native `Not Following Back` tool in Next
+- Why soon: the soft-launch story now depends on one real live tool more than on a broader platform narrative
+
 - [ ] Port deeper parser logic from the static flow into reusable modules
-- Why soon: the current route accepts the right files and supports the flow, but real archive inspection is still lighter than the static prototype
+- Why soon: the current route supports the launch flow, but real archive inspection is still lighter than the static prototype
 
 ### Leave For Later
 
@@ -205,3 +209,24 @@ Add one short entry per work session.
   - the route is real now, but if we stop here the upload step could still feel more like a strong draft than a fully locked product experience
 - Next step:
   - continue polishing the dataset creation page, especially the upload panel, review state, and setup state, before moving deeper into Tool 1 porting
+
+### Session Entry - 2026-03-30
+
+- Date: 2026-03-30
+- Focus: pivot the Next app toward a soft-launch free product and polish the dataset creation flow around that direction
+- What moved forward:
+  - homepage messaging was reframed around a free launch with `Not Following Back` as the live tool and more tools marked as coming soon
+  - pricing was hidden behind a temporary conditional instead of being removed
+  - the app was simplified to dark-only for the soft launch
+  - iconography across the marketing/app flow was cleaned up with `lucide-react`
+  - `/app/datasets/new` was heavily refined from a 3-step upload/review/setup flow into a cleaner `upload -> create` experience
+  - the create step was centered, simplified, and given a subtle processing handoff between upload and dataset creation
+  - the upload/create flow now feels much closer to a polished launch surface than an internal migration screen
+- What remains rough:
+  - the dataset overview/workspace still needs another pass so it matches the quality of the new dataset flow
+  - the native `Not Following Back` route is still the biggest missing launch piece
+  - deeper parser extraction still remains ahead
+- Biggest risk:
+  - the soft-launch story is now much clearer than the actual live-tool depth, so the next session needs to complete the overview and Tool 1 path without losing this polish
+- Next step:
+  - finish the dataset overview/workspace and then implement the native `Not Following Back` tool for the soft launch

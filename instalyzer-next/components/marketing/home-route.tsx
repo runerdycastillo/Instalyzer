@@ -1,168 +1,110 @@
 import { Fragment } from "react";
+import type { LucideIcon } from "lucide-react";
+import {
+  ArrowUpRight,
+  ChartColumnBig,
+  Clock,
+  Eye,
+  FileText,
+  GitCompareArrows,
+  MessageSquareText,
+  TrendingUp,
+  Upload,
+  UserMinus,
+  UserRound,
+  UsersRound,
+} from "lucide-react";
 import Link from "next/link";
 import { FaqAccordion } from "@/components/marketing/faq-accordion";
 import { HeroScrollLink } from "@/components/marketing/hero-scroll-link";
 import { MarketingScrollReveal } from "@/components/marketing/marketing-scroll-reveal";
 
-const toolTiers = [
+const SHOW_PRICING_SECTION = false;
+
+type ToolTierItem = {
+  title: string;
+  copy: string;
+  availability: "available now" | "coming soon";
+  icon: LucideIcon;
+  featured?: boolean;
+};
+
+const toolsShowcase = [
   {
-    tierClassName: "tier-column-free",
-    label: "free",
-    tools: [
-      {
-        title: "not following back",
-        copy: "See which accounts don't follow you back.",
-        icon: (
-          <svg viewBox="0 0 24 24" aria-hidden="true">
-            <path d="M6 15c2.2 0 3.8-1.8 6-1.8S15.8 15 18 15" />
-            <path d="M4 6h16" />
-            <path d="M8 6v12" />
-            <path d="M16 6v12" />
-          </svg>
-        ),
-      },
-      {
-        title: "export overview",
-        copy: "Quick summary of your dataset.",
-        icon: (
-          <svg viewBox="0 0 24 24" aria-hidden="true">
-            <path d="M7 7h10" />
-            <path d="M7 12h10" />
-            <path d="M7 17h10" />
-            <path d="M5 7h.01" />
-            <path d="M5 12h.01" />
-            <path d="M5 17h.01" />
-          </svg>
-        ),
-      },
-      {
-        title: "visibility snapshot",
-        copy: "Instant read on account visibility signals.",
-        icon: (
-          <svg viewBox="0 0 24 24" aria-hidden="true">
-            <path d="M4 12s3-5 8-5 8 5 8 5-3 5-8 5-8-5-8-5Z" />
-            <circle cx="12" cy="12" r="2.5" />
-          </svg>
-        ),
-      },
-    ],
+    title: "not following back",
+    copy: "See which accounts do not follow you back.",
+    availability: "available now",
+    icon: UserMinus,
+    featured: true,
   },
   {
-    tierClassName: "tier-column-basic",
-    label: "basic",
-    tools: [
-      {
-        title: "ghost followers",
-        copy: "Spot followers who never interact.",
-        icon: (
-          <svg viewBox="0 0 24 24" aria-hidden="true">
-            <path d="M12 5v14" />
-            <path d="M5 12h14" />
-            <circle cx="12" cy="12" r="8" />
-          </svg>
-        ),
-      },
-      {
-        title: "activity insights",
-        copy: "Understand engagement across your posts.",
-        icon: (
-          <svg viewBox="0 0 24 24" aria-hidden="true">
-            <path d="M5 17 9 13l3 3 7-8" />
-            <path d="M5 5v12h14" />
-          </svg>
-        ),
-      },
-      {
-        title: "audience insights",
-        copy: "Track follower movement and growth.",
-        icon: (
-          <svg viewBox="0 0 24 24" aria-hidden="true">
-            <path d="M12 4a8 8 0 1 0 8 8" />
-            <path d="M12 4v8h8" />
-          </svg>
-        ),
-      },
-    ],
+    title: "export overview",
+    copy: "Quick summary of your dataset and export health.",
+    availability: "coming soon",
+    icon: FileText,
   },
   {
-    tierClassName: "tier-column-premium",
-    label: "premium",
-    tools: [
-      {
-        title: "growth summary",
-        copy: "Track follower growth trends.",
-        icon: (
-          <svg viewBox="0 0 24 24" aria-hidden="true">
-            <path d="M6 18V9" />
-            <path d="M12 18V5" />
-            <path d="M18 18v-6" />
-          </svg>
-        ),
-      },
-      {
-        title: "visibility summary",
-        copy: "Understand reach and impressions.",
-        icon: (
-          <svg viewBox="0 0 24 24" aria-hidden="true">
-            <path d="M4 12s3-5 8-5 8 5 8 5-3 5-8 5-8-5-8-5Z" />
-            <circle cx="12" cy="12" r="2.5" />
-          </svg>
-        ),
-      },
-      {
-        title: "engagement summary",
-        copy: "Measure overall interaction performance.",
-        icon: (
-          <svg viewBox="0 0 24 24" aria-hidden="true">
-            <path d="M12 4v16" />
-            <path d="M4 12h16" />
-            <path d="M7 7l10 10" />
-          </svg>
-        ),
-      },
-    ],
+    title: "relationship view",
+    copy: "Compare followers, following, and mutuals.",
+    availability: "coming soon",
+    icon: GitCompareArrows,
   },
-] as const;
+  {
+    title: "audience insights",
+    copy: "Track follower movement and audience changes.",
+    availability: "coming soon",
+    icon: UsersRound,
+  },
+  {
+    title: "visibility summary",
+    copy: "Understand reach, impressions, and profile visits.",
+    availability: "coming soon",
+    icon: Eye,
+  },
+  {
+    title: "interaction summary",
+    copy: "Measure likes, comments, saves, and interactions.",
+    availability: "coming soon",
+    icon: ChartColumnBig,
+  },
+  {
+    title: "story insights",
+    copy: "Break down story replies and engagement.",
+    availability: "coming soon",
+    icon: MessageSquareText,
+  },
+  {
+    title: "posting guidance",
+    copy: "Surface timing and activity pattern insights.",
+    availability: "coming soon",
+    icon: Clock,
+  },
+  {
+    title: "growth summary",
+    copy: "Track follower growth and account momentum.",
+    availability: "coming soon",
+    icon: TrendingUp,
+  },
+] as const satisfies readonly ToolTierItem[];
 
 const howItWorksSteps = [
   {
     step: "step 1",
     title: "upload your export",
     copy: "download your instagram data and upload the export file.",
-    icon: (
-      <svg viewBox="0 0 24 24" aria-hidden="true">
-        <path d="M12 4v11" />
-        <path d="m7.5 10.5 4.5 4.5 4.5-4.5" />
-        <path d="M5 19h14" />
-      </svg>
-    ),
+    icon: Upload,
   },
   {
     step: "step 2",
     title: "we analyze your network",
     copy: "instalyzer processes your followers, following, and engagement signals.",
-    icon: (
-      <svg viewBox="0 0 24 24" aria-hidden="true">
-        <path d="M5 18h14" />
-        <path d="M7 15V9" />
-        <path d="M12 15V6" />
-        <path d="M17 15v-4" />
-        <path d="M8 8h10" />
-      </svg>
-    ),
+    icon: ChartColumnBig,
   },
   {
     step: "step 3",
-    title: "get powerful insights",
-    copy: "see ghost followers, unfollows, and growth signals instantly.",
-    icon: (
-      <svg viewBox="0 0 24 24" aria-hidden="true">
-        <path d="M5 18V8" />
-        <path d="M5 18h14" />
-        <path d="m8 14 3-3 3 2 4-5" />
-        <circle cx="18" cy="8" r="1.5" />
-      </svg>
-    ),
+    title: "use the first live tool",
+    copy: "create a dataset, run not following back now, and watch more tools roll out over time.",
+    icon: ArrowUpRight,
   },
 ] as const;
 
@@ -176,10 +118,10 @@ const resultsPreviewMetrics = [
 ] as const;
 
 const resultsPreviewPills = [
-  { label: "not following back", className: "is-free" },
-  { label: "ghost followers", className: "is-basic" },
-  { label: "activity insights", className: "is-basic" },
-  { label: "growth summary", className: "is-premium" },
+  { label: "not following back live now", className: "is-free" },
+  { label: "audience insights coming soon", className: "is-basic" },
+  { label: "reach summary coming soon", className: "is-basic" },
+  { label: "growth summary coming soon", className: "is-premium" },
 ] as const;
 
 const pricingPlans = [
@@ -238,7 +180,7 @@ const faqColumns = [
     {
       question: "what happens after i upload?",
       answer:
-        "we analyze your followers, activity, and engagement data to generate a personalized dashboard with insights and tools.",
+        "you review the import, create a reusable dataset, and unlock the first live tool now while the broader workspace keeps expanding.",
     },
   ],
   [
@@ -253,9 +195,9 @@ const faqColumns = [
         "we support the official instagram export zip file. no additional setup or formatting is required.",
     },
     {
-      question: "can i cancel anytime?",
+      question: "is this free right now?",
       answer:
-        "yes. all paid plans can be canceled anytime. you'll keep access until the end of your billing period.",
+        "yes. the current launch version is free while we finish the broader toolset and workspace experience.",
     },
   ],
 ] as const;
@@ -275,8 +217,8 @@ export function MarketingHomeRoute() {
           </h1>
 
           <p className="hero-copy">
-            upload once and instantly see who is not following you back, discover
-            ghost followers, and uncover engagement insights.
+            upload your instagram export once, run not following back now, and get
+            ready for more tools as the workspace expands.
           </p>
 
           <div className="hero-actions">
@@ -315,31 +257,33 @@ export function MarketingHomeRoute() {
               tools unlocked by your instagram export
             </h2>
             <p className="section-copy">
-              upload your instagram export once to unlock relationship, audience, and
-              growth insights.
+              launch version includes not following back live now, with more
+              dataset tools rolling out soon.
             </p>
           </div>
 
-          <div className="tier-columns-grid" aria-label="Instalyzer tool tiers">
-            {toolTiers.map((tier) => (
-              <article key={tier.label} className={`tier-column ${tier.tierClassName}`}>
-                <div className="tier-column-head">
-                  <span className="tier-column-label">{tier.label}</span>
+          <div className="tools-showcase-grid" aria-label="Instalyzer tools">
+            {toolsShowcase.map((tool) => (
+              <article
+                key={tool.title}
+                className={`tools-showcase-card${tool.featured ? " is-featured" : ""}`}
+              >
+                <div className="tools-showcase-card__head">
+                  <span className="tools-showcase-icon" aria-hidden="true">
+                    <tool.icon aria-hidden="true" strokeWidth={1.9} />
+                  </span>
+                  <span
+                    className={`tools-showcase-badge${
+                      tool.availability === "available now" ? " is-live" : ""
+                    }`}
+                  >
+                    {tool.availability}
+                  </span>
                 </div>
 
-                <div className="tier-tool-list">
-                  {tier.tools.map((tool) => (
-                    <article key={tool.title} className="tier-tool-row">
-                      <span className="tier-tool-icon" aria-hidden="true">
-                        {tool.icon}
-                      </span>
-
-                      <div className="tier-tool-body">
-                        <h3 className="tier-tool-title">{tool.title}</h3>
-                        <p className="tier-tool-copy">{tool.copy}</p>
-                      </div>
-                    </article>
-                  ))}
+                <div className="tools-showcase-card__body">
+                  <h3 className="tools-showcase-title">{tool.title}</h3>
+                  <p className="tools-showcase-copy">{tool.copy}</p>
                 </div>
               </article>
             ))}
@@ -348,18 +292,11 @@ export function MarketingHomeRoute() {
 
         <div className="tier-columns-meta">
           <p className="tier-columns-note">
-            <span className="tier-columns-note-mark" aria-hidden="true">
-              +
-            </span>
-            <span>more tools unlock as you upgrade</span>
+            <span>more tools coming soon.</span>
           </p>
-          <HeroScrollLink
-            targetId="pricing-scroll-target"
-            className="tier-columns-link"
-            ariaLabel="Scroll to pricing section"
-          >
-            view pricing
-          </HeroScrollLink>
+          <Link href="/app/datasets/new?entry=home-hero" className="hero-btn hero-btn-primary">
+            try not following back
+          </Link>
         </div>
       </section>
 
@@ -385,7 +322,7 @@ export function MarketingHomeRoute() {
               <article className="how-it-works-card">
                 <span className="how-it-works-step">{step.step}</span>
                 <span className="how-it-works-icon" aria-hidden="true">
-                  {step.icon}
+                  <step.icon aria-hidden="true" strokeWidth={1.9} />
                 </span>
                 <h3 className="how-it-works-card-title">{step.title}</h3>
                 <p className="how-it-works-card-copy">{step.copy}</p>
@@ -417,8 +354,8 @@ export function MarketingHomeRoute() {
             the dashboard behind your export
           </h2>
           <p className="section-copy">
-            analyze followers, engagement, and growth signals from your instagram
-            data.
+            start with a dataset and see how the workspace can grow into more tools
+            over time.
           </p>
         </div>
 
@@ -429,16 +366,13 @@ export function MarketingHomeRoute() {
 
               <div className="results-preview-profile">
                 <div className="results-preview-avatar" aria-hidden="true">
-                  <svg viewBox="0 0 24 24">
-                    <path d="M12 12a3.75 3.75 0 1 0-3.75-3.75A3.75 3.75 0 0 0 12 12Z" />
-                    <path d="M5.5 19a6.5 6.5 0 0 1 13 0" />
-                  </svg>
+                  <UserRound aria-hidden="true" strokeWidth={1.9} />
                 </div>
 
                 <div className="results-preview-profile-copy">
                   <span className="results-preview-profile-handle">@username</span>
-                  <strong>creator profile</strong>
-                  <span>last 90 days</span>
+                  <strong>dataset overview</strong>
+                  <span>latest import</span>
                 </div>
               </div>
 
@@ -484,76 +418,78 @@ export function MarketingHomeRoute() {
         </div>
       </section>
 
-      <section
-        id="pricing-section"
-        className="pricing-section"
-        aria-labelledby="pricing-title"
-        data-reveal
-      >
-        <div id="pricing-scroll-target" className="section-scroll-target">
-          <div className="section-intro pricing-intro">
-            <p className="section-kicker">pricing</p>
-            <h2 id="pricing-title" className="section-title">
-              pick the right plan for your workflow
-            </h2>
-            <p className="section-copy">
-              start free, unlock more tools as you grow, and upgrade when you want
-              deeper insights.
-            </p>
-          </div>
+      {SHOW_PRICING_SECTION ? (
+        <section
+          id="pricing-section"
+          className="pricing-section"
+          aria-labelledby="pricing-title"
+          data-reveal
+        >
+          <div id="pricing-scroll-target" className="section-scroll-target">
+            <div className="section-intro pricing-intro">
+              <p className="section-kicker">pricing</p>
+              <h2 id="pricing-title" className="section-title">
+                pick the right plan for your workflow
+              </h2>
+              <p className="section-copy">
+                start free, unlock more tools as you grow, and upgrade when you want
+                deeper insights.
+              </p>
+            </div>
 
-          <div className="pricing-grid" aria-label="Pricing plans">
-            {pricingPlans.map((plan) => (
-              <article
-                key={plan.tier}
-                className={`pricing-card ${plan.cardClassName}${plan.featured ? " is-featured" : ""}`}
-              >
-                {plan.badge ? <div className="pricing-card-badge">{plan.badge}</div> : null}
-
-                <div className="pricing-card-head">
-                  <p className="pricing-card-tier">{plan.tier}</p>
-                  <p className="pricing-card-price">
-                    <span>{plan.price}</span>
-                    {plan.billingLabel ? <small>{plan.billingLabel}</small> : null}
-                  </p>
-                </div>
-
-                <p className="pricing-card-copy">{plan.copy}</p>
-
-                <ul className="pricing-feature-list">
-                  {plan.features.map((feature) => (
-                    <li key={feature}>{feature}</li>
-                  ))}
-                </ul>
-
-                <Link
-                  href={`/app/datasets/new?entry=${`home-pricing-${plan.tier}`}`}
-                  className={`pricing-card-btn ${plan.ctaClassName}`.trim()}
+            <div className="pricing-grid" aria-label="Pricing plans">
+              {pricingPlans.map((plan) => (
+                <article
+                  key={plan.tier}
+                  className={`pricing-card ${plan.cardClassName}${plan.featured ? " is-featured" : ""}`}
                 >
-                  {plan.ctaLabel}
-                </Link>
-              </article>
-            ))}
-          </div>
-        </div>
+                  {plan.badge ? <div className="pricing-card-badge">{plan.badge}</div> : null}
 
-        <div className="pricing-footer">
-          <p className="pricing-reassurance">
-            cancel anytime. no instagram login required. your export stays private.
-          </p>
+                  <div className="pricing-card-head">
+                    <p className="pricing-card-tier">{plan.tier}</p>
+                    <p className="pricing-card-price">
+                      <span>{plan.price}</span>
+                      {plan.billingLabel ? <small>{plan.billingLabel}</small> : null}
+                    </p>
+                  </div>
 
-          <div className="pricing-footer-cta">
-            <p className="pricing-footer-copy">need help choosing a plan?</p>
-            <HeroScrollLink
-              targetId="tools-scroll-target"
-              className="pricing-footer-link"
-              ariaLabel="Scroll to tools section"
-            >
-              compare tools
-            </HeroScrollLink>
+                  <p className="pricing-card-copy">{plan.copy}</p>
+
+                  <ul className="pricing-feature-list">
+                    {plan.features.map((feature) => (
+                      <li key={feature}>{feature}</li>
+                    ))}
+                  </ul>
+
+                  <Link
+                    href={`/app/datasets/new?entry=${`home-pricing-${plan.tier}`}`}
+                    className={`pricing-card-btn ${plan.ctaClassName}`.trim()}
+                  >
+                    {plan.ctaLabel}
+                  </Link>
+                </article>
+              ))}
+            </div>
           </div>
-        </div>
-      </section>
+
+          <div className="pricing-footer">
+            <p className="pricing-reassurance">
+              cancel anytime. no instagram login required. your export stays private.
+            </p>
+
+            <div className="pricing-footer-cta">
+              <p className="pricing-footer-copy">need help choosing a plan?</p>
+              <HeroScrollLink
+                targetId="tools-scroll-target"
+                className="pricing-footer-link"
+                ariaLabel="Scroll to tools section"
+              >
+                compare tools
+              </HeroScrollLink>
+            </div>
+          </div>
+        </section>
+      ) : null}
 
       <section className="faq-section" aria-labelledby="faq-title" data-reveal>
         <div className="section-intro faq-intro">
@@ -588,8 +524,8 @@ export function MarketingHomeRoute() {
             ready to analyze your instagram data?
           </h2>
           <p className="section-copy">
-            upload your export and get instant insights - no login required, your
-            data stays private.
+            upload your export and try the first live tool now. no instagram login
+            required and your data stays private.
           </p>
         </div>
 
@@ -602,10 +538,10 @@ export function MarketingHomeRoute() {
           </Link>
           <p
             className="final-cta-placeholder-trust"
-            aria-label="no instagram login required, cancel anytime, your data stays private"
+            aria-label="no instagram login required, free launch, your data stays private"
           >
             <span>no instagram login required</span>
-            <span>cancel anytime</span>
+            <span>free launch</span>
             <span>your data stays private</span>
           </p>
         </div>

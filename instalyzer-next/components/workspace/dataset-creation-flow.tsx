@@ -1,12 +1,12 @@
 "use client";
 
-import Link from "next/link";
+import { ArrowLeft, LoaderCircle } from "lucide-react";
 import { useRouter, useSearchParams } from "next/navigation";
 import {
   type ChangeEvent,
   type DragEvent,
   Fragment,
-  type InputHTMLAttributes,
+  useEffect,
   useMemo,
   useRef,
   useState,
@@ -17,18 +17,18 @@ import {
   makeDatasetId,
   saveLocalDataset,
   type DatasetEntryPoint,
-  type DatasetToolAvailability,
 } from "@/lib/instagram/local-datasets";
 
-type CreationStep = "upload" | "review" | "setup";
+type CreationStep = "upload" | "create";
 
 const uploadSupportSections = [
   {
     title: "before you start",
     items: [
-      "you may need to log into instagram first.",
-      "instagram may take a few minutes to prepare your file.",
+      "You may need to log into Instagram first.",
+      "Instagram may take a few minutes to prepare your file.",
     ],
+    instagramLink: true,
   },
   {
     title: "recommended settings",
@@ -38,9 +38,9 @@ const uploadSupportSections = [
   {
     title: "common issues",
     items: [
-      "no file? check email and spam.",
-      "wrong format? use JSON.",
-      "upload issue? use the export ZIP file.",
+      "No file? Check email and spam.",
+      "Wrong format? Use JSON.",
+      "Upload issue? Use the export ZIP file.",
     ],
   },
 ] as const;
@@ -59,24 +59,50 @@ const entryPointValues = new Set<DatasetEntryPoint>([
   "unknown",
 ]);
 
-function getToolToneClass(tool: DatasetToolAvailability) {
-  if (tool.status === "ready") return "is-ready";
-  if (tool.status === "partial") return "is-partial";
-  return "is-later";
+function DatasetFlowQuickTips() {
+  return (
+    <aside className="dataset-flow__side dataset-flow__side--upload">
+      <p className="guide-side-stack-label dataset-upload-tips-label">quick tips</p>
+
+      <div className="guide-side-card guide-side-card-v2 guide-side-card-unified dataset-upload-tips-card">
+        {uploadSupportSections.map((section) => (
+          <div key={section.title} className="guide-side-section">
+            <div className="guide-side-section-head">
+              <h4 className="guide-side-section-title">{section.title}</h4>
+            </div>
+
+            <ul className="guide-side-list">
+              {section.items.map((item, index) => (
+                <li key={item}>
+                  {"labels" in section && section.labels?.[index] ? (
+                    <>
+                      <strong>{section.labels[index]}:</strong> {item}
+                    </>
+                  ) : (
+                    item
+                  )}
+                </li>
+              ))}
+            </ul>
+          </div>
+        ))}
+      </div>
+    </aside>
+  );
 }
 
 export function DatasetCreationFlow() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const filesInputRef = useRef<HTMLInputElement>(null);
-  const folderInputRef = useRef<HTMLInputElement>(null);
+  const processingTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [step, setStep] = useState<CreationStep>("upload");
   const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
   const [datasetName, setDatasetName] = useState("");
   const [datasetDate, setDatasetDate] = useState(new Date().toISOString().slice(0, 10));
-  const [datasetNotes, setDatasetNotes] = useState("");
   const [nameTouched, setNameTouched] = useState(false);
   const [isDragging, setIsDragging] = useState(false);
+  const [isProcessingUpload, setIsProcessingUpload] = useState(false);
   const [isPending, startTransition] = useTransition();
 
   const entryPointParam = searchParams.get("entry") || "unknown";
@@ -84,18 +110,41 @@ export function DatasetCreationFlow() {
     ? (entryPointParam as DatasetEntryPoint)
     : "unknown";
 
+  useEffect(() => {
+    window.scrollTo({ top: 0, behavior: "auto" });
+  }, []);
+
+  useEffect(() => {
+    return () => {
+      if (processingTimeoutRef.current) {
+        clearTimeout(processingTimeoutRef.current);
+      }
+    };
+  }, []);
+
   const review = useMemo(
     () => (selectedFiles.length ? buildImportReview(selectedFiles) : null),
     [selectedFiles],
   );
 
-  const canAdvance = selectedFiles.length > 0;
   const hasDatasetName = datasetName.trim().length > 0;
 
   const handleFiles = (nextFiles: File[]) => {
     if (!nextFiles.length) return;
+
+    if (processingTimeoutRef.current) {
+      clearTimeout(processingTimeoutRef.current);
+    }
+
     setSelectedFiles(nextFiles);
-    setStep("review");
+    setNameTouched(false);
+    setIsProcessingUpload(true);
+    setStep("create");
+
+    processingTimeoutRef.current = setTimeout(() => {
+      setIsProcessingUpload(false);
+      processingTimeoutRef.current = null;
+    }, 1100);
   };
 
   const onFilesChange = (event: ChangeEvent<HTMLInputElement>) => {
@@ -106,13 +155,6 @@ export function DatasetCreationFlow() {
     event.preventDefault();
     setIsDragging(false);
     handleFiles(Array.from(event.dataTransfer.files || []));
-  };
-
-  const resetImport = () => {
-    setSelectedFiles([]);
-    setStep("upload");
-    if (filesInputRef.current) filesInputRef.current.value = "";
-    if (folderInputRef.current) folderInputRef.current.value = "";
   };
 
   const createDataset = () => {
@@ -127,7 +169,7 @@ export function DatasetCreationFlow() {
     saveLocalDataset({
       id: datasetId,
       name: datasetName.trim(),
-      notes: datasetNotes.trim(),
+      notes: "",
       createdAt: datasetDate,
       createdAtMs: Date.parse(`${datasetDate}T00:00:00`),
       entryPoint,
@@ -148,28 +190,21 @@ export function DatasetCreationFlow() {
             turn your export into a reusable dataset
           </h1>
           <p className="section-copy dataset-flow__description">
-            upload your instagram export, review what we detected, and create a reusable dataset.
+            upload your instagram export and create a reusable dataset.
           </p>
         </div>
       </div>
 
-      <div className="dataset-flow__steps" aria-label="Dataset creation steps">
-        {[
-          { key: "upload", label: "upload" },
-          { key: "review", label: "review" },
-          { key: "setup", label: "setup" },
-        ].map((item, index, items) => (
+        <div className="dataset-flow__steps" aria-label="Dataset creation steps">
+          {[
+            { key: "upload", label: "upload" },
+            { key: "create", label: "create" },
+          ].map((item, index, items) => (
           <Fragment key={item.key}>
             <button
               type="button"
               className={`dataset-flow__step${step === item.key ? " is-active" : ""}`}
-              disabled={
-                item.key === "review"
-                  ? !canAdvance
-                  : item.key === "setup"
-                    ? !review
-                    : false
-              }
+              disabled={item.key === "create" ? !review : false}
               onClick={() => setStep(item.key as CreationStep)}
             >
               {item.label}
@@ -186,7 +221,11 @@ export function DatasetCreationFlow() {
         ))}
       </div>
 
-      <div className={`dataset-flow__grid${step === "upload" ? " is-upload-step" : ""}`}>
+      <div
+        className={`dataset-flow__grid${
+          step === "upload" ? " is-upload-step" : step === "create" ? " is-create-step" : ""
+        }`}
+      >
         {step === "upload" ? (
           <>
             <article className="dataset-flow__panel dataset-flow__panel--primary">
@@ -194,11 +233,7 @@ export function DatasetCreationFlow() {
                 <div className="dataset-flow__copy">
                   <p className="dataset-flow__kicker">step 1</p>
                   <h2>upload your export</h2>
-                  <p>
-                    Choose the Instagram export ZIP or a set of extracted JSON files to
-                    start the dataset flow. For relationship tools, JSON and all-time
-                    exports are still the safest direction.
-                  </p>
+                  <p>upload your instagram export to get started.</p>
                 </div>
 
                 <input
@@ -208,18 +243,6 @@ export function DatasetCreationFlow() {
                   hidden
                   accept=".json,.zip,application/json,application/zip"
                   onChange={onFilesChange}
-                />
-
-                <input
-                  ref={folderInputRef}
-                  type="file"
-                  multiple
-                  hidden
-                  onChange={onFilesChange}
-                  {...({
-                    webkitdirectory: "",
-                    directory: "",
-                  } as InputHTMLAttributes<HTMLInputElement>)}
                 />
 
                 <div
@@ -253,279 +276,120 @@ export function DatasetCreationFlow() {
                       <path d="M5 19h14" />
                     </svg>
                   </div>
-                  <h3>upload your instagram export</h3>
                   <p>
-                    drag and drop your ZIP or choose files to begin.
+                    drag and drop your ZIP or choose your export to begin.
                   </p>
 
                   <div className="dataset-dropzone__actions">
-                    <button
+                  <button
                       type="button"
-                      className="hero-btn hero-btn-primary"
+                      className="hero-btn hero-btn-primary dataset-dropzone__primary-action"
                       onClick={(event) => {
                         event.stopPropagation();
                         filesInputRef.current?.click();
                       }}
                     >
-                      choose export
-                    </button>
-                    <button
-                      type="button"
-                      className="hero-btn hero-btn-secondary"
-                      onClick={(event) => {
-                        event.stopPropagation();
-                        folderInputRef.current?.click();
-                      }}
-                    >
-                      choose folder
+                      upload export ZIP
                     </button>
                   </div>
 
                   <p className="dataset-dropzone__reassurance">
-                    no instagram login. review before create.
+                    no instagram login required.
                   </p>
-
-                  <div className="dataset-dropzone__trust-row" aria-label="Trust notes">
-                    <span>no instagram login</span>
-                    <span>review before create</span>
-                    <span>private export workflow</span>
-                  </div>
                 </div>
               </div>
             </article>
 
-            <aside className="dataset-flow__side dataset-flow__side--upload">
-              <p className="guide-side-stack-label dataset-upload-tips-label">quick tips</p>
-
-              <div className="guide-side-card guide-side-card-v2 guide-side-card-unified dataset-upload-tips-card">
-                {uploadSupportSections.map((section) => (
-                  <div key={section.title} className="guide-side-section">
-                    <div className="guide-side-section-head">
-                      <h4 className="guide-side-section-title">{section.title}</h4>
-                    </div>
-
-                    <ul className="guide-side-list">
-                      {section.items.map((item, index) => (
-                        <li key={item}>
-                          {"labels" in section && section.labels?.[index] ? (
-                            <>
-                              <strong>{section.labels[index]}:</strong> {item}
-                            </>
-                          ) : (
-                            item
-                          )}
-                        </li>
-                      ))}
-                    </ul>
-                  </div>
-                ))}
-              </div>
-            </aside>
+            <DatasetFlowQuickTips />
           </>
         ) : (
-          <article className="dataset-flow__panel">
-            {step === "review" && review ? (
-              <div className="dataset-flow__stage">
-                <div className="dataset-flow__copy">
-                  <p className="dataset-flow__kicker">step 2</p>
-                  <h2>review the import</h2>
-                  <p>{review.uploadSummary}</p>
-                </div>
+          <div className="dataset-flow__create-shell">
+            <article className="dataset-flow__panel">
+              {step === "create" && review ? (
+                <div className="dataset-flow__stage">
+                  <div className="dataset-flow__copy">
+                    <p className="dataset-flow__kicker">step 2</p>
+                    <h2>{isProcessingUpload ? "processing your export" : "create your dataset"}</h2>
+                    <p>
+                      {isProcessingUpload
+                        ? "checking your file and preparing your dataset."
+                        : "your export is ready. give this dataset a name to continue."}
+                    </p>
+                  </div>
 
-                <div className="dataset-review-grid">
-                  <article className="dataset-review-card dataset-review-card--primary">
-                    <p className="dataset-review-card__label">import summary</p>
-                    <div className="dataset-review-card__metrics">
-                      <div>
-                        <span>source</span>
-                        <strong>{review.sourceLabel}</strong>
+                  {isProcessingUpload ? (
+                    <div className="dataset-processing-panel" aria-live="polite">
+                      <div className="dataset-processing-panel__spinner" aria-hidden="true">
+                        <LoaderCircle size={28} />
                       </div>
-                      <div>
-                        <span>files staged</span>
-                        <strong>{review.fileCount}</strong>
-                      </div>
-                      <div>
-                        <span>categories detected</span>
-                        <strong>{review.categoryCount}</strong>
+                      <div className="dataset-processing-panel__copy">
+                        <p>preparing your dataset</p>
+                        <span>this will just take a moment.</span>
                       </div>
                     </div>
-                    <p className="dataset-review-card__note">{review.readinessNote}</p>
-                  </article>
+                  ) : (
+                    <div className="dataset-setup-form">
+                      <label className="dataset-field">
+                        <span>dataset name</span>
+                        <input
+                          type="text"
+                          maxLength={60}
+                          value={datasetName}
+                          onChange={(event) => setDatasetName(event.target.value)}
+                          onBlur={() => setNameTouched(true)}
+                          placeholder="march instagram export"
+                        />
+                        {nameTouched && !hasDatasetName ? (
+                          <small className="dataset-field__error">
+                            enter a dataset name to continue
+                          </small>
+                        ) : null}
+                      </label>
 
-                  <article className="dataset-review-card">
-                    <p className="dataset-review-card__label">available tools</p>
-                    <div className="dataset-tool-list">
-                      {review.tools.map((tool) => (
-                        <article
-                          key={tool.id}
-                          className={`dataset-tool-pill ${getToolToneClass(tool)}`}
-                        >
-                          <div>
-                            <strong>{tool.title}</strong>
-                            <p>{tool.note}</p>
-                          </div>
-                          <span>{tool.status}</span>
-                        </article>
-                      ))}
+                      <label className="dataset-field">
+                        <span>dataset date</span>
+                        <input
+                          type="date"
+                          value={datasetDate}
+                          onChange={(event) => setDatasetDate(event.target.value)}
+                        />
+                      </label>
                     </div>
-                  </article>
-
-                  <article className="dataset-review-card">
-                    <p className="dataset-review-card__label">detected categories</p>
-                    <div className="dataset-chip-row">
-                      {review.categoryLabels.length ? (
-                        review.categoryLabels.map((label) => (
-                          <span key={label} className="dataset-chip">
-                            {label}
-                          </span>
-                        ))
-                      ) : (
-                        <span className="dataset-chip">waiting on deeper parser extraction</span>
-                      )}
-                    </div>
-                  </article>
-
-                  <article className="dataset-review-card">
-                    <p className="dataset-review-card__label">staged files</p>
-                    <ul className="dataset-file-list">
-                      {review.fileNames.slice(0, 8).map((fileName) => (
-                        <li key={fileName}>{fileName}</li>
-                      ))}
-                    </ul>
-                    {review.fileNames.length > 8 ? (
-                      <p className="dataset-review-card__note">
-                        +{review.fileNames.length - 8} more files staged
-                      </p>
-                    ) : null}
-                  </article>
+                  )}
                 </div>
-
-                <div className="dataset-flow__footer">
-                  <button
-                    type="button"
-                    className="hero-btn hero-btn-secondary"
-                    onClick={() => setStep("upload")}
-                  >
-                    back
-                  </button>
-                  <button
-                    type="button"
-                    className="hero-btn hero-btn-primary"
-                    onClick={() => setStep("setup")}
-                  >
-                    setup
-                  </button>
-                </div>
-              </div>
-            ) : null}
-
-            {step === "setup" && review ? (
-              <div className="dataset-flow__stage">
-                <div className="dataset-flow__copy">
-                  <p className="dataset-flow__kicker">step 3</p>
-                  <h2>name the dataset</h2>
-                  <p>
-                    Keep the setup step simple for now: give the dataset a name, set
-                    the import date, and add notes if you want context for later.
-                  </p>
-                </div>
-
-                <div className="dataset-setup-form">
-                  <label className="dataset-field">
-                    <span>dataset name</span>
-                    <input
-                      type="text"
-                      maxLength={60}
-                      value={datasetName}
-                      onChange={(event) => setDatasetName(event.target.value)}
-                      onBlur={() => setNameTouched(true)}
-                      placeholder="march instagram export"
-                    />
-                    {nameTouched && !hasDatasetName ? (
-                      <small className="dataset-field__error">
-                        enter a dataset name to continue
-                      </small>
-                    ) : null}
-                  </label>
-
-                  <label className="dataset-field">
-                    <span>dataset date</span>
-                    <input
-                      type="date"
-                      value={datasetDate}
-                      onChange={(event) => setDatasetDate(event.target.value)}
-                    />
-                  </label>
-
-                  <label className="dataset-field">
-                    <span>notes</span>
-                    <textarea
-                      rows={4}
-                      value={datasetNotes}
-                      onChange={(event) => setDatasetNotes(event.target.value)}
-                      placeholder="All-time export from the main account. Good candidate for Tool 1 and insight-summary checks."
-                    />
-                  </label>
-                </div>
-
-                <div className="dataset-flow__footer">
-                  <button
-                    type="button"
-                    className="hero-btn hero-btn-secondary"
-                    onClick={() => setStep("review")}
-                  >
-                    back
-                  </button>
-                  <button
-                    type="button"
-                    className="hero-btn hero-btn-primary"
-                    onClick={createDataset}
-                    disabled={!hasDatasetName || isPending}
-                  >
-                    {isPending ? "creating..." : "create dataset"}
-                  </button>
-                </div>
-              </div>
-            ) : null}
-          </article>
-        )}
-
-        {step === "upload" ? null : (
-          <aside className="dataset-flow__side">
-            <article className="dataset-side-card">
-              <p className="dataset-side-card__label">recommended settings</p>
-              <ul className="dataset-trust-list">
-                <li>customize information</li>
-                <li>all time for relationship tools</li>
-                <li>JSON format</li>
-                <li>medium media quality</li>
-              </ul>
+              ) : null}
             </article>
 
-            <article className="dataset-side-card">
-              <p className="dataset-side-card__label">quick note</p>
-              <p>
-                ZIP uploads are accepted now. Deeper archive parsing is still being
-                tightened as the native parser work continues.
-              </p>
-            </article>
-
-            <article className="dataset-side-card">
-              <p className="dataset-side-card__label">quick links</p>
-              <div className="route-links">
-                <Link href="/help" className="route-link">
-                  export help
-                </Link>
-                <Link href="/app/datasets" className="route-link">
-                  datasets
-                </Link>
-                <button type="button" className="route-link" onClick={resetImport}>
-                  reset
+            {step === "create" && review && !isProcessingUpload ? (
+              <div className="dataset-flow__footer dataset-flow__footer--outside">
+                <button
+                  type="button"
+                  className="hero-btn hero-btn-secondary dataset-flow__back-icon"
+                  onClick={() => {
+                    if (processingTimeoutRef.current) {
+                      clearTimeout(processingTimeoutRef.current);
+                      processingTimeoutRef.current = null;
+                    }
+                    setIsProcessingUpload(false);
+                    setStep("upload");
+                  }}
+                  aria-label="go back to upload"
+                >
+                  <ArrowLeft size={16} aria-hidden="true" />
+                </button>
+                <button
+                  type="button"
+                  className="hero-btn hero-btn-primary"
+                  onClick={createDataset}
+                  disabled={!hasDatasetName || isPending}
+                >
+                  {isPending ? "creating..." : "create dataset"}
                 </button>
               </div>
-            </article>
-          </aside>
+            ) : null}
+          </div>
         )}
+
       </div>
     </section>
   );

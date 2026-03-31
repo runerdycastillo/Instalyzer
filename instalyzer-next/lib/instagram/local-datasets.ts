@@ -124,14 +124,14 @@ function getReadinessNote(categorySet: Set<DatasetCategory>) {
     categorySet.has("followers") && categorySet.has("following");
 
   if (hasRelationshipFiles) {
-    return "Relationship files were detected, so Tool 1 is ready to be ported into the native workspace flow next.";
+    return "Relationship records were detected, so Not Following Back is ready once you finish setup.";
   }
 
   if (categorySet.has("zip-archive")) {
-    return "A ZIP archive was selected. The route-native flow is ready, but deep ZIP inspection still needs the parser extraction pass.";
+    return "Your ZIP is ready to save now, and deeper archive parsing will keep improving as the native workspace expands.";
   }
 
-  return "This import can still become a reusable dataset, but the strongest relationship workflow needs both followers and following files.";
+  return "This import can still become a reusable dataset, but the strongest relationship workflow needs both followers and following records.";
 }
 
 function getToolAvailability(categorySet: Set<DatasetCategory>): DatasetToolAvailability[] {
@@ -205,8 +205,8 @@ export function buildImportReview(files: File[]): DatasetImportReview {
   const categoryLabelsList = Array.from(categorySet).map((category) => categoryLabels[category]);
   const uploadSummary =
     files.length === 1
-      ? `${files[0].name} is staged and ready for review.`
-      : `${files.length} files are staged and ready for review.`;
+      ? `${files[0].name} is staged and ready to analyze.`
+      : `${files.length} files are staged and ready to analyze.`;
 
   return {
     sourceLabel: getSourceLabel(files),

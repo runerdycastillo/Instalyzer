@@ -5,11 +5,8 @@ import {
   useContext,
   useEffect,
   useMemo,
-  useState,
   type ReactNode,
 } from "react";
-
-const STORAGE_KEY_THEME = "ig_theme_v1";
 
 type ThemeMode = "light" | "dark";
 
@@ -33,33 +30,21 @@ function applyTheme(theme: ThemeMode) {
 
 export function ThemeProvider({
   children,
-  initialTheme,
 }: {
   children: ReactNode;
-  initialTheme: ThemeMode;
 }) {
-  const [theme, setTheme] = useState<ThemeMode>(() => {
-    if (typeof document !== "undefined") {
-      return document.documentElement.dataset.theme === "dark" ? "dark" : "light";
-    }
-
-    return initialTheme;
-  });
+  const theme: ThemeMode = "dark";
 
   useEffect(() => {
     applyTheme(theme);
-    window.localStorage.setItem(STORAGE_KEY_THEME, theme);
-    document.cookie = `ig_theme_v1=${theme}; path=/; max-age=31536000; samesite=lax`;
   }, [theme]);
 
   const value = useMemo<ThemeContextValue>(
     () => ({
       theme,
-      toggleTheme: () => {
-        setTheme((currentTheme) => (currentTheme === "dark" ? "light" : "dark"));
-      },
+      toggleTheme: () => {},
     }),
-    [theme]
+    [theme],
   );
 
   return <ThemeContext.Provider value={value}>{children}</ThemeContext.Provider>;

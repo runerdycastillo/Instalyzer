@@ -1,9 +1,9 @@
 "use client";
 
+import { CircleUserRound } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { ThemeToggle } from "@/components/layout/theme-toggle";
 
 const navLinks = [
   { href: "/app", label: "overview" },
@@ -17,10 +17,7 @@ export function MarketingNav() {
     <nav className="top-nav" aria-label="Primary">
       <div className="top-nav-brand">
         <span className="top-nav-icon top-nav-profile" aria-hidden="true">
-          <svg viewBox="0 0 24 24">
-            <path d="M20 21a8 8 0 0 0-16 0" />
-            <circle cx="12" cy="8" r="4" />
-          </svg>
+          <CircleUserRound aria-hidden="true" strokeWidth={1.9} />
         </span>
       </div>
 
@@ -56,8 +53,6 @@ export function MarketingNav() {
             </Link>
           );
         })}
-
-        <ThemeToggle />
       </div>
     </nav>
   );
