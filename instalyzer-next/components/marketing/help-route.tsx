@@ -209,8 +209,8 @@ const sideSections = [
   {
     title: "before you start",
     items: [
-      "You may need to log into Instagram first.",
-      "Instagram may take a few minutes to prepare your file.",
+      "We recommend staying logged into Instagram in your browser so result links open smoothly.",
+      "Export prep can take minutes or hours, depending on account size.",
     ],
     instagramLink: true,
   },

@@ -144,13 +144,13 @@ Use this section to track the current migration flow specifically.
 
 ### Fix Next
 
-- [ ] Finish the dataset overview so the post-create workspace feels launch-ready
-- Why now: the upload/create handoff is in a much stronger place, so the next gain is making the first dataset landing experience feel equally intentional
+- [ ] Implement the native `Not Following Back` route in Next
+- Why now: the workspace, upload flow, and tool selection story are now polished enough that the biggest remaining launch gap is the one live tool itself
 
 ### Watch Soon
 
-- [ ] Implement the native `Not Following Back` tool in Next
-- Why soon: the soft-launch story now depends on one real live tool more than on a broader platform narrative
+- [ ] Keep polishing the dataset workspace only where it supports tool confidence and selection clarity
+- Why soon: the overview is in a much stronger place now, but small UX passes may still help trust right before Tool 1 goes live
 
 - [ ] Port deeper parser logic from the static flow into reusable modules
 - Why soon: the current route supports the launch flow, but real archive inspection is still lighter than the static prototype
@@ -158,7 +158,7 @@ Use this section to track the current migration flow specifically.
 ### Leave For Later
 
 - [ ] Revisit whether `/app` remains a true hub or redirects into datasets
-- Why later: the dataset creation and workspace routes matter more than polishing the app-home shell right now
+- Why later: `overview` now behaves much better, so the more urgent work is the live tool rather than app-home architecture debates
 
 ---
 
@@ -230,3 +230,23 @@ Add one short entry per work session.
   - the soft-launch story is now much clearer than the actual live-tool depth, so the next session needs to complete the overview and Tool 1 path without losing this polish
 - Next step:
   - finish the dataset overview/workspace and then implement the native `Not Following Back` tool for the soft launch
+
+### Session Entry - 2026-04-05
+
+- Date: 2026-04-05
+- Focus: turn the dataset workspace into a polished soft-launch handoff and tighten the upload/create flow around real user behavior
+- What moved forward:
+  - ZIP parsing, richer dataset extraction, and overview metrics were wired into the Next dataset flow
+  - local dataset storage was hardened with stable snapshots, same-tab update events, and active-dataset memory for better navigation behavior
+  - the dataset workspace was redesigned around a lighter shell with current dataset context on the left, overview in the center, and workspace/tool context on the right
+  - dataset and tools modals were upgraded with better backdrop behavior, scroll locking, actions, renaming, deleting, and more intentional placement
+  - the upload flow now locks a prepared draft until the user explicitly resets it, preventing accidental overlapping uploads
+  - default dataset naming, length limits, tool surfacing, and overview navigation were all refined to behave more like a real product
+- What remains rough:
+  - the native `Not Following Back` route is still placeholder content
+  - the tools modal is now directionally right, but may still want one more compact design pass later
+  - mobile behavior and smaller responsive details still need a more deliberate manual pass
+- Biggest risk:
+  - the workspace now looks much closer to launch-ready, which raises the importance of the live-tool gap even more
+- Next step:
+  - implement the native `Not Following Back` experience in Next using the new dataset/workspace foundation

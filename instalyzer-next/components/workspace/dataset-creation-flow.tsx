@@ -1,6 +1,6 @@
 "use client";
 
-import { ArrowLeft, LoaderCircle } from "lucide-react";
+import { ArrowLeft, CheckCircle2, FileArchive, LoaderCircle } from "lucide-react";
 import { useRouter, useSearchParams } from "next/navigation";
 import {
   type ChangeEvent,
@@ -13,10 +13,15 @@ import {
   useTransition,
 } from "react";
 import {
-  buildImportReview,
-  makeDatasetId,
-  saveLocalDataset,
   type DatasetEntryPoint,
+  prepareDatasetDraft,
+} from "@/lib/instagram/export-parser";
+import {
+  DATASET_NAME_MAX_LENGTH,
+  getNextDefaultDatasetName,
+  makeDatasetId,
+  readLocalDatasets,
+  saveLocalDataset,
 } from "@/lib/instagram/local-datasets";
 
 type CreationStep = "upload" | "create";
@@ -25,8 +30,8 @@ const uploadSupportSections = [
   {
     title: "before you start",
     items: [
-      "You may need to log into Instagram first.",
-      "Instagram may take a few minutes to prepare your file.",
+      "We recommend staying logged into Instagram in your browser so result links open smoothly.",
+      "Export prep can take minutes or hours, depending on account size.",
     ],
     instagramLink: true,
   },
@@ -97,12 +102,15 @@ export function DatasetCreationFlow() {
   const filesInputRef = useRef<HTMLInputElement>(null);
   const processingTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [step, setStep] = useState<CreationStep>("upload");
-  const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
+  const [preparedDataset, setPreparedDataset] = useState<Awaited<
+    ReturnType<typeof prepareDatasetDraft>
+  > | null>(null);
   const [datasetName, setDatasetName] = useState("");
   const [datasetDate, setDatasetDate] = useState(new Date().toISOString().slice(0, 10));
   const [nameTouched, setNameTouched] = useState(false);
   const [isDragging, setIsDragging] = useState(false);
   const [isProcessingUpload, setIsProcessingUpload] = useState(false);
+  const [uploadError, setUploadError] = useState("");
   const [isPending, startTransition] = useTransition();
 
   const entryPointParam = searchParams.get("entry") || "unknown";
@@ -122,29 +130,58 @@ export function DatasetCreationFlow() {
     };
   }, []);
 
-  const review = useMemo(
-    () => (selectedFiles.length ? buildImportReview(selectedFiles) : null),
-    [selectedFiles],
-  );
+  const review = useMemo(() => preparedDataset?.importReview || null, [preparedDataset]);
+  const hasPreparedDraft = Boolean(preparedDataset);
 
   const hasDatasetName = datasetName.trim().length > 0;
 
-  const handleFiles = (nextFiles: File[]) => {
+  const handleFiles = async (nextFiles: File[]) => {
     if (!nextFiles.length) return;
 
     if (processingTimeoutRef.current) {
       clearTimeout(processingTimeoutRef.current);
+      processingTimeoutRef.current = null;
     }
 
-    setSelectedFiles(nextFiles);
+    const startTime = Date.now();
+    setPreparedDataset(null);
     setNameTouched(false);
+    setUploadError("");
     setIsProcessingUpload(true);
     setStep("create");
 
-    processingTimeoutRef.current = setTimeout(() => {
+    try {
+      const nextPreparedDataset = await prepareDatasetDraft(nextFiles);
+      const minimumProcessingMs = 1100;
+      const remainingDelay = Math.max(0, minimumProcessingMs - (Date.now() - startTime));
+
+      if (remainingDelay > 0) {
+        await new Promise((resolve) => {
+          processingTimeoutRef.current = setTimeout(() => {
+            processingTimeoutRef.current = null;
+            resolve(undefined);
+          }, remainingDelay);
+        });
+      }
+
+      setPreparedDataset(nextPreparedDataset);
+      setDatasetName((currentName) =>
+        (currentName.trim()
+          ? currentName
+          : getNextDefaultDatasetName(readLocalDatasets())
+        ).trim().slice(0, DATASET_NAME_MAX_LENGTH),
+      );
+    } catch (error) {
+      const message =
+        error instanceof Error
+          ? error.message
+          : "We couldn't read that export. Try the Instagram ZIP or extracted JSON folder.";
+      setUploadError(message);
+      setPreparedDataset(null);
+      setStep("upload");
+    } finally {
       setIsProcessingUpload(false);
-      processingTimeoutRef.current = null;
-    }, 1100);
+    }
   };
 
   const onFilesChange = (event: ChangeEvent<HTMLInputElement>) => {
@@ -160,7 +197,7 @@ export function DatasetCreationFlow() {
   const createDataset = () => {
     setNameTouched(true);
 
-    if (!review || !hasDatasetName) {
+    if (!review || !preparedDataset || !hasDatasetName) {
       return;
     }
 
@@ -168,17 +205,41 @@ export function DatasetCreationFlow() {
 
     saveLocalDataset({
       id: datasetId,
-      name: datasetName.trim(),
+      name: datasetName.trim().slice(0, DATASET_NAME_MAX_LENGTH),
       notes: "",
       createdAt: datasetDate,
       createdAtMs: Date.parse(`${datasetDate}T00:00:00`),
       entryPoint,
       importReview: review,
+      profile: preparedDataset.profile,
+      scope: preparedDataset.scope,
+      metrics: preparedDataset.metrics,
+      meta: preparedDataset.meta,
+      records: preparedDataset.records,
     });
 
     startTransition(() => {
       router.push(`/app/datasets/${datasetId}`);
     });
+  };
+
+  const resetPreparedDraft = () => {
+    if (processingTimeoutRef.current) {
+      clearTimeout(processingTimeoutRef.current);
+      processingTimeoutRef.current = null;
+    }
+
+    setPreparedDataset(null);
+    setDatasetName("");
+    setNameTouched(false);
+    setUploadError("");
+    setIsDragging(false);
+    setIsProcessingUpload(false);
+    setStep("upload");
+
+    if (filesInputRef.current) {
+      filesInputRef.current.value = "";
+    }
   };
 
   return (
@@ -245,58 +306,84 @@ export function DatasetCreationFlow() {
                   onChange={onFilesChange}
                 />
 
-                <div
-                  className={`dataset-dropzone${isDragging ? " is-dragging" : ""}`}
-                  role="button"
-                  tabIndex={0}
-                  onDragEnter={(event) => {
-                    event.preventDefault();
-                    setIsDragging(true);
-                  }}
-                  onDragOver={(event) => {
-                    event.preventDefault();
-                    setIsDragging(true);
-                  }}
-                  onDragLeave={(event) => {
-                    event.preventDefault();
-                    setIsDragging(false);
-                  }}
-                  onDrop={onDrop}
-                  onKeyDown={(event) => {
-                    if (event.key !== "Enter" && event.key !== " ") return;
-                    event.preventDefault();
-                    filesInputRef.current?.click();
-                  }}
-                  onClick={() => filesInputRef.current?.click()}
-                >
-                  <div className="dataset-dropzone__icon" aria-hidden="true">
-                    <svg viewBox="0 0 24 24">
-                      <path d="M12 4v11" />
-                      <path d="m7.5 10.5 4.5 4.5 4.5-4.5" />
-                      <path d="M5 19h14" />
-                    </svg>
-                  </div>
-                  <p>
-                    drag and drop your ZIP or choose your export to begin.
-                  </p>
+                {hasPreparedDraft ? (
+                    <div className="dataset-processing-panel dataset-processing-panel--ready" aria-live="polite">
+                      <div className="dataset-processing-panel__spinner" aria-hidden="true">
+                        <CheckCircle2 size={28} strokeWidth={1.9} />
+                      </div>
+                      <div className="dataset-processing-panel__copy">
+                        <p>current export loaded</p>
+                        <span>finish creating this dataset or reset it before uploading another export.</span>
+                      </div>
+                      <div className="dataset-dropzone__actions dataset-dropzone__actions--stacked">
+                        <button
+                          type="button"
+                          className="hero-btn hero-btn-secondary dataset-dropzone__secondary-action"
+                          onClick={resetPreparedDraft}
+                        >
+                          reset
+                        </button>
+                        <button
+                          type="button"
+                          className="hero-btn hero-btn-primary dataset-dropzone__primary-action"
+                          onClick={() => setStep("create")}
+                        >
+                          create
+                        </button>
+                      </div>
+                    </div>
+                ) : (
+                  <div
+                    className={`dataset-dropzone${isDragging ? " is-dragging" : ""}`}
+                    role="button"
+                    tabIndex={0}
+                    onDragEnter={(event) => {
+                      event.preventDefault();
+                      setIsDragging(true);
+                    }}
+                    onDragOver={(event) => {
+                      event.preventDefault();
+                      setIsDragging(true);
+                    }}
+                    onDragLeave={(event) => {
+                      event.preventDefault();
+                      setIsDragging(false);
+                    }}
+                    onDrop={onDrop}
+                    onKeyDown={(event) => {
+                      if (event.key !== "Enter" && event.key !== " ") return;
+                      event.preventDefault();
+                      filesInputRef.current?.click();
+                    }}
+                    onClick={() => filesInputRef.current?.click()}
+                  >
+                    <div className="dataset-dropzone__icon" aria-hidden="true">
+                      <FileArchive size={28} strokeWidth={1.9} />
+                    </div>
+                    <p>
+                      drag and drop your ZIP or choose your export to begin.
+                    </p>
 
-                  <div className="dataset-dropzone__actions">
-                  <button
-                      type="button"
-                      className="hero-btn hero-btn-primary dataset-dropzone__primary-action"
-                      onClick={(event) => {
-                        event.stopPropagation();
-                        filesInputRef.current?.click();
-                      }}
-                    >
-                      upload export ZIP
-                    </button>
-                  </div>
+                    {uploadError ? <p className="dataset-field__error">{uploadError}</p> : null}
 
-                  <p className="dataset-dropzone__reassurance">
-                    no instagram login required.
-                  </p>
-                </div>
+                    <div className="dataset-dropzone__actions">
+                    <button
+                        type="button"
+                        className="hero-btn hero-btn-primary dataset-dropzone__primary-action"
+                        onClick={(event) => {
+                          event.stopPropagation();
+                          filesInputRef.current?.click();
+                        }}
+                      >
+                        upload export ZIP
+                      </button>
+                    </div>
+
+                    <p className="dataset-dropzone__reassurance">
+                      no instagram login required.
+                    </p>
+                  </div>
+                )}
               </div>
             </article>
 
@@ -305,7 +392,7 @@ export function DatasetCreationFlow() {
         ) : (
           <div className="dataset-flow__create-shell">
             <article className="dataset-flow__panel">
-              {step === "create" && review ? (
+              {step === "create" && (isProcessingUpload || review) ? (
                 <div className="dataset-flow__stage">
                   <div className="dataset-flow__copy">
                     <p className="dataset-flow__kicker">step 2</p>
@@ -328,14 +415,22 @@ export function DatasetCreationFlow() {
                       </div>
                     </div>
                   ) : (
-                    <div className="dataset-setup-form">
+                    <form
+                      className="dataset-setup-form"
+                      onSubmit={(event) => {
+                        event.preventDefault();
+                        createDataset();
+                      }}
+                    >
                       <label className="dataset-field">
                         <span>dataset name</span>
                         <input
                           type="text"
-                          maxLength={60}
+                          maxLength={DATASET_NAME_MAX_LENGTH}
                           value={datasetName}
-                          onChange={(event) => setDatasetName(event.target.value)}
+                          onChange={(event) =>
+                            setDatasetName(event.target.value.slice(0, DATASET_NAME_MAX_LENGTH))
+                          }
                           onBlur={() => setNameTouched(true)}
                           placeholder="march instagram export"
                         />
@@ -354,7 +449,7 @@ export function DatasetCreationFlow() {
                           onChange={(event) => setDatasetDate(event.target.value)}
                         />
                       </label>
-                    </div>
+                    </form>
                   )}
                 </div>
               ) : null}

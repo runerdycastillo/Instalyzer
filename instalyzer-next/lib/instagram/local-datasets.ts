@@ -1,53 +1,22 @@
+import type {
+  DatasetEntryPoint,
+  DatasetImportReview,
+  DatasetMeta,
+  DatasetMetrics,
+  DatasetProfile,
+  DatasetRelationshipRecord,
+  DatasetScope,
+} from "@/lib/instagram/export-parser";
+
 export const LOCAL_DATASETS_STORAGE_KEY = "instalyzer_next_guest_datasets_v1";
+const LOCAL_DATASETS_EVENT = "instalyzer:datasets-changed";
+export const ACTIVE_DATASET_STORAGE_KEY = "instalyzer_next_active_dataset_v1";
+const ACTIVE_DATASET_EVENT = "instalyzer:active-dataset-changed";
+export const EMPTY_LOCAL_DATASETS: LocalDatasetRecord[] = [];
+export const DATASET_NAME_MAX_LENGTH = 16;
 
-export type DatasetEntryPoint =
-  | "home-hero"
-  | "home-results-preview"
-  | "home-pricing-free"
-  | "home-pricing-basic"
-  | "home-pricing-premium"
-  | "home-final-cta"
-  | "help-cta"
-  | "workspace-shell"
-  | "datasets-index"
-  | "app-home"
-  | "unknown";
-
-export type DatasetCategory =
-  | "followers"
-  | "following"
-  | "profile"
-  | "audience-insights"
-  | "reach-insights"
-  | "interaction-insights"
-  | "zip-archive"
-  | "other-json";
-
-export type DatasetToolId =
-  | "not-following-back"
-  | "audience-insights"
-  | "reach-summary"
-  | "content-interactions";
-
-export type DatasetToolStatus = "ready" | "partial" | "later";
-
-export type DatasetToolAvailability = {
-  id: DatasetToolId;
-  title: string;
-  status: DatasetToolStatus;
-  note: string;
-};
-
-export type DatasetImportReview = {
-  sourceLabel: string;
-  fileCount: number;
-  fileNames: string[];
-  categoryLabels: string[];
-  categoryCount: number;
-  tools: DatasetToolAvailability[];
-  uploadSummary: string;
-  readinessNote: string;
-};
+let cachedDatasetsRaw: string | null = null;
+let cachedDatasetsParsed: LocalDatasetRecord[] = EMPTY_LOCAL_DATASETS;
 
 export type LocalDatasetRecord = {
   id: string;
@@ -57,17 +26,14 @@ export type LocalDatasetRecord = {
   createdAtMs: number;
   entryPoint: DatasetEntryPoint;
   importReview: DatasetImportReview;
-};
-
-const categoryLabels: Record<DatasetCategory, string> = {
-  followers: "followers",
-  following: "following",
-  profile: "profile identity",
-  "audience-insights": "audience insights",
-  "reach-insights": "reach summary",
-  "interaction-insights": "content interactions",
-  "zip-archive": "zip archive",
-  "other-json": "other json",
+  profile?: DatasetProfile | null;
+  scope?: DatasetScope;
+  metrics?: DatasetMetrics;
+  meta?: DatasetMeta;
+  records?: {
+    followers: DatasetRelationshipRecord[];
+    following: DatasetRelationshipRecord[];
+  };
 };
 
 const entryPointLabels: Record<DatasetEntryPoint, string> = {
@@ -84,142 +50,6 @@ const entryPointLabels: Record<DatasetEntryPoint, string> = {
   unknown: "Direct route",
 };
 
-function getFileMatchPath(file: File) {
-  return (file.webkitRelativePath || file.name || "").replaceAll("\\", "/").toLowerCase();
-}
-
-function detectCategory(file: File): DatasetCategory {
-  const path = getFileMatchPath(file);
-
-  if (path.endsWith(".zip")) return "zip-archive";
-  if (/followers_?\d*\.json$/i.test(path)) return "followers";
-  if (/following\.json$/i.test(path)) return "following";
-  if (/personal_information\/personal_information\/personal_information\.json$/i.test(path)) {
-    return "profile";
-  }
-  if (/audience_insights\.json$/i.test(path)) return "audience-insights";
-  if (/profiles_reached\.json$/i.test(path)) return "reach-insights";
-  if (/content_interactions\.json$/i.test(path)) return "interaction-insights";
-  if (path.endsWith(".json")) return "other-json";
-  return "other-json";
-}
-
-function getSourceLabel(files: File[]) {
-  const zipCount = files.filter((file) => file.name.toLowerCase().endsWith(".zip")).length;
-  const hasFolderPaths = files.some((file) => Boolean(file.webkitRelativePath));
-
-  if (zipCount > 0) {
-    return zipCount === 1 ? "ZIP archive" : "ZIP archives";
-  }
-
-  if (hasFolderPaths) {
-    return "Folder import";
-  }
-
-  return "Selected files";
-}
-
-function getReadinessNote(categorySet: Set<DatasetCategory>) {
-  const hasRelationshipFiles =
-    categorySet.has("followers") && categorySet.has("following");
-
-  if (hasRelationshipFiles) {
-    return "Relationship records were detected, so Not Following Back is ready once you finish setup.";
-  }
-
-  if (categorySet.has("zip-archive")) {
-    return "Your ZIP is ready to save now, and deeper archive parsing will keep improving as the native workspace expands.";
-  }
-
-  return "This import can still become a reusable dataset, but the strongest relationship workflow needs both followers and following records.";
-}
-
-function getToolAvailability(categorySet: Set<DatasetCategory>): DatasetToolAvailability[] {
-  const hasFollowers = categorySet.has("followers");
-  const hasFollowing = categorySet.has("following");
-  const hasZip = categorySet.has("zip-archive");
-
-  return [
-    {
-      id: "not-following-back",
-      title: "Not Following Back",
-      status: hasFollowers && hasFollowing ? "ready" : hasZip ? "partial" : "later",
-      note:
-        hasFollowers && hasFollowing
-          ? "Followers and following records were detected."
-          : hasZip
-            ? "Possible once the ZIP parser is extracted into the Next app."
-            : "Needs both followers and following records.",
-    },
-    {
-      id: "audience-insights",
-      title: "Audience Insights",
-      status: categorySet.has("audience-insights")
-        ? "ready"
-        : hasZip
-          ? "partial"
-          : "later",
-      note:
-        categorySet.has("audience-insights")
-          ? "Audience insight summary files were detected."
-          : hasZip
-            ? "Likely present inside the export, pending ZIP inspection."
-            : "Needs audience insight summary files.",
-    },
-    {
-      id: "reach-summary",
-      title: "Reach Summary",
-      status: categorySet.has("reach-insights") ? "ready" : hasZip ? "partial" : "later",
-      note:
-        categorySet.has("reach-insights")
-          ? "Reach summary files were detected."
-          : hasZip
-            ? "Likely present inside the export, pending ZIP inspection."
-            : "Needs reach summary files.",
-    },
-    {
-      id: "content-interactions",
-      title: "Content Interactions",
-      status: categorySet.has("interaction-insights")
-        ? "ready"
-        : hasZip
-          ? "partial"
-          : "later",
-      note:
-        categorySet.has("interaction-insights")
-          ? "Interaction summary files were detected."
-          : hasZip
-            ? "Likely present inside the export, pending ZIP inspection."
-            : "Needs content interaction files.",
-    },
-  ];
-}
-
-export function buildImportReview(files: File[]): DatasetImportReview {
-  const categorySet = new Set<DatasetCategory>();
-
-  files.forEach((file) => {
-    categorySet.add(detectCategory(file));
-  });
-
-  const categoryLabelsList = Array.from(categorySet).map((category) => categoryLabels[category]);
-  const uploadSummary =
-    files.length === 1
-      ? `${files[0].name} is staged and ready to analyze.`
-      : `${files.length} files are staged and ready to analyze.`;
-
-  return {
-    sourceLabel: getSourceLabel(files),
-    fileCount: files.length,
-    fileNames: files.map((file) => file.webkitRelativePath || file.name),
-    categoryLabels: categoryLabelsList,
-    categoryCount: categoryLabelsList.length,
-    tools: getToolAvailability(categorySet),
-    uploadSummary,
-    readinessNote: getReadinessNote(categorySet),
-  };
-}
-
 export function makeDatasetId() {
   return `dataset_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
 }
@@ -228,26 +58,118 @@ export function getEntryPointLabel(entryPoint: DatasetEntryPoint) {
   return entryPointLabels[entryPoint] || entryPointLabels.unknown;
 }
 
+export function getNextDefaultDatasetName(datasets: LocalDatasetRecord[] = readLocalDatasets()) {
+  const highestExportNumber = datasets.reduce((highest, dataset) => {
+    const match = dataset.name.trim().match(/^export\s+(\d+)$/i);
+    if (!match) return highest;
+
+    const parsedNumber = Number(match[1]);
+    return Number.isFinite(parsedNumber) ? Math.max(highest, parsedNumber) : highest;
+  }, 0);
+
+  return `export ${highestExportNumber + 1}`;
+}
+
 export function readLocalDatasets(): LocalDatasetRecord[] {
-  if (typeof window === "undefined") return [];
+  if (typeof window === "undefined") return EMPTY_LOCAL_DATASETS;
 
   try {
     const raw = window.localStorage.getItem(LOCAL_DATASETS_STORAGE_KEY);
-    const parsed = raw ? (JSON.parse(raw) as unknown) : [];
-    return Array.isArray(parsed) ? (parsed as LocalDatasetRecord[]) : [];
+
+    if (raw === cachedDatasetsRaw) {
+      return cachedDatasetsParsed;
+    }
+
+    const parsed = raw ? (JSON.parse(raw) as unknown) : EMPTY_LOCAL_DATASETS;
+    cachedDatasetsRaw = raw;
+    cachedDatasetsParsed = Array.isArray(parsed)
+      ? (parsed as LocalDatasetRecord[])
+      : EMPTY_LOCAL_DATASETS;
+    return cachedDatasetsParsed;
   } catch {
-    return [];
+    cachedDatasetsRaw = null;
+    cachedDatasetsParsed = EMPTY_LOCAL_DATASETS;
+    return EMPTY_LOCAL_DATASETS;
   }
+}
+
+export function getLocalDatasetsServerSnapshot() {
+  return EMPTY_LOCAL_DATASETS;
+}
+
+export function readActiveDatasetId() {
+  if (typeof window === "undefined") return null;
+
+  try {
+    return window.localStorage.getItem(ACTIVE_DATASET_STORAGE_KEY);
+  } catch {
+    return null;
+  }
+}
+
+export function getActiveDatasetServerSnapshot() {
+  return null;
+}
+
+export function writeActiveDatasetId(datasetId: string | null) {
+  if (typeof window === "undefined") return;
+
+  if (datasetId) {
+    window.localStorage.setItem(ACTIVE_DATASET_STORAGE_KEY, datasetId);
+  } else {
+    window.localStorage.removeItem(ACTIVE_DATASET_STORAGE_KEY);
+  }
+
+  window.dispatchEvent(new Event(ACTIVE_DATASET_EVENT));
 }
 
 export function writeLocalDatasets(datasets: LocalDatasetRecord[]) {
   if (typeof window === "undefined") return;
-  window.localStorage.setItem(LOCAL_DATASETS_STORAGE_KEY, JSON.stringify(datasets));
+  const raw = JSON.stringify(datasets);
+  cachedDatasetsRaw = raw;
+  cachedDatasetsParsed = datasets;
+  window.localStorage.setItem(LOCAL_DATASETS_STORAGE_KEY, raw);
+  window.dispatchEvent(new Event(LOCAL_DATASETS_EVENT));
 }
 
 export function saveLocalDataset(dataset: LocalDatasetRecord) {
   const current = readLocalDatasets();
-  writeLocalDatasets([dataset, ...current.filter((item) => item.id !== dataset.id)]);
+  const normalizedDataset = {
+    ...dataset,
+    name: dataset.name.trim().slice(0, DATASET_NAME_MAX_LENGTH),
+  };
+  writeLocalDatasets([normalizedDataset, ...current.filter((item) => item.id !== dataset.id)]);
+}
+
+export function updateLocalDatasetName(datasetId: string, nextName: string) {
+  const normalizedName = nextName.trim().slice(0, DATASET_NAME_MAX_LENGTH);
+  if (!normalizedName) return readLocalDatasets();
+
+  const current = readLocalDatasets();
+  const next = current.map((item) =>
+    item.id === datasetId
+      ? {
+          ...item,
+          name: normalizedName,
+        }
+      : item,
+  );
+
+  writeLocalDatasets(next);
+  return next;
+}
+
+export function deleteLocalDataset(datasetId: string) {
+  const current = readLocalDatasets();
+  const next = current.filter((item) => item.id !== datasetId);
+  const activeDatasetId = readActiveDatasetId();
+  writeLocalDatasets(next);
+
+  if (activeDatasetId === datasetId) {
+    writeActiveDatasetId(next[0]?.id || null);
+  }
+
+  return next;
 }
 
 export function findLocalDataset(datasetId: string) {
@@ -259,7 +181,37 @@ export function subscribeToLocalDatasets(onStoreChange: () => void) {
     return () => {};
   }
 
-  const handler = () => onStoreChange();
-  window.addEventListener("storage", handler);
-  return () => window.removeEventListener("storage", handler);
+  const handleStorage = (event: StorageEvent) => {
+    if (event.key && event.key !== LOCAL_DATASETS_STORAGE_KEY) return;
+    onStoreChange();
+  };
+  const handleLocalChange = () => onStoreChange();
+
+  window.addEventListener("storage", handleStorage);
+  window.addEventListener(LOCAL_DATASETS_EVENT, handleLocalChange);
+
+  return () => {
+    window.removeEventListener("storage", handleStorage);
+    window.removeEventListener(LOCAL_DATASETS_EVENT, handleLocalChange);
+  };
+}
+
+export function subscribeToActiveDataset(onStoreChange: () => void) {
+  if (typeof window === "undefined") {
+    return () => {};
+  }
+
+  const handleStorage = (event: StorageEvent) => {
+    if (event.key && event.key !== ACTIVE_DATASET_STORAGE_KEY) return;
+    onStoreChange();
+  };
+  const handleLocalChange = () => onStoreChange();
+
+  window.addEventListener("storage", handleStorage);
+  window.addEventListener(ACTIVE_DATASET_EVENT, handleLocalChange);
+
+  return () => {
+    window.removeEventListener("storage", handleStorage);
+    window.removeEventListener(ACTIVE_DATASET_EVENT, handleLocalChange);
+  };
 }

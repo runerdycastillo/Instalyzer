@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useSyncExternalStore } from "react";
 import {
+  getLocalDatasetsServerSnapshot,
   getEntryPointLabel,
   readLocalDatasets,
   subscribeToLocalDatasets,
@@ -11,7 +12,7 @@ import {
 function formatDate(value: string) {
   const date = new Date(`${value}T00:00:00`);
   if (Number.isNaN(date.getTime())) return value;
-  return date.toLocaleDateString(undefined, {
+  return date.toLocaleDateString("en-US", {
     month: "short",
     day: "numeric",
     year: "numeric",
@@ -22,7 +23,7 @@ export function DatasetsIndexRoute() {
   const datasets = useSyncExternalStore(
     subscribeToLocalDatasets,
     readLocalDatasets,
-    () => [],
+    getLocalDatasetsServerSnapshot,
   );
 
   return (

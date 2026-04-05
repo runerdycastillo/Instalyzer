@@ -3,15 +3,39 @@
 import { CircleUserRound } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
-import { usePathname } from "next/navigation";
-
-const navLinks = [
-  { href: "/app", label: "overview" },
-  { href: "/help", label: "help" },
-];
+import { usePathname, useRouter } from "next/navigation";
+import type { MouseEvent } from "react";
+import { useSyncExternalStore } from "react";
+import {
+  getActiveDatasetServerSnapshot,
+  getLocalDatasetsServerSnapshot,
+  readActiveDatasetId,
+  readLocalDatasets,
+  subscribeToActiveDataset,
+  subscribeToLocalDatasets,
+} from "@/lib/instagram/local-datasets";
 
 export function MarketingNav() {
   const pathname = usePathname();
+  const router = useRouter();
+  const activeDatasetId = useSyncExternalStore(
+    subscribeToActiveDataset,
+    readActiveDatasetId,
+    getActiveDatasetServerSnapshot,
+  );
+  const datasets = useSyncExternalStore(
+    subscribeToLocalDatasets,
+    readLocalDatasets,
+    getLocalDatasetsServerSnapshot,
+  );
+  const preferredDatasetId = activeDatasetId && datasets.some((dataset) => dataset.id === activeDatasetId)
+    ? activeDatasetId
+    : datasets[0]?.id || null;
+  const overviewHref = preferredDatasetId ? `/app/datasets/${preferredDatasetId}` : "/app";
+  const navLinks = [
+    { href: overviewHref, label: "overview" },
+    { href: "/help", label: "help" },
+  ];
 
   return (
     <nav className="top-nav" aria-label="Primary">
@@ -40,7 +64,21 @@ export function MarketingNav() {
 
       <div className="top-nav-links">
         {navLinks.map((link) => {
-          const isCurrent = pathname === link.href;
+          const isCurrent =
+            link.label === "overview"
+              ? pathname === overviewHref || (pathname === "/app" && !preferredDatasetId)
+              : pathname === link.href;
+          const handleClick =
+            link.label === "overview"
+              ? (event: MouseEvent<HTMLAnchorElement>) => {
+                  event.preventDefault();
+                  if (pathname === overviewHref) {
+                    router.refresh();
+                    return;
+                  }
+                  router.push(overviewHref);
+                }
+              : undefined;
 
           return (
             <Link
@@ -48,6 +86,7 @@ export function MarketingNav() {
               href={link.href}
               className={`top-nav-link${isCurrent ? " is-current" : ""}`}
               aria-current={isCurrent ? "page" : undefined}
+              onClick={handleClick}
             >
               {link.label}
             </Link>
