@@ -144,13 +144,19 @@ Use this section to track the current migration flow specifically.
 
 ### Fix Next
 
+- [ ] Finish the workspace tools section and tools modal polish
+- Why now: the dataset side of the workspace is now close to locked, so the next highest-signal polish should tighten the tool-selection surface before we freeze the overview
+
+- [ ] Run a focused `data mode` review for the workspace and overview
+- Why now: before Tool 1 lands, we should decide which parsed export signals actually belong in the overview so we stop guessing and start shipping the right data story
+
+- [ ] Finalize the overview with the approved data set
+- Why now: once the workspace/tool surface and data story are locked, the overview can become a stable launch surface instead of a moving target
+
 - [ ] Implement the native `Not Following Back` route in Next
-- Why now: the workspace, upload flow, and tool selection story are now polished enough that the biggest remaining launch gap is the one live tool itself
+- Why now: after the workspace/tool/data handoff is settled, the remaining biggest launch gap is still the one live tool itself
 
 ### Watch Soon
-
-- [ ] Keep polishing the dataset workspace only where it supports tool confidence and selection clarity
-- Why soon: the overview is in a much stronger place now, but small UX passes may still help trust right before Tool 1 goes live
 
 - [ ] Port deeper parser logic from the static flow into reusable modules
 - Why soon: the current route supports the launch flow, but real archive inspection is still lighter than the static prototype
@@ -250,3 +256,21 @@ Add one short entry per work session.
   - the workspace now looks much closer to launch-ready, which raises the importance of the live-tool gap even more
 - Next step:
   - implement the native `Not Following Back` experience in Next using the new dataset/workspace foundation
+
+### Session Entry - 2026-04-06
+
+- Date: 2026-04-06
+- Focus: polish the dataset-side workspace management flow until it feels controlled enough to stop and move forward
+- What moved forward:
+  - the `current dataset` panel was refined with stronger hierarchy, a recent-datasets preview, and cleaner action copy
+  - the `manage exports` modal was heavily upgraded with better spacing, sorting, renaming, export-limit handling, and more stable floating actions
+  - several modal regressions were fixed, including nav shift, overlay clipping, sort/action overlap, and a null-anchor floating-panel crash
+  - export naming in the create flow is now user-defined instead of auto-generated as `export 1`, `export 2`, etc.
+- What remains rough:
+  - the tools side of the workspace still wants one more deliberate pass, mainly in the tools modal
+  - the overview still needs a deliberate data pass before it should be considered finalized
+  - `Not Following Back` is still placeholder content
+- Biggest risk:
+  - it would be easy to start Tool 1 before the workspace/tool/data handoff is truly locked, which could create another polish loop later
+- Next step:
+  - finish the tools-side workspace panel/modal, review the real data we want to surface, finalize the overview, then implement `Not Following Back`

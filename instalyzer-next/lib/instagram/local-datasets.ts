@@ -14,6 +14,8 @@ export const ACTIVE_DATASET_STORAGE_KEY = "instalyzer_next_active_dataset_v1";
 const ACTIVE_DATASET_EVENT = "instalyzer:active-dataset-changed";
 export const EMPTY_LOCAL_DATASETS: LocalDatasetRecord[] = [];
 export const DATASET_NAME_MAX_LENGTH = 16;
+export const MAX_LOCAL_DATASETS = 6;
+export const LOCAL_DATASET_LIMIT_MESSAGE = `You can save up to ${MAX_LOCAL_DATASETS} exports. Delete one to import a new export.`;
 
 let cachedDatasetsRaw: string | null = null;
 let cachedDatasetsParsed: LocalDatasetRecord[] = EMPTY_LOCAL_DATASETS;
@@ -68,6 +70,17 @@ export function getNextDefaultDatasetName(datasets: LocalDatasetRecord[] = readL
   }, 0);
 
   return `export ${highestExportNumber + 1}`;
+}
+
+export function hasReachedLocalDatasetLimit(
+  datasets: LocalDatasetRecord[] = readLocalDatasets(),
+  nextDatasetId?: string,
+) {
+  if (nextDatasetId && datasets.some((dataset) => dataset.id === nextDatasetId)) {
+    return false;
+  }
+
+  return datasets.length >= MAX_LOCAL_DATASETS;
 }
 
 export function readLocalDatasets(): LocalDatasetRecord[] {
@@ -134,6 +147,9 @@ export function writeLocalDatasets(datasets: LocalDatasetRecord[]) {
 
 export function saveLocalDataset(dataset: LocalDatasetRecord) {
   const current = readLocalDatasets();
+  if (hasReachedLocalDatasetLimit(current, dataset.id)) {
+    throw new Error(LOCAL_DATASET_LIMIT_MESSAGE);
+  }
   const normalizedDataset = {
     ...dataset,
     name: dataset.name.trim().slice(0, DATASET_NAME_MAX_LENGTH),

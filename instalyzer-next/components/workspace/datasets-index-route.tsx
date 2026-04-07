@@ -5,6 +5,8 @@ import { useSyncExternalStore } from "react";
 import {
   getLocalDatasetsServerSnapshot,
   getEntryPointLabel,
+  hasReachedLocalDatasetLimit,
+  LOCAL_DATASET_LIMIT_MESSAGE,
   readLocalDatasets,
   subscribeToLocalDatasets,
 } from "@/lib/instagram/local-datasets";
@@ -25,6 +27,7 @@ export function DatasetsIndexRoute() {
     readLocalDatasets,
     getLocalDatasetsServerSnapshot,
   );
+  const hasReachedDatasetLimit = hasReachedLocalDatasetLimit(datasets);
 
   return (
     <section className="dataset-index" aria-labelledby="dataset-index-title">
@@ -39,9 +42,18 @@ export function DatasetsIndexRoute() {
       </div>
 
       <div className="dataset-index__actions">
-        <Link href="/app/datasets/new?entry=datasets-index" className="hero-btn hero-btn-primary">
-          create dataset
-        </Link>
+        {hasReachedDatasetLimit ? (
+          <div className="dataset-index__limit-note">
+            <span className="hero-btn hero-btn-primary is-disabled" aria-disabled="true">
+              export limit reached
+            </span>
+            <p>{LOCAL_DATASET_LIMIT_MESSAGE}</p>
+          </div>
+        ) : (
+          <Link href="/app/datasets/new?entry=datasets-index" className="hero-btn hero-btn-primary">
+            create dataset
+          </Link>
+        )}
       </div>
 
       {datasets.length ? (
@@ -97,9 +109,11 @@ export function DatasetsIndexRoute() {
             workspace and native Tool 1 on top of those saved datasets.
           </p>
           <div className="route-links">
-            <Link href="/app/datasets/new?entry=datasets-index" className="route-link">
-              create your first dataset
-            </Link>
+            {!hasReachedDatasetLimit ? (
+              <Link href="/app/datasets/new?entry=datasets-index" className="route-link">
+                create your first dataset
+              </Link>
+            ) : null}
             <Link href="/help" className="route-link">
               open export help
             </Link>

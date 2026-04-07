@@ -1,12 +1,15 @@
 "use client";
 
 import {
+  ArrowDownUp,
+  Check,
   ChartColumnBig,
-  Ellipsis,
+  ChevronDown,
   Eye,
   FileText,
   FolderKanban,
   Pencil,
+  Settings,
   Trash2,
   UserMinus,
   UsersRound,
@@ -15,13 +18,17 @@ import {
 } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useEffect, useState, useSyncExternalStore } from "react";
+import { createPortal } from "react-dom";
+import { useEffect, useRef, useState, useSyncExternalStore } from "react";
 import {
   readActiveDatasetId,
   DATASET_NAME_MAX_LENGTH,
   deleteLocalDataset,
   getLocalDatasetsServerSnapshot,
   findLocalDataset,
+  hasReachedLocalDatasetLimit,
+  LOCAL_DATASET_LIMIT_MESSAGE,
+  MAX_LOCAL_DATASETS,
   readLocalDatasets,
   subscribeToLocalDatasets,
   updateLocalDatasetName,
@@ -75,6 +82,161 @@ function getWorkspaceToolIcon(toolId: string) {
   }
 }
 
+function getToolStatusLabel(status: "ready" | "partial" | "later") {
+  switch (status) {
+    case "ready":
+      return "available now";
+    case "partial":
+      return "needs stronger export";
+    default:
+      return "coming soon";
+  }
+}
+
+function getToolStatusClassName(status: "ready" | "partial" | "later") {
+  switch (status) {
+    case "ready":
+      return "is-live";
+    case "partial":
+      return "is-partial";
+    default:
+      return "is-later";
+  }
+}
+
+function WorkspaceLoadingState() {
+  return (
+    <section className="dataset-workspace" aria-busy="true" aria-label="Loading workspace">
+      <div className="dataset-workspace__grid dataset-workspace__grid--static">
+        <aside className="dataset-side-panel dataset-side-panel--left dataset-side-panel--loading">
+          <div className="dataset-side-panel__head">
+            <p className="section-kicker">current dataset</p>
+            <div className="dataset-side-panel__dataset-block">
+              <span className="dataset-skeleton-line dataset-skeleton-line--title" aria-hidden="true" />
+              <span className="dataset-skeleton-line dataset-skeleton-line--meta" aria-hidden="true" />
+            </div>
+          </div>
+
+          <div className="dataset-side-panel__body">
+            <div className="dataset-side-panel__count-block">
+              <span>saved datasets</span>
+              <span className="dataset-skeleton-line dataset-skeleton-line--count" aria-hidden="true" />
+            </div>
+
+            <div className="dataset-side-panel__recent">
+              <p className="dataset-side-panel__recent-label">recent datasets</p>
+              <div className="dataset-side-panel__recent-list">
+                {["a", "b", "c"].map((item, index) => (
+                  <div
+                    key={item}
+                    className={`dataset-side-panel__recent-chip${index === 0 ? " is-active" : ""}`}
+                  >
+                    <span className="dataset-skeleton-line dataset-skeleton-line--recent" aria-hidden="true" />
+                    <span className="dataset-skeleton-line dataset-skeleton-line--recent-meta" aria-hidden="true" />
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            <div className="dataset-side-panel__divider" aria-hidden="true" />
+
+            <div className="hero-btn hero-btn-secondary dataset-side-panel__action dataset-side-panel__action--loading">
+              <FolderKanban size={16} aria-hidden="true" />
+              <span>manage datasets</span>
+            </div>
+          </div>
+        </aside>
+
+        <article className="dataset-workspace__surface dataset-workspace__surface--loading">
+          <div className="dataset-overview-head">
+            <div className="dataset-overview-head__loading">
+              <p className="section-kicker">dataset overview</p>
+              <span className="dataset-skeleton-line dataset-skeleton-line--hero-title" aria-hidden="true" />
+              <span className="dataset-skeleton-line dataset-skeleton-line--body" aria-hidden="true" />
+            </div>
+            <div className="dataset-overview-meta dataset-overview-meta--loading">
+              <span className="dataset-meta-label">created</span>
+              <span className="dataset-skeleton-line dataset-skeleton-line--meta" aria-hidden="true" />
+            </div>
+          </div>
+
+          <div className="dataset-overview-body">
+            <div className="dataset-profile-band dataset-profile-band--loading">
+              <div className="dataset-profile-avatar-shell">
+                <div className="dataset-profile-avatar dataset-profile-avatar--loading" aria-hidden="true" />
+              </div>
+
+              <div className="dataset-profile-copy">
+                <span className="dataset-skeleton-line dataset-skeleton-line--handle" aria-hidden="true" />
+                <span className="dataset-skeleton-line dataset-skeleton-line--name" aria-hidden="true" />
+                <span className="dataset-skeleton-line dataset-skeleton-line--meta" aria-hidden="true" />
+              </div>
+            </div>
+
+            <div className="dataset-overview-grid">
+              {[
+                "followers",
+                "accounts reached",
+                "profile visits",
+                "external link taps",
+                "content interactions",
+                "accounts engaged",
+                "impressions",
+                "categories detected",
+                "import source",
+              ].map((label) => (
+                <article key={label} className="dataset-overview-card dataset-overview-card--loading">
+                  <span className="dataset-meta-label">{label}</span>
+                  <span className="dataset-skeleton-line dataset-skeleton-line--card-value" aria-hidden="true" />
+                </article>
+              ))}
+            </div>
+
+            <div className="dataset-workspace__notes">
+              <span className="dataset-skeleton-line dataset-skeleton-line--body" aria-hidden="true" />
+            </div>
+          </div>
+        </article>
+
+        <aside className="dataset-side-panel dataset-side-panel--right dataset-side-panel--loading">
+          <div className="dataset-side-panel__head">
+            <p className="section-kicker">workspace</p>
+          </div>
+
+          <div className="dataset-side-panel__body">
+            <div className="workspace-tool-pill workspace-tool-pill--featured">
+              <span className="workspace-tool-icon" aria-hidden="true">
+                <UserMinus size={16} strokeWidth={1.9} />
+              </span>
+              <span className="workspace-tool-copy">
+                <span className="dataset-skeleton-line dataset-skeleton-line--tool" aria-hidden="true" />
+              </span>
+              <span className="workspace-tool-spacer" aria-hidden="true" />
+            </div>
+
+            <div className="hero-btn hero-btn-secondary dataset-side-panel__action dataset-side-panel__action--loading">
+              <Wrench size={16} aria-hidden="true" />
+              <span>tools</span>
+            </div>
+
+            <article className="dataset-workspace__support-card">
+              <p className="dataset-meta-label">relationship signals</p>
+              <div className="dataset-card__metrics dataset-card__metrics--compact">
+                {["following", "followers", "mutuals", "not following back"].map((label) => (
+                  <div key={label}>
+                    <span>{label}</span>
+                    <span className="dataset-skeleton-line dataset-skeleton-line--metric" aria-hidden="true" />
+                  </div>
+                ))}
+              </div>
+            </article>
+          </div>
+        </aside>
+      </div>
+    </section>
+  );
+}
+
 export function DatasetWorkspaceRoute({ datasetId }: DatasetWorkspaceRouteProps) {
   const router = useRouter();
   const isWorkspaceHome = !datasetId;
@@ -83,6 +245,21 @@ export function DatasetWorkspaceRoute({ datasetId }: DatasetWorkspaceRouteProps)
   const [openDatasetMenuId, setOpenDatasetMenuId] = useState<string | null>(null);
   const [renamingDatasetId, setRenamingDatasetId] = useState<string | null>(null);
   const [datasetNameDraft, setDatasetNameDraft] = useState("");
+  const [datasetSortOrder, setDatasetSortOrder] = useState<"latest" | "oldest" | "name">("latest");
+  const [isSortMenuOpen, setIsSortMenuOpen] = useState(false);
+  const [isHydrationSettled, setIsHydrationSettled] = useState(false);
+  const [floatingPanelStyle, setFloatingPanelStyle] = useState<{
+    position: "fixed";
+    left: number;
+    top: number;
+    width: number;
+    zIndex: number;
+  } | null>(null);
+  const sortMenuRef = useRef<HTMLDivElement | null>(null);
+  const listRef = useRef<HTMLDivElement | null>(null);
+  const rowActionsRef = useRef<HTMLDivElement | null>(null);
+  const floatingPanelRef = useRef<HTMLDivElement | HTMLFormElement | null>(null);
+  const menuTriggerRefs = useRef<Record<string, HTMLButtonElement | null>>({});
   const hasMounted = useSyncExternalStore(
     () => () => {},
     () => true,
@@ -98,50 +275,104 @@ export function DatasetWorkspaceRoute({ datasetId }: DatasetWorkspaceRouteProps)
     ? datasets.find((item) => item.id === datasetId) || findLocalDataset(datasetId)
     : datasets.find((item) => item.id === activeDatasetId) || datasets[0] || null;
 
+  function buildFloatingPanelStyle(
+    anchor: HTMLButtonElement | null,
+    panel: "menu" | "rename",
+  ) {
+    if (!anchor || typeof window === "undefined") {
+      return null;
+    }
+
+    const anchorRect = anchor.getBoundingClientRect();
+    const width = panel === "menu" ? 158 : Math.min(260, window.innerWidth - 72);
+    const height = panel === "menu" ? 96 : 76;
+    const gap = 10;
+    const viewportPadding = 16;
+
+    let left = anchorRect.left - width - gap;
+    let top = anchorRect.top + anchorRect.height / 2 - height / 2;
+
+    left = Math.max(viewportPadding, Math.min(left, window.innerWidth - width - viewportPadding));
+    top = Math.max(viewportPadding, Math.min(top, window.innerHeight - height - viewportPadding));
+
+    return {
+      position: "fixed" as const,
+      left,
+      top,
+      width,
+      zIndex: 60,
+    };
+  }
+
   useEffect(() => {
     if (!isDatasetsModalOpen && !isToolsModalOpen) return undefined;
 
     const html = document.documentElement;
     const body = document.body;
-    const previousHtmlOverflow = html.style.overflow;
-    const previousBodyOverflow = body.style.overflow;
-    const previousHtmlPaddingRight = html.style.paddingRight;
-    const previousBodyPaddingRight = body.style.paddingRight;
-    const scrollbarWidth = window.innerWidth - html.clientWidth;
 
     html.classList.add("modal-open");
     body.classList.add("modal-open");
-    html.style.overflow = "hidden";
-    body.style.overflow = "hidden";
-    if (scrollbarWidth > 0) {
-      html.style.paddingRight = `${scrollbarWidth}px`;
-      body.style.paddingRight = `${scrollbarWidth}px`;
-    }
 
     return () => {
       html.classList.remove("modal-open");
       body.classList.remove("modal-open");
-      html.style.overflow = previousHtmlOverflow;
-      body.style.overflow = previousBodyOverflow;
-      html.style.paddingRight = previousHtmlPaddingRight;
-      body.style.paddingRight = previousBodyPaddingRight;
     };
   }, [isDatasetsModalOpen, isToolsModalOpen]);
+
+  useEffect(() => {
+    if (!isDatasetsModalOpen || !isSortMenuOpen) return undefined;
+
+    function handlePointerDown(event: PointerEvent) {
+      if (!sortMenuRef.current?.contains(event.target as Node)) {
+        setIsSortMenuOpen(false);
+      }
+    }
+
+    document.addEventListener("pointerdown", handlePointerDown);
+
+    return () => {
+      document.removeEventListener("pointerdown", handlePointerDown);
+    };
+  }, [isDatasetsModalOpen, isSortMenuOpen]);
+
+  useEffect(() => {
+    if (!isDatasetsModalOpen || (!openDatasetMenuId && !renamingDatasetId)) return undefined;
+
+    function handlePointerDown(event: PointerEvent) {
+      const target = event.target as Node;
+      if (!rowActionsRef.current?.contains(target) && !floatingPanelRef.current?.contains(target)) {
+        setOpenDatasetMenuId(null);
+        setRenamingDatasetId(null);
+        setDatasetNameDraft("");
+      }
+    }
+
+    document.addEventListener("pointerdown", handlePointerDown);
+
+    return () => {
+      document.removeEventListener("pointerdown", handlePointerDown);
+    };
+  }, [isDatasetsModalOpen, openDatasetMenuId, renamingDatasetId]);
 
   useEffect(() => {
     if (!datasetId || !dataset) return;
     writeActiveDatasetId(dataset.id);
   }, [datasetId, dataset]);
 
-  if (!hasMounted) {
-    return (
-      <section className="dataset-workspace" aria-busy="true">
-        <article className="dataset-card dataset-card--empty">
-          <h1>loading dataset</h1>
-          <p>Preparing your saved workspace view.</p>
-        </article>
-      </section>
-    );
+  useEffect(() => {
+    if (!hasMounted) return undefined;
+
+    const settleTimer = window.setTimeout(() => {
+      setIsHydrationSettled(true);
+    }, 140);
+
+    return () => {
+      window.clearTimeout(settleTimer);
+    };
+  }, [hasMounted]);
+
+  if (!hasMounted || !isHydrationSettled) {
+    return <WorkspaceLoadingState />;
   }
 
   if (!dataset && datasetId) {
@@ -168,7 +399,7 @@ export function DatasetWorkspaceRoute({ datasetId }: DatasetWorkspaceRouteProps)
 
   if (!dataset) {
     return (
-      <section className="dataset-workspace" aria-labelledby="dataset-workspace-title">
+      <section className="dataset-workspace dataset-workspace--hydrated" aria-labelledby="dataset-workspace-title">
         <div className="dataset-workspace__grid dataset-workspace__grid--static">
           <aside className="dataset-side-panel dataset-side-panel--left">
             <div className="dataset-side-panel__head">
@@ -303,20 +534,26 @@ export function DatasetWorkspaceRoute({ datasetId }: DatasetWorkspaceRouteProps)
   }
 
   function startRenamingDataset(targetId: string, currentName: string) {
+    const anchor = menuTriggerRefs.current[targetId];
+    setIsSortMenuOpen(false);
     setOpenDatasetMenuId(null);
     setRenamingDatasetId(targetId);
     setDatasetNameDraft(currentName);
+    setFloatingPanelStyle(anchor ? buildFloatingPanelStyle(anchor, "rename") : null);
   }
 
   function closeDatasetsModal() {
     setIsDatasetsModalOpen(false);
     setOpenDatasetMenuId(null);
     setRenamingDatasetId(null);
+    setIsSortMenuOpen(false);
+    setFloatingPanelStyle(null);
     setDatasetNameDraft("");
   }
 
   function cancelRenamingDataset() {
     setRenamingDatasetId(null);
+    setFloatingPanelStyle(null);
     setDatasetNameDraft("");
   }
 
@@ -326,13 +563,16 @@ export function DatasetWorkspaceRoute({ datasetId }: DatasetWorkspaceRouteProps)
 
     updateLocalDatasetName(targetId, normalizedName);
     setRenamingDatasetId(null);
+    setFloatingPanelStyle(null);
     setDatasetNameDraft("");
   }
 
   function removeDataset(targetId: string) {
     const nextDatasets = deleteLocalDataset(targetId);
+    setIsSortMenuOpen(false);
     setOpenDatasetMenuId(null);
     setRenamingDatasetId(null);
+    setFloatingPanelStyle(null);
     setDatasetNameDraft("");
 
     if (targetId !== dataset.id) return;
@@ -341,22 +581,63 @@ export function DatasetWorkspaceRoute({ datasetId }: DatasetWorkspaceRouteProps)
     router.push(nextDatasets[0] ? `/app/datasets/${nextDatasets[0].id}` : "/app/datasets");
   }
 
+  const readyToolsCount = dataset.importReview.tools.filter((tool) => tool.status === "ready").length;
+  const partialToolsCount = dataset.importReview.tools.filter((tool) => tool.status === "partial").length;
+  const laterToolsCount = dataset.importReview.tools.filter((tool) => tool.status === "later").length;
+  const notFollowingBackTotal = formatMetric(dataset.metrics?.notFollowingBackCount ?? null, "0");
+  const recentDatasets = [
+    dataset,
+    ...datasets.filter((item) => item.id !== dataset.id),
+  ].slice(0, 2);
+  const sortedModalDatasets = [...datasets].sort((left, right) => {
+    if (datasetSortOrder === "name") {
+      return left.name.localeCompare(right.name, undefined, { sensitivity: "base" });
+    }
+
+    const dateCompare = left.createdAt.localeCompare(right.createdAt);
+    return datasetSortOrder === "oldest" ? dateCompare : -dateCompare;
+  });
+  const hasReachedDatasetLimit = hasReachedLocalDatasetLimit(datasets);
+
   return (
-    <section className="dataset-workspace" aria-labelledby="dataset-workspace-title">
+    <section className="dataset-workspace dataset-workspace--hydrated" aria-labelledby="dataset-workspace-title">
       <div className="dataset-workspace__grid dataset-workspace__grid--static">
         <aside className="dataset-side-panel dataset-side-panel--left">
           <div className="dataset-side-panel__head">
             <p className="section-kicker">{isWorkspaceHome ? "workspace overview" : "current dataset"}</p>
-            <h2 className="tools-sidebar-title dataset-side-panel__title">{dataset.name}</h2>
+            <div className="dataset-side-panel__dataset-block">
+              <h2 className="tools-sidebar-title dataset-side-panel__title">{dataset.name}</h2>
+            </div>
           </div>
 
           <div className="dataset-side-panel__body">
-            <div className="dataset-card__metrics dataset-card__metrics--compact">
-              <div>
-                <span>saved datasets</span>
-                <strong>{datasets.length}</strong>
+            <div className="dataset-side-panel__count-block">
+              <span>saved datasets</span>
+              <strong>{datasets.length}</strong>
+            </div>
+
+            <div className="dataset-side-panel__recent">
+              <p className="dataset-side-panel__recent-label">recent datasets</p>
+              <div className="dataset-side-panel__recent-list">
+                {recentDatasets.map((item) => {
+                  const isActiveDataset = item.id === dataset.id;
+
+                  return (
+                    <div
+                      key={item.id}
+                      className={`dataset-side-panel__recent-chip${isActiveDataset ? " is-active" : ""}`}
+                    >
+                      <span className="dataset-side-panel__recent-name">{item.name}</span>
+                      <span className="dataset-side-panel__recent-meta">
+                        {isActiveDataset ? "active now" : formatDate(item.createdAt)}
+                      </span>
+                    </div>
+                  );
+                })}
               </div>
             </div>
+
+            <div className="dataset-side-panel__divider" aria-hidden="true" />
 
             <button
               type="button"
@@ -364,7 +645,7 @@ export function DatasetWorkspaceRoute({ datasetId }: DatasetWorkspaceRouteProps)
               onClick={() => setIsDatasetsModalOpen(true)}
             >
               <FolderKanban size={16} aria-hidden="true" />
-              datasets
+              manage datasets
             </button>
           </div>
         </aside>
@@ -563,37 +844,108 @@ export function DatasetWorkspaceRoute({ datasetId }: DatasetWorkspaceRouteProps)
           onClick={closeDatasetsModal}
         >
           <div
-            className="dataset-modal"
+            className="dataset-modal dataset-modal--datasets"
             role="dialog"
             aria-modal="true"
             aria-labelledby="all-datasets-title"
             onClick={(event) => {
               event.stopPropagation();
-              setOpenDatasetMenuId(null);
+
+              if (event.target === event.currentTarget) {
+                setIsSortMenuOpen(false);
+                setOpenDatasetMenuId(null);
+                setRenamingDatasetId(null);
+              }
             }}
           >
             <div className="dataset-modal__head">
-              <div>
-                <p className="section-kicker">datasets</p>
+              <div className="dataset-modal__head-copy">
+                <p className="section-kicker">exports</p>
                 <h2 id="all-datasets-title" className="tools-sidebar-title">
-                  all datasets
+                  manage exports
                 </h2>
+                <p className="dataset-modal__copy">
+                  switch between instagram exports
+                </p>
+                <div className="dataset-modal__toolbar">
+                  <p className="dataset-modal__summary-text">
+                    <span className="dataset-modal__summary-label">saved exports:</span>{" "}
+                    <span className="dataset-modal__summary-value">{datasets.length}</span>
+                  </p>
+                  <div className="dataset-modal__sort-wrap" ref={sortMenuRef}>
+                    <button
+                      type="button"
+                      className="dataset-modal__sort"
+                      onClick={(event) => {
+                        event.stopPropagation();
+                        setOpenDatasetMenuId(null);
+                        setRenamingDatasetId(null);
+                        setIsSortMenuOpen((current) => !current);
+                      }}
+                      aria-haspopup="menu"
+                      aria-expanded={isSortMenuOpen}
+                      aria-label="Sort exports"
+                    >
+                      <span className="dataset-modal__sort-label">
+                        <ArrowDownUp size={14} aria-hidden="true" />
+                        sort
+                      </span>
+                      <span className="dataset-modal__sort-value">{datasetSortOrder}</span>
+                      <ChevronDown size={14} aria-hidden="true" className="dataset-modal__sort-caret" />
+                    </button>
+                    {isSortMenuOpen ? (
+                      <div
+                        className="dataset-modal__menu dataset-modal__sort-menu"
+                        role="menu"
+                        aria-label="Sort exports"
+                        onClick={(event) => event.stopPropagation()}
+                      >
+                        {(["latest", "oldest", "name"] as const).map((option) => (
+                          <button
+                            key={option}
+                            type="button"
+                            className={`dataset-modal__sort-option${datasetSortOrder === option ? " is-selected" : ""}`}
+                            onClick={() => {
+                              setDatasetSortOrder(option);
+                              setOpenDatasetMenuId(null);
+                              setRenamingDatasetId(null);
+                              setIsSortMenuOpen(false);
+                            }}
+                            role="menuitemradio"
+                            aria-checked={datasetSortOrder === option}
+                          >
+                            <span>{option}</span>
+                          </button>
+                        ))}
+                      </div>
+                    ) : null}
+                  </div>
+                </div>
               </div>
               <button
                 type="button"
                 className="dataset-modal__close"
                 onClick={closeDatasetsModal}
-                aria-label="Close datasets panel"
+                aria-label="Close exports panel"
               >
                 <X size={16} aria-hidden="true" />
               </button>
             </div>
 
-            <div className="dataset-modal__list">
-              {datasets.map((item) => {
+            <div
+              className="dataset-modal__list"
+              ref={listRef}
+              onScroll={() => {
+                setOpenDatasetMenuId(null);
+                setRenamingDatasetId(null);
+                setFloatingPanelStyle(null);
+              }}
+            >
+              {sortedModalDatasets.map((item) => {
                 const isCurrentDataset = item.id === dataset.id;
                 const isRenaming = renamingDatasetId === item.id;
                 const isMenuOpen = openDatasetMenuId === item.id;
+                const dateRangeLabel = item.scope?.insightDateRangeLabel || item.importReview.sourceLabel;
 
                 return (
                   <div
@@ -602,8 +954,16 @@ export function DatasetWorkspaceRoute({ datasetId }: DatasetWorkspaceRouteProps)
                   >
                     {isCurrentDataset ? (
                       <div className="dataset-modal__row-main">
-                        <strong>{item.name}</strong>
-                        <p>{item.scope?.insightDateRangeLabel || item.importReview.sourceLabel}</p>
+                        <div className="dataset-modal__row-topline">
+                          <strong>{item.name}</strong>
+                          <div className="dataset-modal__row-topmeta">
+                            <p className="dataset-modal__row-date">imported {formatDate(item.createdAt)}</p>
+                            <span className={`dataset-modal__row-status${isCurrentDataset ? " is-current" : ""}`}>
+                              {isCurrentDataset ? "current" : "saved"}
+                            </span>
+                          </div>
+                        </div>
+                        <p className="dataset-modal__row-subtitle">{dateRangeLabel}</p>
                       </div>
                     ) : (
                       <Link
@@ -611,93 +971,158 @@ export function DatasetWorkspaceRoute({ datasetId }: DatasetWorkspaceRouteProps)
                         className="dataset-modal__row-main"
                         onClick={closeDatasetsModal}
                       >
-                        <strong>{item.name}</strong>
-                        <p>{item.scope?.insightDateRangeLabel || item.importReview.sourceLabel}</p>
+                        <div className="dataset-modal__row-topline">
+                          <strong>{item.name}</strong>
+                          <div className="dataset-modal__row-topmeta">
+                            <p className="dataset-modal__row-date">imported {formatDate(item.createdAt)}</p>
+                            <span className={`dataset-modal__row-status${isCurrentDataset ? " is-current" : ""}`}>
+                              {isCurrentDataset ? "current" : "saved"}
+                            </span>
+                          </div>
+                        </div>
+                        <p className="dataset-modal__row-subtitle">{dateRangeLabel}</p>
                       </Link>
                     )}
 
-                    <div className="dataset-modal__row-actions">
-                      <span className="dataset-modal__row-status">
-                        {isCurrentDataset ? "current" : "open"}
-                      </span>
-
+                    <div
+                      className="dataset-modal__row-actions"
+                      ref={isMenuOpen || isRenaming ? rowActionsRef : undefined}
+                    >
                       <button
                         type="button"
                         className="dataset-modal__menu-trigger"
+                        ref={(node) => {
+                          menuTriggerRefs.current[item.id] = node;
+                        }}
                         onClick={(event) => {
                           event.stopPropagation();
-                          setOpenDatasetMenuId((currentId) => (currentId === item.id ? null : item.id));
+                          const trigger = event.currentTarget;
+                          setIsSortMenuOpen(false);
+                          setRenamingDatasetId(null);
+                          setOpenDatasetMenuId((currentId) => {
+                            const nextId = currentId === item.id ? null : item.id;
+                            setFloatingPanelStyle(nextId ? buildFloatingPanelStyle(trigger, "menu") : null);
+                            return nextId;
+                          });
                         }}
                         aria-label={`Open actions for ${item.name}`}
                         aria-expanded={isMenuOpen}
                       >
-                        <Ellipsis size={16} aria-hidden="true" />
+                        <Settings size={15} aria-hidden="true" />
                       </button>
 
-                      {isMenuOpen ? (
-                        <div className="dataset-modal__menu" role="menu" aria-label={`Actions for ${item.name}`}>
-                          <button
-                            type="button"
-                            className="dataset-modal__menu-item"
-                            onClick={(event) => {
-                              event.stopPropagation();
-                              startRenamingDataset(item.id, item.name);
-                            }}
-                          >
-                            <Pencil size={14} aria-hidden="true" />
-                            <span>edit name</span>
-                          </button>
-                          <button
-                            type="button"
-                            className="dataset-modal__menu-item dataset-modal__menu-item--danger"
-                            onClick={(event) => {
-                              event.stopPropagation();
-                              removeDataset(item.id);
-                            }}
-                          >
-                            <Trash2 size={14} aria-hidden="true" />
-                            <span>delete</span>
-                          </button>
-                        </div>
-                      ) : null}
+                      {isMenuOpen
+                        ? createPortal(
+                            <div
+                              ref={floatingPanelRef}
+                              className="dataset-modal__menu"
+                              style={floatingPanelStyle ?? undefined}
+                              role="menu"
+                              aria-label={`Actions for ${item.name}`}
+                              onClick={(event) => event.stopPropagation()}
+                            >
+                              <button
+                                type="button"
+                                className="dataset-modal__menu-item"
+                                onClick={(event) => {
+                                  event.stopPropagation();
+                                  startRenamingDataset(item.id, item.name);
+                                }}
+                              >
+                                <Pencil size={14} aria-hidden="true" />
+                                <span>change name</span>
+                              </button>
+                              <button
+                                type="button"
+                                className="dataset-modal__menu-item dataset-modal__menu-item--danger"
+                                onClick={(event) => {
+                                  event.stopPropagation();
+                                  removeDataset(item.id);
+                                }}
+                              >
+                                <Trash2 size={14} aria-hidden="true" />
+                                <span>delete</span>
+                              </button>
+                            </div>,
+                            document.body,
+                          )
+                        : null}
+                      {isRenaming
+                        ? createPortal(
+                            <form
+                              ref={floatingPanelRef}
+                              className="dataset-modal__rename-popover"
+                              style={floatingPanelStyle ?? undefined}
+                              onSubmit={(event) => {
+                                event.preventDefault();
+                                event.stopPropagation();
+                                saveDatasetName(item.id);
+                              }}
+                              onClick={(event) => event.stopPropagation()}
+                            >
+                              <div className="dataset-modal__rename-row">
+                                <input
+                                  id={`rename-${item.id}`}
+                                  className="dataset-modal__rename-input"
+                                  value={datasetNameDraft}
+                                  maxLength={DATASET_NAME_MAX_LENGTH}
+                                  onChange={(event) => setDatasetNameDraft(event.target.value)}
+                                  autoFocus
+                                />
+                                <div className="dataset-modal__rename-actions">
+                                  <button
+                                    type="submit"
+                                    className="dataset-modal__rename-icon"
+                                    aria-label={`Save name for ${item.name}`}
+                                  >
+                                    <Check size={15} aria-hidden="true" />
+                                  </button>
+                                  <button
+                                    type="button"
+                                    className="dataset-modal__rename-icon dataset-modal__rename-icon--ghost"
+                                    onClick={(event) => {
+                                      event.stopPropagation();
+                                      cancelRenamingDataset();
+                                    }}
+                                    aria-label={`Cancel renaming ${item.name}`}
+                                  >
+                                    <X size={15} aria-hidden="true" />
+                                  </button>
+                                </div>
+                              </div>
+                            </form>,
+                            document.body,
+                          )
+                        : null}
                     </div>
-
-                    {isRenaming ? (
-                      <form
-                        className="dataset-modal__rename"
-                        onSubmit={(event) => {
-                          event.preventDefault();
-                          saveDatasetName(item.id);
-                        }}
-                      >
-                        <label className="dataset-modal__rename-label" htmlFor={`rename-${item.id}`}>
-                          dataset name
-                        </label>
-                        <input
-                          id={`rename-${item.id}`}
-                          className="dataset-modal__rename-input"
-                          value={datasetNameDraft}
-                          maxLength={DATASET_NAME_MAX_LENGTH}
-                          onChange={(event) => setDatasetNameDraft(event.target.value)}
-                          autoFocus
-                        />
-                        <div className="dataset-modal__rename-actions">
-                          <button
-                            type="button"
-                            className="dataset-modal__rename-button dataset-modal__rename-button--ghost"
-                            onClick={cancelRenamingDataset}
-                          >
-                            cancel
-                          </button>
-                          <button type="submit" className="dataset-modal__rename-button">
-                            save
-                          </button>
-                        </div>
-                      </form>
-                    ) : null}
                   </div>
                 );
               })}
+            </div>
+
+            <div className="dataset-modal__footer">
+              <p className="dataset-modal__footer-note">
+                {hasReachedDatasetLimit
+                  ? `saved export limit reached (${MAX_LOCAL_DATASETS}/${MAX_LOCAL_DATASETS}). delete one to add a new export.`
+                  : "saved exports stay tied to the instagram archives already imported into your workspace."}
+              </p>
+              {hasReachedDatasetLimit ? (
+                <span
+                  className="dataset-modal__footer-cta is-disabled"
+                  aria-disabled="true"
+                  title={LOCAL_DATASET_LIMIT_MESSAGE}
+                >
+                  limit reached
+                </span>
+              ) : (
+                <Link
+                  href="/app/datasets/new?entry=workspace-shell"
+                  className="dataset-modal__footer-cta"
+                  onClick={closeDatasetsModal}
+                >
+                  new export
+                </Link>
+              )}
             </div>
           </div>
         </div>
@@ -722,6 +1147,16 @@ export function DatasetWorkspaceRoute({ datasetId }: DatasetWorkspaceRouteProps)
                 <h2 id="all-tools-title" className="tools-sidebar-title">
                   all tools
                 </h2>
+                <p className="dataset-modal__copy">
+                  This panel shows which workspace tools are ready right now and which ones still need more product work.
+                </p>
+                <div className="dataset-modal__summary">
+                  <span className="dataset-modal__summary-chip">{readyToolsCount} live</span>
+                  {partialToolsCount ? (
+                    <span className="dataset-modal__summary-chip">{partialToolsCount} partial</span>
+                  ) : null}
+                  <span className="dataset-modal__summary-chip">{laterToolsCount} queued</span>
+                </div>
               </div>
               <button
                 type="button"
@@ -737,39 +1172,44 @@ export function DatasetWorkspaceRoute({ datasetId }: DatasetWorkspaceRouteProps)
               {dataset.importReview.tools.map((tool) => {
                 const Icon = getWorkspaceToolIcon(tool.id);
                 const isAvailableTool = tool.id === "not-following-back";
-                const statusLabel =
-                  tool.status === "ready"
-                    ? "available now"
-                    : tool.status === "partial"
-                      ? "partial"
-                      : "coming soon";
+                const statusLabel = getToolStatusLabel(tool.status);
+                const statusClassName = getToolStatusClassName(tool.status);
 
                 return isAvailableTool ? (
                   <Link
                     key={tool.id}
                     href={`/app/datasets/${dataset.id}/tools/not-following-back`}
-                    className={`dataset-tool-card${tool.status === "ready" ? " is-live" : ""}`}
+                    className={`dataset-tool-card ${statusClassName}`.trim()}
                     onClick={() => setIsToolsModalOpen(false)}
                   >
                     <div className="dataset-tool-card__head">
                       <span className="dataset-tool-card__icon" aria-hidden="true">
                         <Icon size={17} strokeWidth={1.9} />
                       </span>
-                      <span className={`dataset-tool-card__badge${tool.status === "ready" ? " is-live" : ""}`}>
+                      <span className={`dataset-tool-card__badge ${statusClassName}`.trim()}>
                         {statusLabel}
                       </span>
                     </div>
                     <strong className="dataset-tool-card__title">{tool.title}</strong>
+                    <p className="dataset-tool-card__note">{tool.note}</p>
+                    <div className="dataset-tool-card__footer">
+                      <span>{notFollowingBackTotal} accounts ready to review</span>
+                      <span className="dataset-tool-card__action">open workspace</span>
+                    </div>
                   </Link>
                 ) : (
-                  <div key={tool.id} className="dataset-tool-card">
+                  <div key={tool.id} className={`dataset-tool-card ${statusClassName}`.trim()}>
                     <div className="dataset-tool-card__head">
                       <span className="dataset-tool-card__icon" aria-hidden="true">
                         <Icon size={17} strokeWidth={1.9} />
                       </span>
-                      <span className="dataset-tool-card__badge">{statusLabel}</span>
+                      <span className={`dataset-tool-card__badge ${statusClassName}`.trim()}>{statusLabel}</span>
                     </div>
                     <strong className="dataset-tool-card__title">{tool.title}</strong>
+                    <p className="dataset-tool-card__note">{tool.note}</p>
+                    <div className="dataset-tool-card__footer">
+                      <span>{tool.status === "partial" ? "eligible after stronger import" : "held for upcoming release"}</span>
+                    </div>
                   </div>
                 );
               })}

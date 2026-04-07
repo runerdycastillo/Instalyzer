@@ -10,6 +10,7 @@ import {
   useMemo,
   useRef,
   useState,
+  useSyncExternalStore,
   useTransition,
 } from "react";
 import {
@@ -18,10 +19,14 @@ import {
 } from "@/lib/instagram/export-parser";
 import {
   DATASET_NAME_MAX_LENGTH,
-  getNextDefaultDatasetName,
+  getLocalDatasetsServerSnapshot,
+  hasReachedLocalDatasetLimit,
+  LOCAL_DATASET_LIMIT_MESSAGE,
+  MAX_LOCAL_DATASETS,
   makeDatasetId,
   readLocalDatasets,
   saveLocalDataset,
+  subscribeToLocalDatasets,
 } from "@/lib/instagram/local-datasets";
 
 type CreationStep = "upload" | "create";
@@ -111,7 +116,13 @@ export function DatasetCreationFlow() {
   const [isDragging, setIsDragging] = useState(false);
   const [isProcessingUpload, setIsProcessingUpload] = useState(false);
   const [uploadError, setUploadError] = useState("");
+  const [creationError, setCreationError] = useState("");
   const [isPending, startTransition] = useTransition();
+  const savedDatasets = useSyncExternalStore(
+    subscribeToLocalDatasets,
+    readLocalDatasets,
+    getLocalDatasetsServerSnapshot,
+  );
 
   const entryPointParam = searchParams.get("entry") || "unknown";
   const entryPoint = entryPointValues.has(entryPointParam as DatasetEntryPoint)
@@ -132,6 +143,7 @@ export function DatasetCreationFlow() {
 
   const review = useMemo(() => preparedDataset?.importReview || null, [preparedDataset]);
   const hasPreparedDraft = Boolean(preparedDataset);
+  const hasReachedDatasetLimit = hasReachedLocalDatasetLimit(savedDatasets);
 
   const hasDatasetName = datasetName.trim().length > 0;
 
@@ -147,8 +159,15 @@ export function DatasetCreationFlow() {
     setPreparedDataset(null);
     setNameTouched(false);
     setUploadError("");
+    setCreationError("");
     setIsProcessingUpload(true);
     setStep("create");
+
+    if (hasReachedDatasetLimit) {
+      setUploadError(LOCAL_DATASET_LIMIT_MESSAGE);
+      setStep("upload");
+      return;
+    }
 
     try {
       const nextPreparedDataset = await prepareDatasetDraft(nextFiles);
@@ -165,12 +184,7 @@ export function DatasetCreationFlow() {
       }
 
       setPreparedDataset(nextPreparedDataset);
-      setDatasetName((currentName) =>
-        (currentName.trim()
-          ? currentName
-          : getNextDefaultDatasetName(readLocalDatasets())
-        ).trim().slice(0, DATASET_NAME_MAX_LENGTH),
-      );
+      setDatasetName("");
     } catch (error) {
       const message =
         error instanceof Error
@@ -201,22 +215,34 @@ export function DatasetCreationFlow() {
       return;
     }
 
+    if (hasReachedLocalDatasetLimit(readLocalDatasets())) {
+      setCreationError(LOCAL_DATASET_LIMIT_MESSAGE);
+      return;
+    }
+
     const datasetId = makeDatasetId();
 
-    saveLocalDataset({
-      id: datasetId,
-      name: datasetName.trim().slice(0, DATASET_NAME_MAX_LENGTH),
-      notes: "",
-      createdAt: datasetDate,
-      createdAtMs: Date.parse(`${datasetDate}T00:00:00`),
-      entryPoint,
-      importReview: review,
-      profile: preparedDataset.profile,
-      scope: preparedDataset.scope,
-      metrics: preparedDataset.metrics,
-      meta: preparedDataset.meta,
-      records: preparedDataset.records,
-    });
+    try {
+      saveLocalDataset({
+        id: datasetId,
+        name: datasetName.trim().slice(0, DATASET_NAME_MAX_LENGTH),
+        notes: "",
+        createdAt: datasetDate,
+        createdAtMs: Date.parse(`${datasetDate}T00:00:00`),
+        entryPoint,
+        importReview: review,
+        profile: preparedDataset.profile,
+        scope: preparedDataset.scope,
+        metrics: preparedDataset.metrics,
+        meta: preparedDataset.meta,
+        records: preparedDataset.records,
+      });
+      setCreationError("");
+    } catch (error) {
+      const message = error instanceof Error ? error.message : LOCAL_DATASET_LIMIT_MESSAGE;
+      setCreationError(message);
+      return;
+    }
 
     startTransition(() => {
       router.push(`/app/datasets/${datasetId}`);
@@ -233,6 +259,7 @@ export function DatasetCreationFlow() {
     setDatasetName("");
     setNameTouched(false);
     setUploadError("");
+    setCreationError("");
     setIsDragging(false);
     setIsProcessingUpload(false);
     setStep("upload");
@@ -295,6 +322,11 @@ export function DatasetCreationFlow() {
                   <p className="dataset-flow__kicker">step 1</p>
                   <h2>upload your export</h2>
                   <p>upload your instagram export to get started.</p>
+                  {hasReachedDatasetLimit ? (
+                    <p className="dataset-field__error">
+                      {LOCAL_DATASET_LIMIT_MESSAGE} You already have {MAX_LOCAL_DATASETS} saved exports.
+                    </p>
+                  ) : null}
                 </div>
 
                 <input
@@ -351,11 +383,15 @@ export function DatasetCreationFlow() {
                     }}
                     onDrop={onDrop}
                     onKeyDown={(event) => {
+                      if (hasReachedDatasetLimit) return;
                       if (event.key !== "Enter" && event.key !== " ") return;
                       event.preventDefault();
                       filesInputRef.current?.click();
                     }}
-                    onClick={() => filesInputRef.current?.click()}
+                    onClick={() => {
+                      if (hasReachedDatasetLimit) return;
+                      filesInputRef.current?.click();
+                    }}
                   >
                     <div className="dataset-dropzone__icon" aria-hidden="true">
                       <FileArchive size={28} strokeWidth={1.9} />
@@ -372,8 +408,10 @@ export function DatasetCreationFlow() {
                         className="hero-btn hero-btn-primary dataset-dropzone__primary-action"
                         onClick={(event) => {
                           event.stopPropagation();
+                          if (hasReachedDatasetLimit) return;
                           filesInputRef.current?.click();
                         }}
+                        disabled={hasReachedDatasetLimit}
                       >
                         upload export ZIP
                       </button>
@@ -449,6 +487,7 @@ export function DatasetCreationFlow() {
                           onChange={(event) => setDatasetDate(event.target.value)}
                         />
                       </label>
+                      {creationError ? <small className="dataset-field__error">{creationError}</small> : null}
                     </form>
                   )}
                 </div>
@@ -476,7 +515,7 @@ export function DatasetCreationFlow() {
                   type="button"
                   className="hero-btn hero-btn-primary"
                   onClick={createDataset}
-                  disabled={!hasDatasetName || isPending}
+                  disabled={!hasDatasetName || isPending || hasReachedDatasetLimit}
                 >
                   {isPending ? "creating..." : "create dataset"}
                 </button>
