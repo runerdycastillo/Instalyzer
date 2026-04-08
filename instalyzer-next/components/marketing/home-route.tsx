@@ -1,91 +1,17 @@
 import { Fragment } from "react";
-import type { LucideIcon } from "lucide-react";
 import {
   ArrowUpRight,
   ChartColumnBig,
-  Clock,
-  Eye,
-  FileText,
-  GitCompareArrows,
-  MessageSquareText,
-  TrendingUp,
   Upload,
-  UserMinus,
   UserRound,
-  UsersRound,
 } from "lucide-react";
 import Link from "next/link";
 import { FaqAccordion } from "@/components/marketing/faq-accordion";
 import { HeroScrollLink } from "@/components/marketing/hero-scroll-link";
 import { MarketingScrollReveal } from "@/components/marketing/marketing-scroll-reveal";
+import { homeShowcaseTools, resultsPreviewPills } from "@/lib/instagram/tool-catalog";
 
 const SHOW_PRICING_SECTION = false;
-
-type ToolTierItem = {
-  title: string;
-  copy: string;
-  availability: "available now" | "coming soon";
-  icon: LucideIcon;
-  featured?: boolean;
-};
-
-const toolsShowcase = [
-  {
-    title: "not following back",
-    copy: "See which accounts do not follow you back.",
-    availability: "available now",
-    icon: UserMinus,
-    featured: true,
-  },
-  {
-    title: "export overview",
-    copy: "Quick summary of your dataset and export health.",
-    availability: "coming soon",
-    icon: FileText,
-  },
-  {
-    title: "relationship view",
-    copy: "Compare followers, following, and mutuals.",
-    availability: "coming soon",
-    icon: GitCompareArrows,
-  },
-  {
-    title: "audience insights",
-    copy: "Track follower movement and audience changes.",
-    availability: "coming soon",
-    icon: UsersRound,
-  },
-  {
-    title: "visibility summary",
-    copy: "Understand reach, impressions, and profile visits.",
-    availability: "coming soon",
-    icon: Eye,
-  },
-  {
-    title: "interaction summary",
-    copy: "Measure likes, comments, saves, and interactions.",
-    availability: "coming soon",
-    icon: ChartColumnBig,
-  },
-  {
-    title: "story insights",
-    copy: "Break down story replies and engagement.",
-    availability: "coming soon",
-    icon: MessageSquareText,
-  },
-  {
-    title: "posting guidance",
-    copy: "Surface timing and activity pattern insights.",
-    availability: "coming soon",
-    icon: Clock,
-  },
-  {
-    title: "growth summary",
-    copy: "Track follower growth and account momentum.",
-    availability: "coming soon",
-    icon: TrendingUp,
-  },
-] as const satisfies readonly ToolTierItem[];
 
 const howItWorksSteps = [
   {
@@ -115,13 +41,6 @@ const resultsPreviewMetrics = [
   { label: "content interactions", value: 436 },
   { label: "impressions", value: 48920 },
   { label: "accounts engaged", value: 823 },
-] as const;
-
-const resultsPreviewPills = [
-  { label: "not following back live now", className: "is-free" },
-  { label: "audience insights coming soon", className: "is-basic" },
-  { label: "reach summary coming soon", className: "is-basic" },
-  { label: "growth summary coming soon", className: "is-premium" },
 ] as const;
 
 const pricingPlans = [
@@ -263,7 +182,7 @@ export function MarketingHomeRoute() {
           </div>
 
           <div className="tools-showcase-grid" aria-label="Instalyzer tools">
-            {toolsShowcase.map((tool) => (
+            {homeShowcaseTools.map((tool) => (
               <article
                 key={tool.title}
                 className={`tools-showcase-card${tool.featured ? " is-featured" : ""}`}
@@ -283,7 +202,7 @@ export function MarketingHomeRoute() {
 
                 <div className="tools-showcase-card__body">
                   <h3 className="tools-showcase-title">{tool.title}</h3>
-                  <p className="tools-showcase-copy">{tool.copy}</p>
+                  <p className="tools-showcase-copy">{tool.homeCopy}</p>
                 </div>
               </article>
             ))}

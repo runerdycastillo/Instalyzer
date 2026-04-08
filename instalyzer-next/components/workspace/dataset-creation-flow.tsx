@@ -1,6 +1,7 @@
 "use client";
 
-import { ArrowLeft, CheckCircle2, FileArchive, LoaderCircle } from "lucide-react";
+import { ArrowLeft, CheckCircle2, ExternalLink, FileArchive, LoaderCircle } from "lucide-react";
+import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import {
   type ChangeEvent,
@@ -18,6 +19,10 @@ import {
   prepareDatasetDraft,
 } from "@/lib/instagram/export-parser";
 import {
+  exportQuickTipSections,
+  INSTAGRAM_APP_URL,
+} from "@/lib/instagram/export-requirements";
+import {
   DATASET_NAME_MAX_LENGTH,
   getLocalDatasetsServerSnapshot,
   hasReachedLocalDatasetLimit,
@@ -30,31 +35,6 @@ import {
 } from "@/lib/instagram/local-datasets";
 
 type CreationStep = "upload" | "create";
-
-const uploadSupportSections = [
-  {
-    title: "before you start",
-    items: [
-      "We recommend staying logged into Instagram in your browser so result links open smoothly.",
-      "Export prep can take minutes or hours, depending on account size.",
-    ],
-    instagramLink: true,
-  },
-  {
-    title: "recommended settings",
-    items: ["all available information", "all time", "JSON", "medium"],
-    labels: ["customize information", "date range", "format", "media quality"],
-  },
-  {
-    title: "common issues",
-    items: [
-      "No file? Check email and spam.",
-      "Wrong format? Use JSON.",
-      "Upload issue? Use the export ZIP file.",
-    ],
-  },
-] as const;
-
 const entryPointValues = new Set<DatasetEntryPoint>([
   "home-hero",
   "home-results-preview",
@@ -75,7 +55,20 @@ function DatasetFlowQuickTips() {
       <p className="guide-side-stack-label dataset-upload-tips-label">quick tips</p>
 
       <div className="guide-side-card guide-side-card-v2 guide-side-card-unified dataset-upload-tips-card">
-        {uploadSupportSections.map((section) => (
+        <div className="guide-side-card__topbar">
+          <a
+            href={INSTAGRAM_APP_URL}
+            target="_blank"
+            rel="noreferrer"
+            className="guide-inline-instagram-btn"
+            aria-label="Open Instagram"
+            title="Open Instagram"
+          >
+            <ExternalLink aria-hidden="true" strokeWidth={1.9} />
+          </a>
+        </div>
+
+        {exportQuickTipSections.map((section) => (
           <div key={section.title} className="guide-side-section">
             <div className="guide-side-section-head">
               <h4 className="guide-side-section-title">{section.title}</h4>
@@ -400,7 +393,14 @@ export function DatasetCreationFlow() {
                       drag and drop your ZIP or choose your export to begin.
                     </p>
 
-                    {uploadError ? <p className="dataset-field__error">{uploadError}</p> : null}
+                    {uploadError ? (
+                      <div className="dataset-dropzone__error-wrap">
+                        <p className="dataset-field__error">{uploadError}</p>
+                        <Link href="/help" className="dataset-dropzone__help-link">
+                          open export help
+                        </Link>
+                      </div>
+                    ) : null}
 
                     <div className="dataset-dropzone__actions">
                     <button

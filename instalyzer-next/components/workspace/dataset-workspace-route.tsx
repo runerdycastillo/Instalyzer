@@ -2,24 +2,32 @@
 
 import {
   ArrowDownUp,
+  Bookmark,
+  CalendarDays,
   Check,
-  ChartColumnBig,
   ChevronDown,
-  Eye,
-  FileText,
+  ExternalLink,
   FolderKanban,
+  Globe2,
+  Heart,
+  MapPin,
+  MessageCircle,
   Pencil,
   Settings,
+  TrendingDown,
+  TrendingUp,
   Trash2,
   UserMinus,
-  UsersRound,
+  VenusAndMars,
   Wrench,
   X,
 } from "lucide-react";
+import Image from "next/image";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { createPortal } from "react-dom";
 import { useEffect, useRef, useState, useSyncExternalStore } from "react";
+import { DatasetWorkspaceEmptyState } from "@/components/workspace/dataset-workspace-empty-state";
 import {
   readActiveDatasetId,
   DATASET_NAME_MAX_LENGTH,
@@ -34,6 +42,7 @@ import {
   updateLocalDatasetName,
   writeActiveDatasetId,
 } from "@/lib/instagram/local-datasets";
+import { getSoftLaunchToolIcon, workspaceModalTools } from "@/lib/instagram/tool-catalog";
 
 type DatasetWorkspaceRouteProps = {
   datasetId?: string;
@@ -54,6 +63,156 @@ function formatMetric(value: number | null | undefined, fallback = "Not availabl
   return Number.isFinite(number) ? number.toLocaleString() : fallback;
 }
 
+function formatSignedMetric(value: number | null | undefined, fallback = "Not available") {
+  const number = Number(value);
+  if (!Number.isFinite(number)) return fallback;
+  return `${number > 0 ? "+" : ""}${number.toLocaleString()}`;
+}
+
+function formatPercent(value: number | null | undefined, fallback = "Not available") {
+  const number = Number(value);
+  if (!Number.isFinite(number)) return fallback;
+  return `${number.toFixed(number % 1 === 0 ? 0 : 1)}%`;
+}
+
+function formatProperCaseLabel(value: string) {
+  return value.replace(/\b([a-z])([a-z']*)/g, (_match, first: string, rest: string) => {
+    return `${first.toUpperCase()}${rest.toLowerCase()}`;
+  });
+}
+
+function getClampedPercent(value: number | null | undefined) {
+  const number = Number(value);
+  if (!Number.isFinite(number)) return 0;
+  return Math.max(0, Math.min(number, 100));
+}
+
+function getTrendTone(value: number | null | undefined) {
+  const number = Number(value);
+  if (!Number.isFinite(number) || number === 0) return "neutral";
+  return number > 0 ? "positive" : "negative";
+}
+
+function getSplitRingMetrics(
+  primaryPercent: number | null | undefined,
+  secondaryPercent: number | null | undefined,
+  radius = 34,
+  gap = 4,
+) {
+  const primary = Number(primaryPercent);
+  const secondary = Number(secondaryPercent);
+  const circumference = 2 * Math.PI * radius;
+
+  if (!Number.isFinite(primary) || !Number.isFinite(secondary)) {
+    return null;
+  }
+
+  const total = primary + secondary;
+  if (total <= 0) {
+    return null;
+  }
+
+  const usableCircumference = Math.max(circumference - gap * 2, 0);
+  const primaryLength = (usableCircumference * primary) / total;
+  const secondaryLength = (usableCircumference * secondary) / total;
+
+  return {
+    radius,
+    primaryPercentOfPath: (primaryLength / circumference) * 100,
+    secondaryPercentOfPath: (secondaryLength / circumference) * 100,
+    secondaryOffsetPercent: (-(primaryLength + gap) / circumference) * 100,
+  };
+}
+
+function getReachRingMetrics(followerPercent: number | null | undefined, nonFollowerPercent: number | null | undefined) {
+  const metrics = getSplitRingMetrics(followerPercent, nonFollowerPercent);
+  if (!metrics) return null;
+
+  return {
+    radius: metrics.radius,
+    followerPercentOfPath: metrics.primaryPercentOfPath,
+    nonFollowerPercentOfPath: metrics.secondaryPercentOfPath,
+    nonFollowerOffsetPercent: metrics.secondaryOffsetPercent,
+  };
+}
+
+const monthIndex: Record<string, number> = {
+  jan: 0,
+  feb: 1,
+  mar: 2,
+  apr: 3,
+  may: 4,
+  jun: 5,
+  jul: 6,
+  aug: 7,
+  sep: 8,
+  oct: 9,
+  nov: 10,
+  dec: 11,
+};
+
+function formatOverviewWindow(scope?: {
+  insightDateRangeLabel?: string;
+  exportRequestEndTimestamp?: number | null;
+}) {
+  const rangeLabel = String(scope?.insightDateRangeLabel || "").trim();
+  if (!rangeLabel) return "overview window not detected";
+
+  const endTimestamp = Number(scope?.exportRequestEndTimestamp);
+  if (!Number.isFinite(endTimestamp) || endTimestamp <= 0) {
+    return rangeLabel;
+  }
+
+  const match = rangeLabel.match(
+    /^([A-Za-z]{3})\s+(\d{1,2})\s*-\s*([A-Za-z]{3})\s+(\d{1,2})$/,
+  );
+
+  if (!match) return rangeLabel;
+
+  const [, startMonthRaw, startDayRaw, endMonthRaw, endDayRaw] = match;
+  const startMonth = monthIndex[startMonthRaw.toLowerCase()];
+  const endMonth = monthIndex[endMonthRaw.toLowerCase()];
+  const startDay = Number(startDayRaw);
+  const endDay = Number(endDayRaw);
+
+  if (
+    startMonth === undefined ||
+    endMonth === undefined ||
+    !Number.isFinite(startDay) ||
+    !Number.isFinite(endDay)
+  ) {
+    return rangeLabel;
+  }
+
+  const endReference = new Date(endTimestamp * 1000);
+  const endYear = endReference.getFullYear();
+  const startYear =
+    startMonth > endMonth || (startMonth === endMonth && startDay > endDay) ? endYear - 1 : endYear;
+
+  const startDate = new Date(startYear, startMonth, startDay);
+  const endDate = new Date(endYear, endMonth, endDay);
+
+  if (Number.isNaN(startDate.getTime()) || Number.isNaN(endDate.getTime())) {
+    return rangeLabel;
+  }
+
+  const formatter = new Intl.DateTimeFormat("en-US", {
+    month: "short",
+    day: "numeric",
+    year: "numeric",
+  });
+
+  return `${formatter.format(startDate)} - ${formatter.format(endDate)}`;
+}
+
+function getExportRangeLabel(scope?: {
+  exportRequestRange?: "all_time" | "limited" | "unknown";
+}) {
+  if (scope?.exportRequestRange === "all_time") return "all-time export";
+  if (scope?.exportRequestRange === "limited") return "limited export";
+  return "export imported";
+}
+
 function getDisplayName(dataset: NonNullable<ReturnType<typeof findLocalDataset>>) {
   return dataset.profile?.displayName || (dataset.profile?.username ? `@${dataset.profile.username}` : dataset.name);
 }
@@ -65,43 +224,6 @@ function getHandle(dataset: NonNullable<ReturnType<typeof findLocalDataset>>) {
 function getInstagramProfileHref(dataset: NonNullable<ReturnType<typeof findLocalDataset>>) {
   const username = dataset.profile?.username?.trim();
   return username ? `https://www.instagram.com/${username}/` : "";
-}
-
-function getWorkspaceToolIcon(toolId: string) {
-  switch (toolId) {
-    case "not-following-back":
-      return UserMinus;
-    case "audience-insights":
-      return UsersRound;
-    case "reach-summary":
-      return Eye;
-    case "content-interactions":
-      return ChartColumnBig;
-    default:
-      return FileText;
-  }
-}
-
-function getToolStatusLabel(status: "ready" | "partial" | "later") {
-  switch (status) {
-    case "ready":
-      return "available now";
-    case "partial":
-      return "needs stronger export";
-    default:
-      return "coming soon";
-  }
-}
-
-function getToolStatusClassName(status: "ready" | "partial" | "later") {
-  switch (status) {
-    case "ready":
-      return "is-live";
-    case "partial":
-      return "is-partial";
-    default:
-      return "is-later";
-  }
 }
 
 function WorkspaceLoadingState() {
@@ -222,7 +344,7 @@ function WorkspaceLoadingState() {
             <article className="dataset-workspace__support-card">
               <p className="dataset-meta-label">relationship signals</p>
               <div className="dataset-card__metrics dataset-card__metrics--compact">
-                {["following", "followers", "mutuals", "not following back"].map((label) => (
+                {["followers", "following", "mutuals", "not following back"].map((label) => (
                   <div key={label}>
                     <span>{label}</span>
                     <span className="dataset-skeleton-line dataset-skeleton-line--metric" aria-hidden="true" />
@@ -245,7 +367,7 @@ export function DatasetWorkspaceRoute({ datasetId }: DatasetWorkspaceRouteProps)
   const [openDatasetMenuId, setOpenDatasetMenuId] = useState<string | null>(null);
   const [renamingDatasetId, setRenamingDatasetId] = useState<string | null>(null);
   const [datasetNameDraft, setDatasetNameDraft] = useState("");
-  const [datasetSortOrder, setDatasetSortOrder] = useState<"latest" | "oldest" | "name">("latest");
+  const [datasetSortOrder, setDatasetSortOrder] = useState<"newest" | "oldest" | "a-z">("newest");
   const [isSortMenuOpen, setIsSortMenuOpen] = useState(false);
   const [isHydrationSettled, setIsHydrationSettled] = useState(false);
   const [floatingPanelStyle, setFloatingPanelStyle] = useState<{
@@ -274,6 +396,40 @@ export function DatasetWorkspaceRoute({ datasetId }: DatasetWorkspaceRouteProps)
   const dataset = datasetId
     ? datasets.find((item) => item.id === datasetId) || findLocalDataset(datasetId)
     : datasets.find((item) => item.id === activeDatasetId) || datasets[0] || null;
+  const reachRingMetrics = getReachRingMetrics(
+    dataset?.metrics?.reachFollowersPercent,
+    dataset?.metrics?.reachNonFollowersPercent,
+  );
+  const genderRingMetrics = getSplitRingMetrics(
+    dataset?.metrics?.womenFollowerPercent,
+    dataset?.metrics?.menFollowerPercent,
+    27,
+    3,
+  );
+  const interactionMixItems = [
+    {
+      key: "likes",
+      label: "likes",
+      value: dataset?.metrics?.postLikes ?? null,
+      icon: Heart,
+    },
+    {
+      key: "comments",
+      label: "comments",
+      value: dataset?.metrics?.postComments ?? null,
+      icon: MessageCircle,
+    },
+    {
+      key: "saves",
+      label: "saves",
+      value: dataset?.metrics?.postSaves ?? null,
+      icon: Bookmark,
+    },
+  ];
+  const interactionMixTotal = interactionMixItems.reduce(
+    (sum, item) => sum + (typeof item.value === "number" && Number.isFinite(item.value) ? item.value : 0),
+    0,
+  );
 
   function buildFloatingPanelStyle(
     anchor: HTMLButtonElement | null,
@@ -303,21 +459,6 @@ export function DatasetWorkspaceRoute({ datasetId }: DatasetWorkspaceRouteProps)
       zIndex: 60,
     };
   }
-
-  useEffect(() => {
-    if (!isDatasetsModalOpen && !isToolsModalOpen) return undefined;
-
-    const html = document.documentElement;
-    const body = document.body;
-
-    html.classList.add("modal-open");
-    body.classList.add("modal-open");
-
-    return () => {
-      html.classList.remove("modal-open");
-      body.classList.remove("modal-open");
-    };
-  }, [isDatasetsModalOpen, isToolsModalOpen]);
 
   useEffect(() => {
     if (!isDatasetsModalOpen || !isSortMenuOpen) return undefined;
@@ -398,139 +539,7 @@ export function DatasetWorkspaceRoute({ datasetId }: DatasetWorkspaceRouteProps)
   }
 
   if (!dataset) {
-    return (
-      <section className="dataset-workspace dataset-workspace--hydrated" aria-labelledby="dataset-workspace-title">
-        <div className="dataset-workspace__grid dataset-workspace__grid--static">
-          <aside className="dataset-side-panel dataset-side-panel--left">
-            <div className="dataset-side-panel__head">
-              <p className="section-kicker">workspace overview</p>
-              <h2 className="tools-sidebar-title dataset-side-panel__title">no dataset yet</h2>
-            </div>
-
-            <div className="dataset-side-panel__body">
-              <p className="dataset-overview-copy">Upload an Instagram export to start your workspace.</p>
-
-              <div className="dataset-card__metrics dataset-card__metrics--compact">
-                <div>
-                  <span>saved datasets</span>
-                  <strong>0</strong>
-                </div>
-                <div>
-                  <span>status</span>
-                  <strong>ready to create</strong>
-                </div>
-              </div>
-
-              <Link href="/app/datasets/new?entry=app-home" className="hero-btn hero-btn-primary dataset-side-panel__action">
-                create dataset
-              </Link>
-            </div>
-          </aside>
-
-          <article className="dataset-workspace__surface">
-            <div className="dataset-overview-head">
-              <div>
-                <p className="section-kicker">workspace overview</p>
-                <h1 id="dataset-workspace-title" className="dataset-overview-title">
-                  no data available yet
-                </h1>
-              </div>
-            </div>
-
-            <div className="dataset-overview-body">
-              <div className="dataset-overview-intro">
-                <p className="dataset-overview-copy">
-                  Upload your Instagram export to unlock your saved overview, relationship signals, and tools.
-                </p>
-              </div>
-
-              <div className="dataset-profile-band dataset-profile-band--empty">
-                <div className="dataset-profile-avatar-shell">
-                  <div className="dataset-profile-avatar dataset-profile-avatar--fallback">I</div>
-                </div>
-
-                <div className="dataset-profile-copy">
-                  <p className="dataset-profile-handle">@youraccount</p>
-                  <h3 className="dataset-profile-name">workspace waiting for your first export</h3>
-                  <p className="dataset-profile-range">Import one JSON or ZIP export to populate this overview.</p>
-                </div>
-              </div>
-
-              <div className="dataset-overview-grid">
-                {[
-                  "followers",
-                  "accounts reached",
-                  "profile visits",
-                  "external link taps",
-                  "content interactions",
-                  "accounts engaged",
-                  "impressions",
-                  "categories detected",
-                  "import source",
-                ].map((label) => (
-                  <article key={label} className="dataset-overview-card dataset-overview-card--empty">
-                    <span className="dataset-meta-label">{label}</span>
-                    <strong className="dataset-overview-value">-</strong>
-                  </article>
-                ))}
-              </div>
-
-              <div className="dataset-workspace__notes">
-                <p className="dataset-overview-copy">
-                  No export loaded yet. Create your first dataset and this page will become your overview hub.
-                </p>
-                <div className="route-links">
-                  <Link href="/app/datasets/new?entry=app-home" className="route-link">
-                    upload export
-                  </Link>
-                  <Link href="/help" className="route-link">
-                    export help
-                  </Link>
-                </div>
-              </div>
-            </div>
-          </article>
-
-          <aside className="dataset-side-panel dataset-side-panel--right">
-            <div className="dataset-side-panel__head">
-              <p className="section-kicker">workspace</p>
-            </div>
-
-            <div className="dataset-side-panel__body">
-              <div className="workspace-tool-pill workspace-tool-pill--current" aria-label="No tool selected">
-                <span className="workspace-tool-placeholder">no tool selected</span>
-              </div>
-
-              <Link href="/app/datasets/new?entry=app-home" className="hero-btn hero-btn-secondary dataset-side-panel__action">
-                create dataset
-              </Link>
-
-              <article className="dataset-workspace__support-card">
-                <p className="dataset-meta-label">relationship signals</p>
-                <div className="dataset-card__metrics dataset-card__metrics--compact">
-                  <div>
-                    <span>following</span>
-                    <strong>0</strong>
-                  </div>
-                  <div>
-                    <span>followers</span>
-                    <strong>0</strong>
-                  </div>
-                  <div>
-                    <span>mutuals</span>
-                    <strong>0</strong>
-                  </div>
-                  <div>
-                    <span>not following back</span>
-                    <strong>0</strong>
-                  </div>
-                </div>
-              </article>
-            </div>
-          </aside>
-        </div>
-      </section>
-    );
+    return <DatasetWorkspaceEmptyState createEntryPoint="app-home" />;
   }
 
   function startRenamingDataset(targetId: string, currentName: string) {
@@ -581,16 +590,12 @@ export function DatasetWorkspaceRoute({ datasetId }: DatasetWorkspaceRouteProps)
     router.push(nextDatasets[0] ? `/app/datasets/${nextDatasets[0].id}` : "/app/datasets");
   }
 
-  const readyToolsCount = dataset.importReview.tools.filter((tool) => tool.status === "ready").length;
-  const partialToolsCount = dataset.importReview.tools.filter((tool) => tool.status === "partial").length;
-  const laterToolsCount = dataset.importReview.tools.filter((tool) => tool.status === "later").length;
-  const notFollowingBackTotal = formatMetric(dataset.metrics?.notFollowingBackCount ?? null, "0");
   const recentDatasets = [
     dataset,
     ...datasets.filter((item) => item.id !== dataset.id),
   ].slice(0, 2);
   const sortedModalDatasets = [...datasets].sort((left, right) => {
-    if (datasetSortOrder === "name") {
+    if (datasetSortOrder === "a-z") {
       return left.name.localeCompare(right.name, undefined, { sensitivity: "base" });
     }
 
@@ -670,12 +675,6 @@ export function DatasetWorkspaceRoute({ datasetId }: DatasetWorkspaceRouteProps)
           </div>
 
           <div className="dataset-overview-body">
-            <div className="dataset-overview-intro">
-              <p className="dataset-overview-copy">
-                Trusted account and insight metrics extracted from this imported Instagram dataset.
-              </p>
-            </div>
-
             <div className="dataset-profile-band">
               {getInstagramProfileHref(dataset) ? (
                 <a
@@ -684,38 +683,39 @@ export function DatasetWorkspaceRoute({ datasetId }: DatasetWorkspaceRouteProps)
                   target="_blank"
                   rel="noreferrer noopener"
                   aria-label="Open Instagram profile"
+                  title="Open Instagram profile"
                 >
-                  <svg viewBox="0 0 24 24" aria-hidden="true">
-                    <rect x="3" y="3" width="18" height="18" rx="5" />
-                    <circle cx="12" cy="12" r="4" />
-                    <circle cx="17.2" cy="6.8" r="1.1" fill="currentColor" stroke="none" />
-                  </svg>
+                  <ExternalLink aria-hidden="true" strokeWidth={1.9} />
                 </a>
               ) : null}
 
               <div className="dataset-profile-avatar-shell">
-                <div className="dataset-profile-avatar dataset-profile-avatar--fallback">
-                  {dataset.profile?.username?.slice(0, 1).toUpperCase() || "I"}
-                </div>
+                {dataset.profile?.profilePhotoDataUrl ? (
+                  <Image
+                    src={dataset.profile.profilePhotoDataUrl}
+                    alt={`${getDisplayName(dataset)} profile`}
+                    className="dataset-profile-avatar dataset-profile-avatar--image"
+                    width={88}
+                    height={88}
+                    unoptimized
+                  />
+                ) : (
+                  <div className="dataset-profile-avatar dataset-profile-avatar--fallback">
+                    {dataset.profile?.username?.slice(0, 1).toUpperCase() || "I"}
+                  </div>
+                )}
               </div>
 
               <div className="dataset-profile-copy">
                 <p className="dataset-profile-handle">{getHandle(dataset)}</p>
                 <h3 className="dataset-profile-name">{getDisplayName(dataset)}</h3>
                 <p className="dataset-profile-range">
-                  {dataset.scope?.insightDateRangeLabel || "insight range not detected"}
+                  overview window: {formatOverviewWindow(dataset.scope)}
                 </p>
               </div>
             </div>
 
             <div className="dataset-overview-grid">
-              <article className="dataset-overview-card">
-                <span className="dataset-meta-label">followers</span>
-                <strong className="dataset-overview-value">
-                  {formatMetric(dataset.metrics?.followerTotalFromInsights)}
-                </strong>
-              </article>
-
               <article className="dataset-overview-card">
                 <span className="dataset-meta-label">accounts reached</span>
                 <strong className="dataset-overview-value">
@@ -758,27 +758,277 @@ export function DatasetWorkspaceRoute({ datasetId }: DatasetWorkspaceRouteProps)
                 </strong>
               </article>
 
-              <article className="dataset-overview-card">
-                <span className="dataset-meta-label">categories detected</span>
-                <strong className="dataset-overview-value">
-                  {dataset.importReview.categoryCount}
-                </strong>
-              </article>
-
-              <article className="dataset-overview-card">
-                <span className="dataset-meta-label">import source</span>
-                <strong className="dataset-overview-value">
-                  {dataset.importReview.sourceLabel}
-                </strong>
-              </article>
             </div>
 
-            <div className="dataset-workspace__notes">
-              <p className="dataset-overview-copy">
-                {isWorkspaceHome
-                  ? "This is your workspace home. Switch datasets from the left and open tools from the right."
-                  : dataset.importReview.readinessNote}
-              </p>
+            <div className="dataset-overview-support-grid">
+              <article
+                className={`dataset-overview-support-card dataset-overview-support-card--movement is-${getTrendTone(
+                  dataset.metrics?.netFollowersInRange,
+                )} dataset-overview-support-card--movement-slot`}
+              >
+                <div className="dataset-overview-support-head">
+                  <span className="dataset-overview-panel-title">audience movement</span>
+                </div>
+                <div className="dataset-overview-movement-grid">
+                  <div className="dataset-overview-movement-stat dataset-overview-movement-stat--positive">
+                    <span>follows</span>
+                    <strong>{formatSignedMetric(dataset.metrics?.followsInRange)}</strong>
+                  </div>
+                  <div className="dataset-overview-movement-stat dataset-overview-movement-stat--negative">
+                    <span>unfollows</span>
+                    <strong>
+                      {typeof dataset.metrics?.unfollowsInRange === "number"
+                        ? `-${formatMetric(dataset.metrics.unfollowsInRange, "0")}`
+                        : "Not available"}
+                    </strong>
+                  </div>
+                </div>
+                <div className={`dataset-overview-movement-highlight is-${getTrendTone(dataset.metrics?.netFollowersInRange)}`}>
+                  <span>net follower change</span>
+                  <div className="dataset-overview-movement-highlight__value">
+                    {getTrendTone(dataset.metrics?.netFollowersInRange) === "positive" ? (
+                      <TrendingUp size={18} aria-hidden="true" />
+                    ) : getTrendTone(dataset.metrics?.netFollowersInRange) === "negative" ? (
+                      <TrendingDown size={18} aria-hidden="true" />
+                    ) : (
+                      <ArrowDownUp size={18} aria-hidden="true" />
+                    )}
+                    <strong>{formatSignedMetric(dataset.metrics?.netFollowersInRange)}</strong>
+                  </div>
+                </div>
+              </article>
+
+              <article className="dataset-overview-support-card dataset-overview-support-card--reach">
+                <div className="dataset-overview-support-head">
+                  <span className="dataset-overview-panel-title">reach mix</span>
+                </div>
+                <div className="dataset-overview-ring-row">
+                  <div className="dataset-overview-ring" aria-hidden="true">
+                    {reachRingMetrics ? (
+                      <svg className="dataset-overview-ring__svg" viewBox="0 0 96 96" aria-hidden="true">
+                        <circle className="dataset-overview-ring__track" cx="48" cy="48" r="34" />
+                        <circle
+                          className="dataset-overview-ring__arc dataset-overview-ring__arc--followers"
+                          cx="48"
+                          cy="48"
+                          r={reachRingMetrics.radius}
+                          pathLength={100}
+                          strokeDasharray={`${reachRingMetrics.followerPercentOfPath} 100`}
+                          strokeDashoffset="0"
+                        />
+                        <circle
+                          className="dataset-overview-ring__arc dataset-overview-ring__arc--nonfollowers"
+                          cx="48"
+                          cy="48"
+                          r={reachRingMetrics.radius}
+                          pathLength={100}
+                          strokeDasharray={`${reachRingMetrics.nonFollowerPercentOfPath} 100`}
+                          strokeDashoffset={reachRingMetrics.nonFollowerOffsetPercent}
+                        />
+                      </svg>
+                    ) : null}
+                    <div className="dataset-overview-ring__core">
+                      <strong>{formatPercent(dataset.metrics?.reachNonFollowersPercent, "--")}</strong>
+                      <span>non-followers</span>
+                    </div>
+                  </div>
+                  <div className="dataset-overview-split-list">
+                    <div>
+                      <span className="dataset-overview-split-label">
+                        <i className="dataset-overview-split-dot dataset-overview-split-dot--followers" aria-hidden="true" />
+                        followers
+                      </span>
+                      <strong>{formatPercent(dataset.metrics?.reachFollowersPercent)}</strong>
+                    </div>
+                    <div>
+                      <span className="dataset-overview-split-label">
+                        <i className="dataset-overview-split-dot dataset-overview-split-dot--nonfollowers" aria-hidden="true" />
+                        non-followers
+                      </span>
+                      <strong>{formatPercent(dataset.metrics?.reachNonFollowersPercent)}</strong>
+                    </div>
+                  </div>
+                </div>
+              </article>
+
+              <article className="dataset-overview-support-card dataset-overview-support-card--snapshot">
+                <span className="dataset-overview-panel-title">audience snapshot</span>
+                <div className="dataset-overview-detail-list">
+                  <div>
+                    <span>
+                      <MapPin size={14} aria-hidden="true" />
+                      top city
+                    </span>
+                    {dataset.metrics?.topFollowerCity ? (
+                      <div className="dataset-overview-inline-row">
+                        <strong>{formatProperCaseLabel(dataset.metrics.topFollowerCity)}</strong>
+                        <span className="dataset-overview-percent-pill">
+                          {formatPercent(dataset.metrics.topFollowerCityPercent, "--")}
+                        </span>
+                      </div>
+                    ) : (
+                      <strong>not detected</strong>
+                    )}
+                    <div className="dataset-overview-snapshot-bar dataset-overview-snapshot-bar--city" aria-hidden="true">
+                      <div
+                        className="dataset-overview-snapshot-bar__fill"
+                        style={{ width: `${getClampedPercent(dataset.metrics?.topFollowerCityPercent)}%` }}
+                      />
+                    </div>
+                  </div>
+                  <div>
+                    <span>
+                      <Globe2 size={14} aria-hidden="true" />
+                      top country
+                    </span>
+                    {dataset.metrics?.topFollowerCountry ? (
+                      <div className="dataset-overview-inline-row">
+                        <strong>{formatProperCaseLabel(dataset.metrics.topFollowerCountry)}</strong>
+                        <span className="dataset-overview-percent-pill">
+                          {formatPercent(dataset.metrics.topFollowerCountryPercent, "--")}
+                        </span>
+                      </div>
+                    ) : (
+                      <strong>not detected</strong>
+                    )}
+                    <div className="dataset-overview-snapshot-bar dataset-overview-snapshot-bar--country" aria-hidden="true">
+                      <div
+                        className="dataset-overview-snapshot-bar__fill"
+                        style={{ width: `${getClampedPercent(dataset.metrics?.topFollowerCountryPercent)}%` }}
+                      />
+                    </div>
+                  </div>
+                  <div>
+                    <span>
+                      <VenusAndMars size={14} aria-hidden="true" />
+                      gender split
+                    </span>
+                    <div className="dataset-overview-snapshot-gender-row">
+                      <div className="dataset-overview-snapshot-gender-ring" aria-hidden="true">
+                        {genderRingMetrics ? (
+                          <svg className="dataset-overview-snapshot-gender-ring__svg" viewBox="0 0 72 72" aria-hidden="true">
+                            <circle className="dataset-overview-snapshot-gender-ring__track" cx="36" cy="36" r="27" />
+                            <circle
+                              className="dataset-overview-snapshot-gender-ring__arc dataset-overview-snapshot-gender-ring__arc--women"
+                              cx="36"
+                              cy="36"
+                              r={genderRingMetrics.radius}
+                              pathLength={100}
+                              strokeDasharray={`${genderRingMetrics.primaryPercentOfPath} 100`}
+                              strokeDashoffset="0"
+                            />
+                            <circle
+                              className="dataset-overview-snapshot-gender-ring__arc dataset-overview-snapshot-gender-ring__arc--men"
+                              cx="36"
+                              cy="36"
+                              r={genderRingMetrics.radius}
+                              pathLength={100}
+                              strokeDasharray={`${genderRingMetrics.secondaryPercentOfPath} 100`}
+                              strokeDashoffset={genderRingMetrics.secondaryOffsetPercent}
+                            />
+                          </svg>
+                        ) : null}
+                        <div className="dataset-overview-snapshot-gender-ring__core">
+                          <strong>{formatPercent(dataset.metrics?.womenFollowerPercent, "--")}</strong>
+                          <span>women</span>
+                        </div>
+                      </div>
+                      <div className="dataset-overview-snapshot-gender-legend" aria-hidden="true">
+                        <div>
+                          <span>
+                            <i className="dataset-overview-snapshot-gender-dot dataset-overview-snapshot-gender-dot--women" />
+                            women
+                          </span>
+                          <strong>{formatPercent(dataset.metrics?.womenFollowerPercent, "--")}</strong>
+                        </div>
+                        <div>
+                          <span>
+                            <i className="dataset-overview-snapshot-gender-dot dataset-overview-snapshot-gender-dot--men" />
+                            men
+                          </span>
+                          <strong>{formatPercent(dataset.metrics?.menFollowerPercent, "--")}</strong>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                  <div className="dataset-overview-detail-list__section-break dataset-overview-detail-list__section-break--activity">
+                    <span>
+                      <CalendarDays size={14} aria-hidden="true" />
+                      most active day
+                    </span>
+                    <div className="dataset-overview-activity-spotlight">
+                      <strong>
+                        {dataset.metrics?.topFollowerActivityDay || "not detected"}
+                      </strong>
+                      {dataset.metrics?.topFollowerActivityDay ? (
+                        <small className="dataset-overview-detail-note">
+                          {formatMetric(dataset.metrics.topFollowerActivityValue, "--")} follower activity
+                        </small>
+                      ) : null}
+                    </div>
+                  </div>
+                </div>
+              </article>
+
+              <article className="dataset-overview-support-card dataset-overview-support-card--interaction">
+                <div className="dataset-overview-support-head">
+                  <span className="dataset-overview-panel-title">interaction mix</span>
+                  <strong className="dataset-overview-support-value">
+                    {formatMetric(
+                      (dataset.metrics?.postLikes ?? 0) +
+                        (dataset.metrics?.postComments ?? 0) +
+                        (dataset.metrics?.postSaves ?? 0),
+                    )}
+                  </strong>
+                </div>
+                <div className="dataset-overview-interaction-list">
+                  {interactionMixItems.map((item) => {
+                    const Icon = item.icon;
+                    const numericValue = Number(item.value);
+                    const barWidth =
+                      interactionMixTotal > 0 && Number.isFinite(numericValue)
+                        ? `${Math.max((numericValue / interactionMixTotal) * 100, 8)}%`
+                        : "0%";
+
+                    return (
+                      <div key={item.key} className={`dataset-overview-interaction-item dataset-overview-interaction-item--${item.key}`}>
+                        <div className="dataset-overview-interaction-item__head">
+                          <span>
+                            <Icon size={14} aria-hidden="true" />
+                            {item.label}
+                          </span>
+                          <strong>{formatMetric(item.value)}</strong>
+                        </div>
+                        <div className="dataset-overview-interaction-item__track" aria-hidden="true">
+                          <div className="dataset-overview-interaction-item__fill" style={{ width: barWidth }} />
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </article>
+
+              <article className="dataset-overview-support-card dataset-overview-support-card--details">
+                <span className="dataset-overview-panel-title">dataset details</span>
+                <div className="dataset-overview-detail-list">
+                  <div>
+                    <span>overview window</span>
+                    <strong>{formatOverviewWindow(dataset.scope)}</strong>
+                  </div>
+                  <div>
+                    <span>export type</span>
+                    <strong>{getExportRangeLabel(dataset.scope)}</strong>
+                  </div>
+                  <div>
+                    <span>import source</span>
+                    <strong>{dataset.importReview.sourceLabel}</strong>
+                  </div>
+                  <div>
+                    <span>media quality</span>
+                    <strong>{dataset.scope?.exportRequestMediaQuality || "not detected"}</strong>
+                  </div>
+                </div>
+              </article>
             </div>
           </div>
         </article>
@@ -816,12 +1066,12 @@ export function DatasetWorkspaceRoute({ datasetId }: DatasetWorkspaceRouteProps)
               <p className="dataset-meta-label">relationship signals</p>
               <div className="dataset-card__metrics dataset-card__metrics--compact">
                 <div>
-                  <span>following</span>
-                  <strong>{formatMetric(dataset.metrics?.followingCount ?? null, "0")}</strong>
-                </div>
-                <div>
                   <span>followers</span>
                   <strong>{formatMetric(dataset.metrics?.followerCount ?? null, "0")}</strong>
+                </div>
+                <div>
+                  <span>following</span>
+                  <strong>{formatMetric(dataset.metrics?.followingCount ?? null, "0")}</strong>
                 </div>
                 <div>
                   <span>mutuals</span>
@@ -900,7 +1150,7 @@ export function DatasetWorkspaceRoute({ datasetId }: DatasetWorkspaceRouteProps)
                         aria-label="Sort exports"
                         onClick={(event) => event.stopPropagation()}
                       >
-                        {(["latest", "oldest", "name"] as const).map((option) => (
+                        {(["newest", "oldest", "a-z"] as const).map((option) => (
                           <button
                             key={option}
                             type="button"
@@ -945,7 +1195,8 @@ export function DatasetWorkspaceRoute({ datasetId }: DatasetWorkspaceRouteProps)
                 const isCurrentDataset = item.id === dataset.id;
                 const isRenaming = renamingDatasetId === item.id;
                 const isMenuOpen = openDatasetMenuId === item.id;
-                const dateRangeLabel = item.scope?.insightDateRangeLabel || item.importReview.sourceLabel;
+                const dateRangeLabel =
+                  (item.scope ? formatOverviewWindow(item.scope) : "") || item.importReview.sourceLabel;
 
                 return (
                   <div
@@ -1135,7 +1386,7 @@ export function DatasetWorkspaceRoute({ datasetId }: DatasetWorkspaceRouteProps)
           onClick={() => setIsToolsModalOpen(false)}
         >
           <div
-            className="dataset-modal"
+            className="dataset-modal dataset-modal--tools"
             role="dialog"
             aria-modal="true"
             aria-labelledby="all-tools-title"
@@ -1148,15 +1399,8 @@ export function DatasetWorkspaceRoute({ datasetId }: DatasetWorkspaceRouteProps)
                   all tools
                 </h2>
                 <p className="dataset-modal__copy">
-                  This panel shows which workspace tools are ready right now and which ones still need more product work.
+                  available now and coming soon in your workspace.
                 </p>
-                <div className="dataset-modal__summary">
-                  <span className="dataset-modal__summary-chip">{readyToolsCount} live</span>
-                  {partialToolsCount ? (
-                    <span className="dataset-modal__summary-chip">{partialToolsCount} partial</span>
-                  ) : null}
-                  <span className="dataset-modal__summary-chip">{laterToolsCount} queued</span>
-                </div>
               </div>
               <button
                 type="button"
@@ -1169,51 +1413,56 @@ export function DatasetWorkspaceRoute({ datasetId }: DatasetWorkspaceRouteProps)
             </div>
 
             <div className="dataset-tools-grid">
-              {dataset.importReview.tools.map((tool) => {
-                const Icon = getWorkspaceToolIcon(tool.id);
-                const isAvailableTool = tool.id === "not-following-back";
-                const statusLabel = getToolStatusLabel(tool.status);
-                const statusClassName = getToolStatusClassName(tool.status);
+              {workspaceModalTools.map((tool) => {
+                const Icon = getSoftLaunchToolIcon(tool.id);
+                const badgeClassName = tool.availability === "available now" ? "is-live" : "is-soon";
+                const href =
+                  tool.id === "not-following-back"
+                    ? `/app/datasets/${dataset.id}/tools/not-following-back`
+                    : null;
 
-                return isAvailableTool ? (
+                return href ? (
                   <Link
                     key={tool.id}
-                    href={`/app/datasets/${dataset.id}/tools/not-following-back`}
-                    className={`dataset-tool-card ${statusClassName}`.trim()}
+                    href={href}
+                    className={`dataset-tool-card ${badgeClassName}`.trim()}
                     onClick={() => setIsToolsModalOpen(false)}
                   >
                     <div className="dataset-tool-card__head">
                       <span className="dataset-tool-card__icon" aria-hidden="true">
                         <Icon size={17} strokeWidth={1.9} />
                       </span>
-                      <span className={`dataset-tool-card__badge ${statusClassName}`.trim()}>
-                        {statusLabel}
+                      <span className={`dataset-tool-card__badge ${badgeClassName}`.trim()}>
+                        {tool.availability}
                       </span>
                     </div>
                     <strong className="dataset-tool-card__title">{tool.title}</strong>
-                    <p className="dataset-tool-card__note">{tool.note}</p>
+                    <p className="dataset-tool-card__note">{tool.workspaceDescription}</p>
                     <div className="dataset-tool-card__footer">
-                      <span>{notFollowingBackTotal} accounts ready to review</span>
-                      <span className="dataset-tool-card__action">open workspace</span>
+                      <span>{tool.workspaceHelper}</span>
+                      <span className="dataset-tool-card__action">{tool.workspaceAction}</span>
                     </div>
                   </Link>
                 ) : (
-                  <div key={tool.id} className={`dataset-tool-card ${statusClassName}`.trim()}>
+                  <div key={tool.id} className={`dataset-tool-card ${badgeClassName}`.trim()}>
                     <div className="dataset-tool-card__head">
                       <span className="dataset-tool-card__icon" aria-hidden="true">
                         <Icon size={17} strokeWidth={1.9} />
                       </span>
-                      <span className={`dataset-tool-card__badge ${statusClassName}`.trim()}>{statusLabel}</span>
+                      <span className={`dataset-tool-card__badge ${badgeClassName}`.trim()}>
+                        {tool.availability}
+                      </span>
                     </div>
                     <strong className="dataset-tool-card__title">{tool.title}</strong>
-                    <p className="dataset-tool-card__note">{tool.note}</p>
+                    <p className="dataset-tool-card__note">{tool.workspaceDescription}</p>
                     <div className="dataset-tool-card__footer">
-                      <span>{tool.status === "partial" ? "eligible after stronger import" : "held for upcoming release"}</span>
+                      <span>{tool.workspaceHelper}</span>
                     </div>
                   </div>
                 );
               })}
             </div>
+
           </div>
         </div>
       ) : null}

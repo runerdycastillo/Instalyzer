@@ -1,5 +1,7 @@
 "use client";
 
+import { REQUIRED_EXPORT_SETTINGS_TEXT } from "@/lib/instagram/export-requirements";
+
 export type DatasetEntryPoint =
   | "home-hero"
   | "home-results-preview"
@@ -63,12 +65,18 @@ export type DatasetProfile = {
   website: string;
   isPrivate: boolean;
   profilePhotoPath: string;
+  profilePhotoDataUrl?: string;
   profilePhotoCreatedAt: number;
 };
 
 export type DatasetScope = {
   insightDateRangeLabel: string;
   relationshipExportRange: "all_time" | "limited" | "unknown";
+  exportRequestRange: "all_time" | "limited" | "unknown";
+  exportRequestStartTimestamp: number | null;
+  exportRequestEndTimestamp: number | null;
+  exportRequestFormat: string;
+  exportRequestMediaQuality: string;
   notFollowingBackEligible: boolean;
 };
 
@@ -90,6 +98,19 @@ export type DatasetMetrics = {
   followsInRange: number | null;
   unfollowsInRange: number | null;
   netFollowersInRange: number | null;
+  reachFollowersPercent: number | null;
+  reachNonFollowersPercent: number | null;
+  topFollowerCity: string;
+  topFollowerCityPercent: number | null;
+  topFollowerCountry: string;
+  topFollowerCountryPercent: number | null;
+  menFollowerPercent: number | null;
+  womenFollowerPercent: number | null;
+  topFollowerActivityDay: string;
+  topFollowerActivityValue: number | null;
+  postLikes: number | null;
+  postComments: number | null;
+  postSaves: number | null;
 };
 
 export type DatasetMeta = {
@@ -122,6 +143,11 @@ type ImportFileLike = {
   text(): Promise<string>;
 };
 
+type ExpandedImportData = {
+  jsonFiles: ImportFileLike[];
+  archiveEntries: Map<string, { bytes: Uint8Array; mimeType: string }>;
+};
+
 type ParsedRelationshipMatch = {
   type: "followers" | "following";
   entries: unknown[];
@@ -133,6 +159,14 @@ type ParsedAudienceInsights = {
   followsInRange: number | null;
   unfollowsInRange: number | null;
   netFollowersInRange: number | null;
+  topFollowerCity: string;
+  topFollowerCityPercent: number | null;
+  topFollowerCountry: string;
+  topFollowerCountryPercent: number | null;
+  menFollowerPercent: number | null;
+  womenFollowerPercent: number | null;
+  topFollowerActivityDay: string;
+  topFollowerActivityValue: number | null;
   dateRangeLabel: string;
 };
 
@@ -141,6 +175,8 @@ type ParsedReachInsights = {
   impressions: number | null;
   profileVisits: number | null;
   externalLinkTaps: number | null;
+  reachFollowersPercent: number | null;
+  reachNonFollowersPercent: number | null;
   dateRangeLabel: string;
 };
 
@@ -150,7 +186,18 @@ type ParsedInteractionInsights = {
   storyInteractions: number | null;
   storyReplies: number | null;
   accountsEngaged: number | null;
+  postLikes: number | null;
+  postComments: number | null;
+  postSaves: number | null;
   dateRangeLabel: string;
+};
+
+type ParsedDownloadRequest = {
+  requestTimestamp: number;
+  startTimestamp: number | null;
+  endTimestamp: number | null;
+  outputFormat: string;
+  mediaQuality: string;
 };
 
 declare global {
@@ -175,6 +222,15 @@ const categoryLabels: Record<DatasetCategory, string> = {
   "other-json": "other json",
 };
 
+const requiredLaunchDataLabels = [
+  "profile identity",
+  "followers",
+  "following",
+  "audience insights",
+  "reach summary",
+  "content interactions",
+] as const;
+
 function getFilePath(file: Pick<ImportFileLike, "name" | "webkitRelativePath">) {
   return (file.webkitRelativePath || file.name || "").replaceAll("\\", "/").toLowerCase();
 }
@@ -185,6 +241,10 @@ function normalizeUploadPath(file: Pick<ImportFileLike, "name" | "webkitRelative
 
 function normalizePathForMatch(file: Pick<ImportFileLike, "name" | "webkitRelativePath">) {
   return normalizeUploadPath(file).toLowerCase();
+}
+
+function normalizeArchivePath(path: string) {
+  return String(path || "").replaceAll("\\", "/").replace(/^\/+/, "").toLowerCase();
 }
 
 function detectCategory(file: Pick<ImportFileLike, "name" | "webkitRelativePath">): DatasetCategory {
@@ -201,6 +261,31 @@ function detectCategory(file: Pick<ImportFileLike, "name" | "webkitRelativePath"
   if (/content_interactions\.json$/i.test(path)) return "interaction-insights";
   if (path.endsWith(".json")) return "other-json";
   return "other-json";
+}
+
+function getMimeTypeFromPath(path: string) {
+  const normalized = normalizeArchivePath(path);
+  if (normalized.endsWith(".jpg") || normalized.endsWith(".jpeg")) return "image/jpeg";
+  if (normalized.endsWith(".png")) return "image/png";
+  if (normalized.endsWith(".webp")) return "image/webp";
+  if (normalized.endsWith(".gif")) return "image/gif";
+  return "";
+}
+
+function encodeBase64(bytes: Uint8Array) {
+  let binary = "";
+  const chunkSize = 0x8000;
+
+  for (let index = 0; index < bytes.length; index += chunkSize) {
+    const chunk = bytes.subarray(index, index + chunkSize);
+    binary += String.fromCharCode(...chunk);
+  }
+
+  return btoa(binary);
+}
+
+function createDataUrlFromBytes(bytes: Uint8Array, mimeType: string) {
+  return `data:${mimeType};base64,${encodeBase64(bytes)}`;
 }
 
 function getSourceLabel(files: File[]) {
@@ -273,34 +358,94 @@ function normalizeRangeLabel(value: string) {
   return String(value || "").trim().replace(/\s+/g, " ");
 }
 
-function detectRelationshipExportRange(rangeLabel: string) {
-  const normalized = normalizeRangeLabel(rangeLabel).toLowerCase();
-  if (!normalized) return "unknown";
-  if (/\ball\s*time\b/.test(normalized)) return "all_time";
+function formatLabelList(values: string[]) {
+  if (values.length <= 1) return values[0] || "";
+  if (values.length === 2) return `${values[0]} and ${values[1]}`;
+  return `${values.slice(0, -1).join(", ")}, and ${values[values.length - 1]}`;
+}
+
+function getRequiredLaunchSettingsMessage(detail: string) {
+  return `this export doesn't meet the required launch settings yet. ${detail} required settings: ${REQUIRED_EXPORT_SETTINGS_TEXT} re-export from instagram and try again.`;
+}
+
+function detectExportRequestRange(startTimestamp: number | null) {
+  if (startTimestamp === null || !Number.isFinite(startTimestamp)) return "unknown";
+  if (startTimestamp < 0) return "all_time";
   return "limited";
 }
 
-function getNotFollowingBackAccess(rangeLabel: string) {
-  const detectedRange = detectRelationshipExportRange(rangeLabel);
+function getNotFollowingBackAccess(input: {
+  rangeLabel: string;
+  exportRequestRange: "all_time" | "limited" | "unknown";
+}) {
+  const detectedRange = input.exportRequestRange;
 
   if (detectedRange === "all_time") {
     return {
       eligible: true,
-      note: "All-time export detected, so relationship results can use the broadest roster available.",
+      note: "all-time export request verified, so relationship results can use the broadest roster available.",
     };
   }
 
   if (detectedRange === "limited") {
     return {
       eligible: false,
-      note: `This dataset shows "${normalizeRangeLabel(rangeLabel)}". Re-export in JSON with all time for the strongest relationship results.`,
+      note: "the export request history shows a limited date range, so re-export with all time before using relationship tools.",
+    };
+  }
+
+  if (normalizeRangeLabel(input.rangeLabel)) {
+    return {
+      eligible: true,
+      note: `insight range detected as "${normalizeRangeLabel(input.rangeLabel)}". relationship records were loaded successfully for this dataset.`,
     };
   }
 
   return {
-    eligible: false,
-    note: "All-time export was not verified for this dataset yet.",
+    eligible: true,
+    note: "relationship records were loaded successfully for this dataset.",
   };
+}
+
+function getLabelValueEntry(entry: unknown, label: string) {
+  if (!entry || typeof entry !== "object") return null;
+  const labelValues = (entry as Record<string, unknown>).label_values;
+  if (!Array.isArray(labelValues)) return null;
+
+  return (
+    labelValues.find((item) => item && typeof item === "object" && (item as Record<string, unknown>).label === label) ||
+    null
+  ) as Record<string, unknown> | null;
+}
+
+function extractDownloadRequests(data: unknown): ParsedDownloadRequest[] {
+  if (!Array.isArray(data)) return [];
+
+  return data
+    .map((entry) => {
+      const outputFormat = String(getLabelValueEntry(entry, "Output format")?.value || "").trim();
+      const mediaQuality = String(getLabelValueEntry(entry, "Media quality")?.value || "").trim();
+      const requestTimestamp = Number((entry as Record<string, unknown>)?.timestamp || 0);
+      const startTimestamp = Number(getLabelValueEntry(entry, "Start date")?.timestamp_value);
+      const endTimestamp = Number(getLabelValueEntry(entry, "End date")?.timestamp_value);
+
+      return {
+        requestTimestamp: Number.isFinite(requestTimestamp) ? requestTimestamp : 0,
+        startTimestamp: Number.isFinite(startTimestamp) ? startTimestamp : null,
+        endTimestamp: Number.isFinite(endTimestamp) ? endTimestamp : null,
+        outputFormat,
+        mediaQuality,
+      };
+    })
+    .filter((item) => item.outputFormat);
+}
+
+function getLatestJsonDownloadRequest(requests: ParsedDownloadRequest[]) {
+  return (
+    requests
+      .filter((item) => item.outputFormat.toLowerCase() === "json")
+      .sort((a, b) => b.requestTimestamp - a.requestTimestamp)[0] || null
+  );
 }
 
 function getReadinessNote(
@@ -311,17 +456,17 @@ function getReadinessNote(
   if (hasRelationshipFiles) {
     const relationshipAccess = getNotFollowingBackAccess(rangeLabel);
     if (relationshipAccess.eligible) {
-      return "Relationship records and overview signals were detected, so this dataset is ready for a strong workspace handoff.";
+      return "this export meets the required launch settings and is ready for your overview and relationship workflow.";
     }
 
     if (hasInsightMetrics) {
-      return "Your overview signals are ready now, but relationship tools will be strongest after an all-time JSON export.";
+      return "this export is missing the required launch settings for the current soft launch.";
     }
 
-    return "Relationship records were detected, but an all-time JSON export is still recommended for the strongest tool accuracy.";
+    return "this export is missing the required launch settings for the current soft launch.";
   }
 
-  return "This import is missing the core followers and following records needed for the launch relationship workflow.";
+  return "this export is missing the required launch settings for the current soft launch.";
 }
 
 function getToolAvailability(input: {
@@ -337,7 +482,7 @@ function getToolAvailability(input: {
   return [
     {
       id: "not-following-back",
-      title: "Not Following Back",
+      title: "not following back",
       status: hasRelationshipFiles
         ? input.relationshipEligible
           ? "ready"
@@ -345,33 +490,33 @@ function getToolAvailability(input: {
         : "later",
       note: hasRelationshipFiles
         ? input.relationshipEligible
-          ? "Followers and following records were detected with an all-time relationship range."
-          : "Followers and following were detected, but the export range still needs verification for the strongest results."
-        : "Needs both followers and following records.",
+          ? "followers and following records were detected and are ready to compare."
+          : "followers and following records were detected and are ready to compare."
+        : "needs both followers and following records.",
     },
     {
       id: "audience-insights",
-      title: "Audience Insights",
+      title: "audience insights",
       status: input.hasAudienceInsights ? "ready" : "later",
       note: input.hasAudienceInsights
-        ? "Audience insight summary files were detected."
-        : "Needs audience insight summary files.",
+        ? "audience insight summary files were detected."
+        : "needs audience insight summary files.",
     },
     {
       id: "reach-summary",
-      title: "Reach Summary",
+      title: "reach summary",
       status: input.hasReachInsights ? "ready" : "later",
       note: input.hasReachInsights
-        ? "Reach summary files were detected."
-        : "Needs reach summary files.",
+        ? "reach summary files were detected."
+        : "needs reach summary files.",
     },
     {
       id: "content-interactions",
-      title: "Content Interactions",
+      title: "content interactions",
       status: input.hasInteractionInsights ? "ready" : "later",
       note: input.hasInteractionInsights
-        ? "Interaction summary files were detected."
-        : "Needs content interaction files.",
+        ? "interaction summary files were detected."
+        : "needs content interaction files.",
     },
   ];
 }
@@ -463,9 +608,20 @@ function getStringMapValue(entry: unknown, key: string) {
   if (!entry || typeof entry !== "object") return "";
   const stringMap = (entry as Record<string, unknown>).string_map_data;
   if (!stringMap || typeof stringMap !== "object") return "";
-  const raw = (stringMap as Record<string, unknown>)[key];
-  if (!raw || typeof raw !== "object") return "";
-  return String((raw as Record<string, unknown>).value || "").trim();
+
+  const direct = (stringMap as Record<string, unknown>)[key];
+  if (direct && typeof direct === "object") {
+    return String((direct as Record<string, unknown>).value || "").trim();
+  }
+
+  const normalizedTarget = key.trim().toLowerCase();
+  for (const [candidateKey, candidateValue] of Object.entries(stringMap as Record<string, unknown>)) {
+    if (candidateKey.trim().toLowerCase() !== normalizedTarget) continue;
+    if (!candidateValue || typeof candidateValue !== "object") return "";
+    return String((candidateValue as Record<string, unknown>).value || "").trim();
+  }
+
+  return "";
 }
 
 function getMediaMapEntry(entry: unknown, key: string) {
@@ -549,15 +705,83 @@ function parseInsightCount(value: string) {
   return Number.isFinite(number) ? number : null;
 }
 
+function parseInsightPercent(value: string) {
+  const digits = String(value || "").replace(/[^\d.-]/g, "");
+  if (!digits) return null;
+  const number = Number(digits);
+  return Number.isFinite(number) ? number : null;
+}
+
+function parseLeadingBreakdownValue(value: string) {
+  const firstSegment = String(value || "")
+    .split(",")
+    .map((item) => item.trim())
+    .find(Boolean);
+
+  if (!firstSegment) {
+    return {
+      label: "",
+      percent: null as number | null,
+    };
+  }
+
+  const match = firstSegment.match(/^(.+?):\s*([\d.]+)%$/);
+  if (!match) {
+    return {
+      label: firstSegment,
+      percent: null as number | null,
+    };
+  }
+
+  return {
+    label: match[1].trim(),
+    percent: parseInsightPercent(match[2]),
+  };
+}
+
 function extractAudienceInsights(data: unknown): ParsedAudienceInsights | null {
   const entry = getFirstArrayItem(data, "organic_insights_audience");
   if (!entry) return null;
+
+  const topCity = parseLeadingBreakdownValue(
+    getStringMapValue(entry, "Follower Percentage by City"),
+  );
+  const topCountry = parseLeadingBreakdownValue(
+    getStringMapValue(entry, "Follower Percentage by Country"),
+  );
+  const followerActivityDays = [
+    { label: "Monday", value: parseInsightCount(getStringMapValue(entry, "Monday Follower Activity")) },
+    { label: "Tuesday", value: parseInsightCount(getStringMapValue(entry, "Tuesday Follower Activity")) },
+    { label: "Wednesday", value: parseInsightCount(getStringMapValue(entry, "Wednesday Follower Activity")) },
+    { label: "Thursday", value: parseInsightCount(getStringMapValue(entry, "Thursday Follower Activity")) },
+    { label: "Friday", value: parseInsightCount(getStringMapValue(entry, "Friday Follower Activity")) },
+    { label: "Saturday", value: parseInsightCount(getStringMapValue(entry, "Saturday Follower Activity")) },
+    { label: "Sunday", value: parseInsightCount(getStringMapValue(entry, "Sunday Follower Activity")) },
+  ];
+  const topActivityDay = followerActivityDays.reduce(
+    (best, item) => {
+      if (!Number.isFinite(item.value ?? NaN)) return best;
+      if (!Number.isFinite(best.value ?? NaN) || (item.value ?? 0) > (best.value ?? 0)) {
+        return item;
+      }
+      return best;
+    },
+    { label: "", value: null as number | null },
+  );
 
   return {
     followerTotal: parseInsightCount(getStringMapValue(entry, "Followers")),
     followsInRange: parseInsightCount(getStringMapValue(entry, "Follows")),
     unfollowsInRange: parseInsightCount(getStringMapValue(entry, "Unfollows")),
     netFollowersInRange: parseInsightCount(getStringMapValue(entry, "Overall followers")),
+    topFollowerCity: topCity.label,
+    topFollowerCityPercent: topCity.percent,
+    topFollowerCountry: topCountry.label,
+    topFollowerCountryPercent: topCountry.percent,
+    menFollowerPercent: parseInsightPercent(getStringMapValue(entry, "Total Follower Percentage for Men")),
+    womenFollowerPercent: parseInsightPercent(getStringMapValue(entry, "Total Follower Percentage for Women")),
+    topFollowerActivityDay: topActivityDay.label,
+    topFollowerActivityValue: topActivityDay.value,
     dateRangeLabel: getStringMapValue(entry, "Date Range"),
   };
 }
@@ -571,6 +795,8 @@ function extractReachInsights(data: unknown): ParsedReachInsights | null {
     impressions: parseInsightCount(getStringMapValue(entry, "Impressions")),
     profileVisits: parseInsightCount(getStringMapValue(entry, "Profile visits")),
     externalLinkTaps: parseInsightCount(getStringMapValue(entry, "External link taps")),
+    reachFollowersPercent: parseInsightPercent(getStringMapValue(entry, "Followers")),
+    reachNonFollowersPercent: parseInsightPercent(getStringMapValue(entry, "Non-Followers")),
     dateRangeLabel: getStringMapValue(entry, "Date Range"),
   };
 }
@@ -585,6 +811,9 @@ function extractInteractionInsights(data: unknown): ParsedInteractionInsights | 
     storyInteractions: parseInsightCount(getStringMapValue(entry, "Story interactions")),
     storyReplies: parseInsightCount(getStringMapValue(entry, "Story replies")),
     accountsEngaged: parseInsightCount(getStringMapValue(entry, "Accounts engaged")),
+    postLikes: parseInsightCount(getStringMapValue(entry, "Post Likes")),
+    postComments: parseInsightCount(getStringMapValue(entry, "Post Comments")),
+    postSaves: parseInsightCount(getStringMapValue(entry, "Post Saves")),
     dateRangeLabel: getStringMapValue(entry, "Date Range"),
   };
 }
@@ -677,39 +906,60 @@ function buildRelationshipMetrics(
   };
 }
 
-async function extractZipJsonFiles(file: File): Promise<ImportFileLike[]> {
+async function extractZipImportData(file: File): Promise<ExpandedImportData> {
   const fflate = await loadFflateScript();
   if (!fflate?.unzipSync || !fflate?.strFromU8) {
     throw new Error("ZIP support is unavailable right now.");
   }
 
   const archive = fflate.unzipSync(new Uint8Array(await file.arrayBuffer()));
-  const extracted: ImportFileLike[] = [];
+  const jsonFiles: ImportFileLike[] = [];
+  const archiveEntries = new Map<string, { bytes: Uint8Array; mimeType: string }>();
 
   for (const [path, bytes] of Object.entries(archive)) {
-    if (!/\.json$/i.test(path)) continue;
-    extracted.push({
-      name: path.split("/").pop() || path,
-      webkitRelativePath: `${file.name}/${path}`,
-      text: async () => fflate.strFromU8(bytes),
-    });
-  }
+    const normalizedPath = normalizeArchivePath(path);
 
-  return extracted;
-}
+    if (/\.json$/i.test(path)) {
+      jsonFiles.push({
+        name: path.split("/").pop() || path,
+        webkitRelativePath: `${file.name}/${path}`,
+        text: async () => fflate.strFromU8(bytes),
+      });
+      continue;
+    }
 
-async function expandImportedFiles(files: File[]): Promise<ImportFileLike[]> {
-  const expandedFiles: ImportFileLike[] = [];
-
-  for (const file of files) {
-    if (file.name.toLowerCase().endsWith(".zip")) {
-      expandedFiles.push(...(await extractZipJsonFiles(file)));
-    } else {
-      expandedFiles.push(file);
+    const mimeType = getMimeTypeFromPath(path);
+    if (mimeType) {
+      archiveEntries.set(normalizedPath, { bytes, mimeType });
     }
   }
 
-  return expandedFiles.filter((file) => /\.json$/i.test(file.name));
+  return {
+    jsonFiles,
+    archiveEntries,
+  };
+}
+
+async function expandImportedFiles(files: File[]): Promise<ExpandedImportData> {
+  const jsonFiles: ImportFileLike[] = [];
+  const archiveEntries = new Map<string, { bytes: Uint8Array; mimeType: string }>();
+
+  for (const file of files) {
+    if (file.name.toLowerCase().endsWith(".zip")) {
+      const zipImportData = await extractZipImportData(file);
+      jsonFiles.push(...zipImportData.jsonFiles);
+      for (const [path, entry] of zipImportData.archiveEntries.entries()) {
+        archiveEntries.set(path, entry);
+      }
+    } else {
+      jsonFiles.push(file);
+    }
+  }
+
+  return {
+    jsonFiles: jsonFiles.filter((file) => /\.json$/i.test(file.name)),
+    archiveEntries,
+  };
 }
 
 export function getDefaultDatasetName(
@@ -733,9 +983,12 @@ export async function prepareDatasetDraft(files: File[]): Promise<PreparedLocalD
   const categorySet = new Set<DatasetCategory>();
   files.forEach((file) => categorySet.add(detectCategory(file)));
 
-  const expandedJsonFiles = await expandImportedFiles(files);
+  const expandedImportData = await expandImportedFiles(files);
+  const expandedJsonFiles = expandedImportData.jsonFiles;
   if (!expandedJsonFiles.length) {
-    throw new Error("No JSON files were found. Upload the Instagram ZIP or the extracted JSON export.");
+    throw new Error(
+      `no json files were found. required settings: ${REQUIRED_EXPORT_SETTINGS_TEXT} upload the instagram ZIP or the extracted json export and try again.`,
+    );
   }
 
   const categoryCounts = createCategoryCounts(expandedJsonFiles);
@@ -748,6 +1001,7 @@ export async function prepareDatasetDraft(files: File[]): Promise<PreparedLocalD
   let audienceInsights: ParsedAudienceInsights | null = null;
   let reachInsights: ParsedReachInsights | null = null;
   let interactionInsights: ParsedInteractionInsights | null = null;
+  let latestJsonDownloadRequest: ParsedDownloadRequest | null = null;
 
   for (const file of expandedJsonFiles) {
     let parsed: unknown;
@@ -764,8 +1018,24 @@ export async function prepareDatasetDraft(files: File[]): Promise<PreparedLocalD
       )
     ) {
       profile = extractProfileFromPersonalInfo(parsed);
+      if (profile?.profilePhotoPath) {
+        const normalizedPhotoPath = normalizeArchivePath(profile.profilePhotoPath);
+        const photoEntry = expandedImportData.archiveEntries.get(normalizedPhotoPath);
+        if (photoEntry) {
+          profile.profilePhotoDataUrl = createDataUrlFromBytes(photoEntry.bytes, photoEntry.mimeType);
+        }
+      }
       categorySet.add("profile");
       continue;
+    }
+
+    if (
+      !latestJsonDownloadRequest &&
+      /(^|\/)your_instagram_activity\/other_activity\/your_information_download_requests\.json$/i.test(
+        normalizePathForMatch(file),
+      )
+    ) {
+      latestJsonDownloadRequest = getLatestJsonDownloadRequest(extractDownloadRequests(parsed));
     }
 
     if (
@@ -828,16 +1098,20 @@ export async function prepareDatasetDraft(files: File[]): Promise<PreparedLocalD
     }
   }
 
-  if (!followerMatches.length || !followingMatches.length) {
-    const missing = [
-      followerMatches.length ? null : "followers",
-      followingMatches.length ? null : "following",
-    ]
-      .filter(Boolean)
-      .join(" and ");
+  const missingRequiredData = [
+    profile ? null : requiredLaunchDataLabels[0],
+    followerMatches.length ? null : requiredLaunchDataLabels[1],
+    followingMatches.length ? null : requiredLaunchDataLabels[2],
+    audienceInsights ? null : requiredLaunchDataLabels[3],
+    reachInsights ? null : requiredLaunchDataLabels[4],
+    interactionInsights ? null : requiredLaunchDataLabels[5],
+  ].filter(Boolean) as string[];
 
+  if (missingRequiredData.length) {
     throw new Error(
-      `Could not find the required ${missing} JSON. Make sure you selected the Instagram export in JSON format.`,
+      getRequiredLaunchSettingsMessage(
+        `missing required data: ${formatLabelList(missingRequiredData)}. `,
+      ),
     );
   }
 
@@ -850,7 +1124,17 @@ export async function prepareDatasetDraft(files: File[]): Promise<PreparedLocalD
     "following",
   );
   const relationshipMetrics = buildRelationshipMetrics(followers, following);
-  const relationshipAccess = getNotFollowingBackAccess(insightDateRangeLabel);
+  const exportRequestRange = detectExportRequestRange(latestJsonDownloadRequest?.startTimestamp ?? null);
+  const relationshipAccess = getNotFollowingBackAccess({
+    rangeLabel: insightDateRangeLabel,
+    exportRequestRange,
+  });
+
+  if (!relationshipAccess.eligible) {
+    throw new Error(
+      getRequiredLaunchSettingsMessage("the archive request history shows a limited export range. "),
+    );
+  }
 
   const metrics: DatasetMetrics = {
     ...relationshipMetrics,
@@ -867,6 +1151,19 @@ export async function prepareDatasetDraft(files: File[]): Promise<PreparedLocalD
     followsInRange: audienceInsights?.followsInRange ?? null,
     unfollowsInRange: audienceInsights?.unfollowsInRange ?? null,
     netFollowersInRange: audienceInsights?.netFollowersInRange ?? null,
+    reachFollowersPercent: reachInsights?.reachFollowersPercent ?? null,
+    reachNonFollowersPercent: reachInsights?.reachNonFollowersPercent ?? null,
+    topFollowerCity: audienceInsights?.topFollowerCity || "",
+    topFollowerCityPercent: audienceInsights?.topFollowerCityPercent ?? null,
+    topFollowerCountry: audienceInsights?.topFollowerCountry || "",
+    topFollowerCountryPercent: audienceInsights?.topFollowerCountryPercent ?? null,
+    menFollowerPercent: audienceInsights?.menFollowerPercent ?? null,
+    womenFollowerPercent: audienceInsights?.womenFollowerPercent ?? null,
+    topFollowerActivityDay: audienceInsights?.topFollowerActivityDay || "",
+    topFollowerActivityValue: audienceInsights?.topFollowerActivityValue ?? null,
+    postLikes: interactionInsights?.postLikes ?? null,
+    postComments: interactionInsights?.postComments ?? null,
+    postSaves: interactionInsights?.postSaves ?? null,
   };
 
   const hasInsightMetrics =
@@ -904,7 +1201,12 @@ export async function prepareDatasetDraft(files: File[]): Promise<PreparedLocalD
     profile,
     scope: {
       insightDateRangeLabel,
-      relationshipExportRange: detectRelationshipExportRange(insightDateRangeLabel),
+      relationshipExportRange: exportRequestRange,
+      exportRequestRange,
+      exportRequestStartTimestamp: latestJsonDownloadRequest?.startTimestamp ?? null,
+      exportRequestEndTimestamp: latestJsonDownloadRequest?.endTimestamp ?? null,
+      exportRequestFormat: latestJsonDownloadRequest?.outputFormat || "",
+      exportRequestMediaQuality: latestJsonDownloadRequest?.mediaQuality || "",
       notFollowingBackEligible: relationshipAccess.eligible,
     },
     metrics,

@@ -4,6 +4,10 @@ import { ChevronLeft, ChevronRight, ExternalLink } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
 import { useState } from "react";
+import {
+  exportQuickTipSections,
+  INSTAGRAM_APP_URL,
+} from "@/lib/instagram/export-requirements";
 
 const guideTabs = [
   { key: "quick-steps", title: "quick guide", copy: "written guide" },
@@ -46,12 +50,11 @@ const quickSteps = [
     ),
   },
   {
-    title: "choose recommended settings",
+    title: "choose required settings",
     copy: (
       <>
-        Use these recommended settings:{" "}
-        <strong>Customize information</strong>, <strong>All time</strong>,{" "}
-        <strong>JSON</strong>, and <strong>Medium</strong>.
+        Use these required settings: <strong>Customize information</strong>,{" "}
+        <strong>All time</strong>, and <strong>JSON</strong>.
       </>
     ),
     accented: true,
@@ -171,7 +174,7 @@ const visualSteps = [
     title: "start export",
     copy: (
       <>
-        with the <strong>recommended settings</strong>, start your{" "}
+        with the <strong>required settings</strong>, start your{" "}
         <strong>export</strong>.
       </>
     ),
@@ -202,40 +205,6 @@ const visualSteps = [
       </>
     ),
     overlayPosition: "top-right",
-  },
-] as const;
-
-const sideSections = [
-  {
-    title: "before you start",
-    items: [
-      "We recommend staying logged into Instagram in your browser so result links open smoothly.",
-      "Export prep can take minutes or hours, depending on account size.",
-    ],
-    instagramLink: true,
-  },
-  {
-    title: "recommended settings",
-    items: [
-      "All available information",
-      "All time",
-      "JSON",
-      "Medium",
-    ],
-    labels: [
-      "Customize information",
-      "Date range",
-      "Format",
-      "Media quality",
-    ],
-  },
-  {
-    title: "common issues",
-    items: [
-      "No file? Check email and spam.",
-      "Wrong format? Use JSON.",
-      "Upload issue? Use the export ZIP file.",
-    ],
   },
 ] as const;
 
@@ -491,23 +460,23 @@ export function HelpRoute() {
           <p className="guide-side-stack-label">quick tips</p>
 
           <div className="guide-side-card guide-side-card-v2 guide-side-card-unified">
-            {sideSections.map((section) => (
+            <div className="guide-side-card__topbar">
+              <a
+                href={INSTAGRAM_APP_URL}
+                target="_blank"
+                rel="noreferrer"
+                className="guide-inline-instagram-btn"
+                aria-label="Open Instagram"
+                title="Open Instagram"
+              >
+                <ExternalLink aria-hidden="true" strokeWidth={1.9} />
+              </a>
+            </div>
+
+            {exportQuickTipSections.map((section) => (
               <div key={section.title} className="guide-side-section">
                 <div className="guide-side-section-head">
                   <h4 className="guide-side-section-title">{section.title}</h4>
-
-                  {section.instagramLink ? (
-                    <a
-                      href="https://www.instagram.com/"
-                      target="_blank"
-                      rel="noreferrer"
-                      className="guide-inline-instagram-btn"
-                      aria-label="Open Instagram"
-                      title="Open Instagram"
-                    >
-                      <ExternalLink aria-hidden="true" strokeWidth={1.9} />
-                    </a>
-                  ) : null}
                 </div>
 
                 <ul className="guide-side-list">

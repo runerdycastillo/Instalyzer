@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { useSyncExternalStore } from "react";
+import { DatasetWorkspaceEmptyState } from "@/components/workspace/dataset-workspace-empty-state";
 import {
   getLocalDatasetsServerSnapshot,
   getEntryPointLabel,
@@ -28,6 +29,10 @@ export function DatasetsIndexRoute() {
     getLocalDatasetsServerSnapshot,
   );
   const hasReachedDatasetLimit = hasReachedLocalDatasetLimit(datasets);
+
+  if (!datasets.length) {
+    return <DatasetWorkspaceEmptyState createEntryPoint="datasets-index" />;
+  }
 
   return (
     <section className="dataset-index" aria-labelledby="dataset-index-title">
@@ -56,70 +61,50 @@ export function DatasetsIndexRoute() {
         )}
       </div>
 
-      {datasets.length ? (
-        <div className="dataset-index__grid">
-          {datasets.map((dataset) => (
-            <article key={dataset.id} className="dataset-card">
-              <div className="dataset-card__head">
-                <div>
-                  <p className="dataset-card__eyebrow">{getEntryPointLabel(dataset.entryPoint)}</p>
-                  <h2>{dataset.name}</h2>
-                </div>
-                <span className="dataset-chip">{dataset.importReview.sourceLabel}</span>
+      <div className="dataset-index__grid">
+        {datasets.map((dataset) => (
+          <article key={dataset.id} className="dataset-card">
+            <div className="dataset-card__head">
+              <div>
+                <p className="dataset-card__eyebrow">{getEntryPointLabel(dataset.entryPoint)}</p>
+                <h2>{dataset.name}</h2>
               </div>
+              <span className="dataset-chip">{dataset.importReview.sourceLabel}</span>
+            </div>
 
-              <p className="dataset-card__copy">{dataset.importReview.uploadSummary}</p>
+            <p className="dataset-card__copy">{dataset.importReview.uploadSummary}</p>
 
-              <div className="dataset-card__metrics">
-                <div>
-                  <span>created</span>
-                  <strong>{formatDate(dataset.createdAt)}</strong>
-                </div>
-                <div>
-                  <span>files</span>
-                  <strong>{dataset.importReview.fileCount}</strong>
-                </div>
-                <div>
-                  <span>categories</span>
-                  <strong>{dataset.importReview.categoryCount}</strong>
-                </div>
+            <div className="dataset-card__metrics">
+              <div>
+                <span>created</span>
+                <strong>{formatDate(dataset.createdAt)}</strong>
               </div>
-
-              <div className="dataset-chip-row">
-                {dataset.importReview.categoryLabels.map((label) => (
-                  <span key={label} className="dataset-chip">
-                    {label}
-                  </span>
-                ))}
+              <div>
+                <span>files</span>
+                <strong>{dataset.importReview.fileCount}</strong>
               </div>
-
-              <div className="route-links">
-                <Link href={`/app/datasets/${dataset.id}`} className="route-link">
-                  open workspace
-                </Link>
+              <div>
+                <span>categories</span>
+                <strong>{dataset.importReview.categoryCount}</strong>
               </div>
-            </article>
-          ))}
-        </div>
-      ) : (
-        <article className="dataset-card dataset-card--empty">
-          <h2>No datasets yet</h2>
-          <p>
-            Start with the new 3-step import flow, then we can build the fuller
-            workspace and native Tool 1 on top of those saved datasets.
-          </p>
-          <div className="route-links">
-            {!hasReachedDatasetLimit ? (
-              <Link href="/app/datasets/new?entry=datasets-index" className="route-link">
-                create your first dataset
+            </div>
+
+            <div className="dataset-chip-row">
+              {dataset.importReview.categoryLabels.map((label) => (
+                <span key={label} className="dataset-chip">
+                  {label}
+                </span>
+              ))}
+            </div>
+
+            <div className="route-links">
+              <Link href={`/app/datasets/${dataset.id}`} className="route-link">
+                open workspace
               </Link>
-            ) : null}
-            <Link href="/help" className="route-link">
-              open export help
-            </Link>
-          </div>
-        </article>
-      )}
+            </div>
+          </article>
+        ))}
+      </div>
     </section>
   );
 }
