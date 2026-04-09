@@ -106,6 +106,11 @@ export type DatasetMetrics = {
   topFollowerCountryPercent: number | null;
   menFollowerPercent: number | null;
   womenFollowerPercent: number | null;
+  followerActivityByDay: Array<{
+    label: string;
+    shortLabel: string;
+    value: number | null;
+  }>;
   topFollowerActivityDay: string;
   topFollowerActivityValue: number | null;
   postLikes: number | null;
@@ -165,6 +170,11 @@ type ParsedAudienceInsights = {
   topFollowerCountryPercent: number | null;
   menFollowerPercent: number | null;
   womenFollowerPercent: number | null;
+  followerActivityByDay: Array<{
+    label: string;
+    shortLabel: string;
+    value: number | null;
+  }>;
   topFollowerActivityDay: string;
   topFollowerActivityValue: number | null;
   dateRangeLabel: string;
@@ -780,6 +790,11 @@ function extractAudienceInsights(data: unknown): ParsedAudienceInsights | null {
     topFollowerCountryPercent: topCountry.percent,
     menFollowerPercent: parseInsightPercent(getStringMapValue(entry, "Total Follower Percentage for Men")),
     womenFollowerPercent: parseInsightPercent(getStringMapValue(entry, "Total Follower Percentage for Women")),
+    followerActivityByDay: followerActivityDays.map((item) => ({
+      label: item.label,
+      shortLabel: item.label.slice(0, 3),
+      value: item.value,
+    })),
     topFollowerActivityDay: topActivityDay.label,
     topFollowerActivityValue: topActivityDay.value,
     dateRangeLabel: getStringMapValue(entry, "Date Range"),
@@ -1159,6 +1174,7 @@ export async function prepareDatasetDraft(files: File[]): Promise<PreparedLocalD
     topFollowerCountryPercent: audienceInsights?.topFollowerCountryPercent ?? null,
     menFollowerPercent: audienceInsights?.menFollowerPercent ?? null,
     womenFollowerPercent: audienceInsights?.womenFollowerPercent ?? null,
+    followerActivityByDay: audienceInsights?.followerActivityByDay || [],
     topFollowerActivityDay: audienceInsights?.topFollowerActivityDay || "",
     topFollowerActivityValue: audienceInsights?.topFollowerActivityValue ?? null,
     postLikes: interactionInsights?.postLikes ?? null,

@@ -4,6 +4,7 @@ import { usePathname } from "next/navigation";
 import type { ReactNode } from "react";
 import { MarketingShellMetrics } from "@/components/layout/marketing-shell-metrics";
 import { MarketingNav } from "@/components/layout/marketing-nav";
+import { ScrollBehaviorManager } from "@/components/layout/scroll-behavior-manager";
 import { SiteFooter } from "@/components/layout/site-footer";
 
 export function WorkspaceShell({ children }: { children: ReactNode }) {
@@ -12,6 +13,8 @@ export function WorkspaceShell({ children }: { children: ReactNode }) {
 
   return (
     <div className="workspace-shell-frame workspace-shell-frame--focused">
+      <ScrollBehaviorManager />
+
       <MarketingShellMetrics />
 
       <header className="marketing-header">

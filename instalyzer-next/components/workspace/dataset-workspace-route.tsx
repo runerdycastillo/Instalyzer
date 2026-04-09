@@ -2,22 +2,28 @@
 
 import {
   ArrowDownUp,
+  BarChart3,
   Bookmark,
   CalendarDays,
   Check,
   ChevronDown,
   ExternalLink,
   FolderKanban,
+  GitCompareArrows,
   Globe2,
   Heart,
   MapPin,
   MessageCircle,
+  MousePointerClick,
   Pencil,
+  Search,
   Settings,
-  TrendingDown,
-  TrendingUp,
+  Target,
   Trash2,
   UserMinus,
+  UserCheck,
+  UserPlus,
+  UsersRound,
   VenusAndMars,
   Wrench,
   X,
@@ -26,7 +32,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { createPortal } from "react-dom";
-import { useEffect, useRef, useState, useSyncExternalStore } from "react";
+import { useEffect, useRef, useState, useSyncExternalStore, type CSSProperties } from "react";
 import { DatasetWorkspaceEmptyState } from "@/components/workspace/dataset-workspace-empty-state";
 import {
   readActiveDatasetId,
@@ -69,16 +75,52 @@ function formatSignedMetric(value: number | null | undefined, fallback = "Not av
   return `${number > 0 ? "+" : ""}${number.toLocaleString()}`;
 }
 
-function formatPercent(value: number | null | undefined, fallback = "Not available") {
+function formatCompactPercent(value: number | null | undefined, fallback = "Not available") {
   const number = Number(value);
   if (!Number.isFinite(number)) return fallback;
   return `${number.toFixed(number % 1 === 0 ? 0 : 1)}%`;
+}
+
+function formatSignedPercent(value: number | null | undefined, fallback = "Not available") {
+  const number = Number(value);
+  if (!Number.isFinite(number)) return fallback;
+  return `${number > 0 ? "+" : ""}${number.toFixed(number % 1 === 0 ? 0 : 1)}%`;
+}
+
+function formatCompactRatio(value: number | null | undefined, fallback = "Not available") {
+  const number = Number(value);
+  if (!Number.isFinite(number)) return fallback;
+  return `${number.toFixed(number >= 10 || number % 1 === 0 ? 0 : 1)}`;
+}
+
+function calculatePercent(numerator: number | null | undefined, denominator: number | null | undefined) {
+  const top = Number(numerator);
+  const base = Number(denominator);
+  if (!Number.isFinite(top) || !Number.isFinite(base) || base <= 0) return null;
+  return (top / base) * 100;
+}
+
+function calculateRatio(numerator: number | null | undefined, denominator: number | null | undefined) {
+  const top = Number(numerator);
+  const base = Number(denominator);
+  if (!Number.isFinite(top) || !Number.isFinite(base) || base <= 0) return null;
+  return top / base;
 }
 
 function formatProperCaseLabel(value: string) {
   return value.replace(/\b([a-z])([a-z']*)/g, (_match, first: string, rest: string) => {
     return `${first.toUpperCase()}${rest.toLowerCase()}`;
   });
+}
+
+function formatDetectedDataBadges(categoryCounts?: Array<[string, number]>) {
+  if (!categoryCounts?.length) return [];
+
+  return categoryCounts
+    .slice()
+    .sort((a, b) => b[1] - a[1])
+    .map(([label]) => formatProperCaseLabel(label))
+    .slice(0, 6);
 }
 
 function getClampedPercent(value: number | null | undefined) {
@@ -91,6 +133,61 @@ function getTrendTone(value: number | null | undefined) {
   const number = Number(value);
   if (!Number.isFinite(number) || number === 0) return "neutral";
   return number > 0 ? "positive" : "negative";
+}
+
+function buildAudienceTrendChart(
+  activityByDay:
+    | Array<{
+        label: string;
+        shortLabel: string;
+        value: number | null;
+      }>
+    | null
+    | undefined,
+) {
+  const points = (activityByDay || []).map((item, index) => ({
+    ...item,
+    index,
+    numericValue: Number(item.value),
+  }));
+
+  const validPoints = points.filter((item) => Number.isFinite(item.numericValue));
+  if (!validPoints.length) return null;
+
+  const width = 320;
+  const height = 108;
+  const paddingX = 12;
+  const topPadding = 14;
+  const bottomPadding = 18;
+  const minValue = Math.min(...validPoints.map((item) => item.numericValue));
+  const maxValue = Math.max(...validPoints.map((item) => item.numericValue));
+  const range = maxValue - minValue || 1;
+  const stepX = points.length > 1 ? (width - paddingX * 2) / (points.length - 1) : 0;
+
+  const chartPoints = points.map((item) => {
+    const normalized = Number.isFinite(item.numericValue) ? (item.numericValue - minValue) / range : 0;
+    return {
+      ...item,
+      x: paddingX + stepX * item.index,
+      y: height - bottomPadding - normalized * (height - topPadding - bottomPadding),
+    };
+  });
+
+  const linePath = chartPoints
+    .map((point, index) => `${index === 0 ? "M" : "L"} ${point.x.toFixed(1)} ${point.y.toFixed(1)}`)
+    .join(" ");
+  const areaPath = `${linePath} L ${chartPoints[chartPoints.length - 1]?.x.toFixed(1)} ${(height - bottomPadding).toFixed(1)} L ${chartPoints[0]?.x.toFixed(1)} ${(height - bottomPadding).toFixed(1)} Z`;
+  const peakPoint = validPoints.reduce((best, item) => (item.numericValue > best.numericValue ? item : best), validPoints[0]);
+
+  return {
+    width,
+    height,
+    chartPoints,
+    linePath,
+    areaPath,
+    peakLabel: peakPoint.label,
+    peakValue: peakPoint.numericValue,
+  };
 }
 
 function getSplitRingMetrics(
@@ -226,6 +323,118 @@ function getInstagramProfileHref(dataset: NonNullable<ReturnType<typeof findLoca
   return username ? `https://www.instagram.com/${username}/` : "";
 }
 
+function usePrefersReducedMotion() {
+  const [prefersReducedMotion, setPrefersReducedMotion] = useState(false);
+
+  useEffect(() => {
+    if (typeof window === "undefined" || typeof window.matchMedia !== "function") {
+      return;
+    }
+
+    const mediaQuery = window.matchMedia("(prefers-reduced-motion: reduce)");
+    const updatePreference = () => setPrefersReducedMotion(mediaQuery.matches);
+
+    updatePreference();
+    mediaQuery.addEventListener("change", updatePreference);
+
+    return () => {
+      mediaQuery.removeEventListener("change", updatePreference);
+    };
+  }, []);
+
+  return prefersReducedMotion;
+}
+
+type AnimatedValueProps = {
+  value: number | null | undefined;
+  variant?: "metric" | "signed" | "percent" | "ratio";
+  fallback?: string;
+  duration?: number;
+  precision?: number;
+  animateKey?: string | number | null;
+  reducedMotion?: boolean;
+};
+
+function formatAnimatedValue(
+  value: number,
+  variant: NonNullable<AnimatedValueProps["variant"]>,
+  precision?: number,
+) {
+  if (variant === "metric") {
+    return Math.round(value).toLocaleString();
+  }
+
+  if (variant === "signed") {
+    const rounded = Math.round(value);
+    return `${rounded > 0 ? "+" : ""}${rounded.toLocaleString()}`;
+  }
+
+  if (variant === "percent") {
+    const digits = typeof precision === "number" ? precision : Math.abs(value % 1) > 0 ? 1 : 0;
+    return `${value.toFixed(digits)}%`;
+  }
+
+  const digits = typeof precision === "number" ? precision : Math.abs(value % 1) > 0 ? 1 : 0;
+  return value.toFixed(digits);
+}
+
+function AnimatedValue({
+  value,
+  variant = "metric",
+  fallback = "Not available",
+  duration = 960,
+  precision,
+  animateKey,
+  reducedMotion = false,
+}: AnimatedValueProps) {
+  const numericValue = Number(value);
+  const [displayValue, setDisplayValue] = useState(() =>
+    Number.isFinite(numericValue) ? (reducedMotion ? numericValue : 0) : 0,
+  );
+
+  useEffect(() => {
+    if (!Number.isFinite(numericValue)) {
+      return;
+    }
+
+    if (reducedMotion) {
+      const frame = window.requestAnimationFrame(() => {
+        setDisplayValue(numericValue);
+      });
+
+      return () => {
+        window.cancelAnimationFrame(frame);
+      };
+    }
+
+    let frame = 0;
+    const startValue = 0;
+    const startedAt = performance.now();
+
+    const tick = (now: number) => {
+      const progress = Math.min((now - startedAt) / duration, 1);
+      const easedProgress = 1 - Math.pow(1 - progress, 3);
+      setDisplayValue(startValue + (numericValue - startValue) * easedProgress);
+
+      if (progress < 1) {
+        frame = window.requestAnimationFrame(tick);
+      }
+    };
+
+    frame = window.requestAnimationFrame(tick);
+
+    return () => {
+      window.cancelAnimationFrame(frame);
+    };
+  }, [animateKey, duration, numericValue, reducedMotion]);
+
+  if (!Number.isFinite(numericValue)) {
+    return <>{fallback}</>;
+  }
+
+  return <>{formatAnimatedValue(displayValue, variant, precision)}</>;
+}
+
 function WorkspaceLoadingState() {
   return (
     <section className="dataset-workspace" aria-busy="true" aria-label="Loading workspace">
@@ -270,7 +479,7 @@ function WorkspaceLoadingState() {
         </aside>
 
         <article className="dataset-workspace__surface dataset-workspace__surface--loading">
-          <div className="dataset-overview-head">
+          <div className="dataset-overview-head dataset-dashboard-section dataset-dashboard-section--header">
             <div className="dataset-overview-head__loading">
               <p className="section-kicker">dataset overview</p>
               <span className="dataset-skeleton-line dataset-skeleton-line--hero-title" aria-hidden="true" />
@@ -392,10 +601,105 @@ export function DatasetWorkspaceRoute({ datasetId }: DatasetWorkspaceRouteProps)
     readLocalDatasets,
     getLocalDatasetsServerSnapshot,
   );
+  const prefersReducedMotion = usePrefersReducedMotion();
   const activeDatasetId = hasMounted ? readActiveDatasetId() : null;
   const dataset = datasetId
     ? datasets.find((item) => item.id === datasetId) || findLocalDataset(datasetId)
     : datasets.find((item) => item.id === activeDatasetId) || datasets[0] || null;
+  const motionKey = dataset?.id || "dataset-workspace";
+  const datasetUsername = dataset?.profile?.username?.trim().toLowerCase() || "";
+  const previousComparableDataset = datasetUsername
+    ? datasets
+        .filter(
+          (item) =>
+            item.id !== dataset?.id &&
+            item.profile?.username?.trim().toLowerCase() === datasetUsername &&
+            item.createdAtMs < (dataset?.createdAtMs ?? Number.POSITIVE_INFINITY),
+        )
+        .sort((a, b) => b.createdAtMs - a.createdAtMs)[0] || null
+    : null;
+  const accountsReached = dataset?.metrics?.accountsReached ?? null;
+  const profileVisits = dataset?.metrics?.profileVisits ?? null;
+  const externalLinkTaps = dataset?.metrics?.externalLinkTaps ?? null;
+  const contentInteractions = dataset?.metrics?.contentInteractions ?? null;
+  const accountsEngaged = dataset?.metrics?.accountsEngaged ?? null;
+  const impressions = dataset?.metrics?.impressions ?? null;
+  const previousAccountsReached = previousComparableDataset?.metrics?.accountsReached ?? null;
+  const accountsReachedDelta =
+    typeof accountsReached === "number" &&
+    typeof previousAccountsReached === "number" &&
+    previousAccountsReached > 0
+      ? ((accountsReached - previousAccountsReached) / previousAccountsReached) * 100
+      : null;
+  const overviewKpiCards = [
+    {
+      key: "accounts-reached",
+      label: "accounts reached",
+      value: accountsReached,
+      Icon: Target,
+      support:
+        accountsReachedDelta !== null
+          ? `${formatSignedPercent(accountsReachedDelta)} vs previous export`
+          : (() => {
+              const uniqueReachShare = calculatePercent(accountsReached, impressions);
+              return uniqueReachShare !== null
+                ? `${formatCompactPercent(uniqueReachShare)} unique share of impressions`
+                : "comparison unavailable";
+            })(),
+    },
+    {
+      key: "profile-visits",
+      label: "profile visits",
+      value: profileVisits,
+      Icon: Search,
+      support: (() => {
+        const visitShare = calculatePercent(profileVisits, impressions);
+        return visitShare !== null ? `${formatCompactPercent(visitShare)} of total impressions` : "Not available";
+      })(),
+    },
+    {
+      key: "external-link-taps",
+      label: "external link taps",
+      value: externalLinkTaps,
+      Icon: MousePointerClick,
+      support: (() => {
+        const visitConversion = calculatePercent(externalLinkTaps, profileVisits);
+        return visitConversion !== null ? `${formatCompactPercent(visitConversion)} visit conversion` : "Not available";
+      })(),
+    },
+    {
+      key: "content-interactions",
+      label: "content interactions",
+      value: contentInteractions,
+      Icon: Heart,
+      support: (() => {
+        const engagementRate = calculatePercent(contentInteractions, profileVisits);
+        return engagementRate !== null ? `${formatCompactPercent(engagementRate)} engagement rate` : "Not available";
+      })(),
+    },
+    {
+      key: "accounts-engaged",
+      label: "accounts engaged",
+      value: accountsEngaged,
+      Icon: UserCheck,
+      support: (() => {
+        const reachedShare = calculatePercent(accountsEngaged, accountsReached);
+        return reachedShare !== null ? `${formatCompactPercent(reachedShare)} of reached accounts` : "Not available";
+      })(),
+    },
+    {
+      key: "impressions",
+      label: "impressions",
+      value: impressions,
+      Icon: BarChart3,
+      support: (() => {
+        const impressionsPerAccount = calculateRatio(impressions, accountsReached);
+        return impressionsPerAccount !== null
+          ? `${formatCompactRatio(impressionsPerAccount)} impressions per reached account`
+          : "Not available";
+      })(),
+    },
+  ];
   const reachRingMetrics = getReachRingMetrics(
     dataset?.metrics?.reachFollowersPercent,
     dataset?.metrics?.reachNonFollowersPercent,
@@ -430,6 +734,53 @@ export function DatasetWorkspaceRoute({ datasetId }: DatasetWorkspaceRouteProps)
     (sum, item) => sum + (typeof item.value === "number" && Number.isFinite(item.value) ? item.value : 0),
     0,
   );
+  const audienceTrendChart = buildAudienceTrendChart(dataset?.metrics?.followerActivityByDay);
+  const detectedDataBadges = formatDetectedDataBadges(dataset?.meta?.categoryCounts);
+  const relationshipSignalRows = [
+    {
+      key: "followers",
+      label: "followers",
+      value: dataset?.metrics?.followerCount ?? null,
+      helper: "Audience size",
+      badge:
+        typeof dataset?.metrics?.followerCount === "number" && typeof dataset?.metrics?.followingCount === "number"
+          ? `${formatSignedMetric(
+              dataset.metrics.followerCount - dataset.metrics.followingCount,
+              "0",
+            )} vs following`
+          : "Not available",
+      accentClassName: "is-followers",
+      Icon: UsersRound,
+    },
+    {
+      key: "following",
+      label: "following",
+      value: dataset?.metrics?.followingCount ?? null,
+      helper: "Accounts followed",
+      badge:
+        typeof dataset?.metrics?.followingCount === "number" &&
+        typeof dataset?.metrics?.followerCount === "number" &&
+        dataset.metrics.followerCount > 0
+          ? `${formatCompactPercent((dataset.metrics.followingCount / dataset.metrics.followerCount) * 100)} of followers`
+          : "Not available",
+      accentClassName: "is-following",
+      Icon: UserPlus,
+    },
+    {
+      key: "mutuals",
+      label: "mutuals",
+      value: dataset?.metrics?.mutualCount ?? null,
+      helper: "Follow each other",
+      badge:
+        typeof dataset?.metrics?.mutualCount === "number" &&
+        typeof dataset?.metrics?.followingCount === "number" &&
+        dataset.metrics.followingCount > 0
+          ? `${formatCompactPercent((dataset.metrics.mutualCount / dataset.metrics.followingCount) * 100)} of following`
+          : "Not available",
+      accentClassName: "is-mutuals",
+      Icon: GitCompareArrows,
+    },
+  ];
 
   function buildFloatingPanelStyle(
     anchor: HTMLButtonElement | null,
@@ -607,7 +958,7 @@ export function DatasetWorkspaceRoute({ datasetId }: DatasetWorkspaceRouteProps)
   return (
     <section className="dataset-workspace dataset-workspace--hydrated" aria-labelledby="dataset-workspace-title">
       <div className="dataset-workspace__grid dataset-workspace__grid--static">
-        <aside className="dataset-side-panel dataset-side-panel--left">
+        <aside className="dataset-side-panel dataset-side-panel--left dataset-dashboard-section dataset-dashboard-section--sidebar-left">
           <div className="dataset-side-panel__head">
             <p className="section-kicker">{isWorkspaceHome ? "workspace overview" : "current dataset"}</p>
             <div className="dataset-side-panel__dataset-block">
@@ -675,7 +1026,7 @@ export function DatasetWorkspaceRoute({ datasetId }: DatasetWorkspaceRouteProps)
           </div>
 
           <div className="dataset-overview-body">
-            <div className="dataset-profile-band">
+            <div className="dataset-profile-band dataset-dashboard-section dataset-dashboard-section--profile">
               {getInstagramProfileHref(dataset) ? (
                 <a
                   href={getInstagramProfileHref(dataset)}
@@ -716,140 +1067,33 @@ export function DatasetWorkspaceRoute({ datasetId }: DatasetWorkspaceRouteProps)
             </div>
 
             <div className="dataset-overview-grid">
-              <article className="dataset-overview-card">
-                <span className="dataset-meta-label">accounts reached</span>
-                <strong className="dataset-overview-value">
-                  {formatMetric(dataset.metrics?.accountsReached)}
-                </strong>
-              </article>
+              {overviewKpiCards.map((card) => {
+                const Icon = card.Icon;
 
-              <article className="dataset-overview-card">
-                <span className="dataset-meta-label">profile visits</span>
-                <strong className="dataset-overview-value">
-                  {formatMetric(dataset.metrics?.profileVisits)}
-                </strong>
-              </article>
-
-              <article className="dataset-overview-card">
-                <span className="dataset-meta-label">external link taps</span>
-                <strong className="dataset-overview-value">
-                  {formatMetric(dataset.metrics?.externalLinkTaps)}
-                </strong>
-              </article>
-
-              <article className="dataset-overview-card">
-                <span className="dataset-meta-label">content interactions</span>
-                <strong className="dataset-overview-value">
-                  {formatMetric(dataset.metrics?.contentInteractions)}
-                </strong>
-              </article>
-
-              <article className="dataset-overview-card">
-                <span className="dataset-meta-label">accounts engaged</span>
-                <strong className="dataset-overview-value">
-                  {formatMetric(dataset.metrics?.accountsEngaged)}
-                </strong>
-              </article>
-
-              <article className="dataset-overview-card">
-                <span className="dataset-meta-label">impressions</span>
-                <strong className="dataset-overview-value">
-                  {formatMetric(dataset.metrics?.impressions)}
-                </strong>
-              </article>
-
+                return (
+                  <article key={card.key} className="dataset-overview-card">
+                    <div className="dataset-overview-card__head">
+                      <span className="dataset-overview-card__label">{card.label}</span>
+                      <i className="dataset-overview-card__icon" aria-hidden="true">
+                        <Icon size={15} strokeWidth={1.9} />
+                      </i>
+                    </div>
+                    <strong className="dataset-overview-value">
+                      <AnimatedValue
+                        value={card.value}
+                        variant="metric"
+                        animateKey={`${motionKey}-${card.key}`}
+                        reducedMotion={prefersReducedMotion}
+                      />
+                    </strong>
+                    <small className="dataset-overview-card__support">{card.support}</small>
+                  </article>
+                );
+              })}
             </div>
 
             <div className="dataset-overview-support-grid">
-              <article
-                className={`dataset-overview-support-card dataset-overview-support-card--movement is-${getTrendTone(
-                  dataset.metrics?.netFollowersInRange,
-                )} dataset-overview-support-card--movement-slot`}
-              >
-                <div className="dataset-overview-support-head">
-                  <span className="dataset-overview-panel-title">audience movement</span>
-                </div>
-                <div className="dataset-overview-movement-grid">
-                  <div className="dataset-overview-movement-stat dataset-overview-movement-stat--positive">
-                    <span>follows</span>
-                    <strong>{formatSignedMetric(dataset.metrics?.followsInRange)}</strong>
-                  </div>
-                  <div className="dataset-overview-movement-stat dataset-overview-movement-stat--negative">
-                    <span>unfollows</span>
-                    <strong>
-                      {typeof dataset.metrics?.unfollowsInRange === "number"
-                        ? `-${formatMetric(dataset.metrics.unfollowsInRange, "0")}`
-                        : "Not available"}
-                    </strong>
-                  </div>
-                </div>
-                <div className={`dataset-overview-movement-highlight is-${getTrendTone(dataset.metrics?.netFollowersInRange)}`}>
-                  <span>net follower change</span>
-                  <div className="dataset-overview-movement-highlight__value">
-                    {getTrendTone(dataset.metrics?.netFollowersInRange) === "positive" ? (
-                      <TrendingUp size={18} aria-hidden="true" />
-                    ) : getTrendTone(dataset.metrics?.netFollowersInRange) === "negative" ? (
-                      <TrendingDown size={18} aria-hidden="true" />
-                    ) : (
-                      <ArrowDownUp size={18} aria-hidden="true" />
-                    )}
-                    <strong>{formatSignedMetric(dataset.metrics?.netFollowersInRange)}</strong>
-                  </div>
-                </div>
-              </article>
-
-              <article className="dataset-overview-support-card dataset-overview-support-card--reach">
-                <div className="dataset-overview-support-head">
-                  <span className="dataset-overview-panel-title">reach mix</span>
-                </div>
-                <div className="dataset-overview-ring-row">
-                  <div className="dataset-overview-ring" aria-hidden="true">
-                    {reachRingMetrics ? (
-                      <svg className="dataset-overview-ring__svg" viewBox="0 0 96 96" aria-hidden="true">
-                        <circle className="dataset-overview-ring__track" cx="48" cy="48" r="34" />
-                        <circle
-                          className="dataset-overview-ring__arc dataset-overview-ring__arc--followers"
-                          cx="48"
-                          cy="48"
-                          r={reachRingMetrics.radius}
-                          pathLength={100}
-                          strokeDasharray={`${reachRingMetrics.followerPercentOfPath} 100`}
-                          strokeDashoffset="0"
-                        />
-                        <circle
-                          className="dataset-overview-ring__arc dataset-overview-ring__arc--nonfollowers"
-                          cx="48"
-                          cy="48"
-                          r={reachRingMetrics.radius}
-                          pathLength={100}
-                          strokeDasharray={`${reachRingMetrics.nonFollowerPercentOfPath} 100`}
-                          strokeDashoffset={reachRingMetrics.nonFollowerOffsetPercent}
-                        />
-                      </svg>
-                    ) : null}
-                    <div className="dataset-overview-ring__core">
-                      <strong>{formatPercent(dataset.metrics?.reachNonFollowersPercent, "--")}</strong>
-                      <span>non-followers</span>
-                    </div>
-                  </div>
-                  <div className="dataset-overview-split-list">
-                    <div>
-                      <span className="dataset-overview-split-label">
-                        <i className="dataset-overview-split-dot dataset-overview-split-dot--followers" aria-hidden="true" />
-                        followers
-                      </span>
-                      <strong>{formatPercent(dataset.metrics?.reachFollowersPercent)}</strong>
-                    </div>
-                    <div>
-                      <span className="dataset-overview-split-label">
-                        <i className="dataset-overview-split-dot dataset-overview-split-dot--nonfollowers" aria-hidden="true" />
-                        non-followers
-                      </span>
-                      <strong>{formatPercent(dataset.metrics?.reachNonFollowersPercent)}</strong>
-                    </div>
-                  </div>
-                </div>
-              </article>
+              <div className="dataset-overview-support-column dataset-overview-support-column--primary">
 
               <article className="dataset-overview-support-card dataset-overview-support-card--snapshot">
                 <span className="dataset-overview-panel-title">audience snapshot</span>
@@ -862,9 +1106,16 @@ export function DatasetWorkspaceRoute({ datasetId }: DatasetWorkspaceRouteProps)
                     {dataset.metrics?.topFollowerCity ? (
                       <div className="dataset-overview-inline-row">
                         <strong>{formatProperCaseLabel(dataset.metrics.topFollowerCity)}</strong>
-                        <span className="dataset-overview-percent-pill">
-                          {formatPercent(dataset.metrics.topFollowerCityPercent, "--")}
-                        </span>
+                          <span className="dataset-overview-percent-pill">
+                            <AnimatedValue
+                              value={dataset.metrics.topFollowerCityPercent}
+                              variant="percent"
+                              precision={typeof dataset.metrics.topFollowerCityPercent === "number" && dataset.metrics.topFollowerCityPercent % 1 !== 0 ? 1 : 0}
+                              fallback="--"
+                              animateKey={`${motionKey}-top-city-percent`}
+                              reducedMotion={prefersReducedMotion}
+                            />
+                          </span>
                       </div>
                     ) : (
                       <strong>not detected</strong>
@@ -884,9 +1135,16 @@ export function DatasetWorkspaceRoute({ datasetId }: DatasetWorkspaceRouteProps)
                     {dataset.metrics?.topFollowerCountry ? (
                       <div className="dataset-overview-inline-row">
                         <strong>{formatProperCaseLabel(dataset.metrics.topFollowerCountry)}</strong>
-                        <span className="dataset-overview-percent-pill">
-                          {formatPercent(dataset.metrics.topFollowerCountryPercent, "--")}
-                        </span>
+                          <span className="dataset-overview-percent-pill">
+                            <AnimatedValue
+                              value={dataset.metrics.topFollowerCountryPercent}
+                              variant="percent"
+                              precision={typeof dataset.metrics.topFollowerCountryPercent === "number" && dataset.metrics.topFollowerCountryPercent % 1 !== 0 ? 1 : 0}
+                              fallback="--"
+                              animateKey={`${motionKey}-top-country-percent`}
+                              reducedMotion={prefersReducedMotion}
+                            />
+                          </span>
                       </div>
                     ) : (
                       <strong>not detected</strong>
@@ -916,6 +1174,12 @@ export function DatasetWorkspaceRoute({ datasetId }: DatasetWorkspaceRouteProps)
                               pathLength={100}
                               strokeDasharray={`${genderRingMetrics.primaryPercentOfPath} 100`}
                               strokeDashoffset="0"
+                              style={
+                                {
+                                  "--arc-length": `${genderRingMetrics.primaryPercentOfPath}`,
+                                  "--arc-offset": "0",
+                                } as CSSProperties
+                              }
                             />
                             <circle
                               className="dataset-overview-snapshot-gender-ring__arc dataset-overview-snapshot-gender-ring__arc--men"
@@ -925,12 +1189,29 @@ export function DatasetWorkspaceRoute({ datasetId }: DatasetWorkspaceRouteProps)
                               pathLength={100}
                               strokeDasharray={`${genderRingMetrics.secondaryPercentOfPath} 100`}
                               strokeDashoffset={genderRingMetrics.secondaryOffsetPercent}
+                              style={
+                                {
+                                  "--arc-length": `${genderRingMetrics.secondaryPercentOfPath}`,
+                                  "--arc-offset": `${genderRingMetrics.secondaryOffsetPercent}`,
+                                } as CSSProperties
+                              }
                             />
                           </svg>
                         ) : null}
                         <div className="dataset-overview-snapshot-gender-ring__core">
-                          <strong>{formatPercent(dataset.metrics?.womenFollowerPercent, "--")}</strong>
-                          <span>women</span>
+                          <div className="dataset-overview-snapshot-gender-ring__stack">
+                            <strong className="dataset-overview-snapshot-gender-ring__value">
+                                <AnimatedValue
+                                  value={dataset.metrics?.womenFollowerPercent}
+                                  variant="percent"
+                                  precision={typeof dataset.metrics?.womenFollowerPercent === "number" && dataset.metrics.womenFollowerPercent % 1 !== 0 ? 1 : 0}
+                                  fallback="--"
+                                  animateKey={`${motionKey}-women-percent-core`}
+                                  reducedMotion={prefersReducedMotion}
+                                />
+                            </strong>
+                            <span className="dataset-overview-snapshot-gender-ring__label">women</span>
+                          </div>
                         </div>
                       </div>
                       <div className="dataset-overview-snapshot-gender-legend" aria-hidden="true">
@@ -939,14 +1220,32 @@ export function DatasetWorkspaceRoute({ datasetId }: DatasetWorkspaceRouteProps)
                             <i className="dataset-overview-snapshot-gender-dot dataset-overview-snapshot-gender-dot--women" />
                             women
                           </span>
-                          <strong>{formatPercent(dataset.metrics?.womenFollowerPercent, "--")}</strong>
+                            <strong>
+                              <AnimatedValue
+                                value={dataset.metrics?.womenFollowerPercent}
+                                variant="percent"
+                                precision={typeof dataset.metrics?.womenFollowerPercent === "number" && dataset.metrics.womenFollowerPercent % 1 !== 0 ? 1 : 0}
+                                fallback="--"
+                                animateKey={`${motionKey}-women-percent-legend`}
+                                reducedMotion={prefersReducedMotion}
+                              />
+                            </strong>
                         </div>
                         <div>
                           <span>
                             <i className="dataset-overview-snapshot-gender-dot dataset-overview-snapshot-gender-dot--men" />
                             men
                           </span>
-                          <strong>{formatPercent(dataset.metrics?.menFollowerPercent, "--")}</strong>
+                            <strong>
+                              <AnimatedValue
+                                value={dataset.metrics?.menFollowerPercent}
+                                variant="percent"
+                                precision={typeof dataset.metrics?.menFollowerPercent === "number" && dataset.metrics.menFollowerPercent % 1 !== 0 ? 1 : 0}
+                                fallback="--"
+                                animateKey={`${motionKey}-men-percent-legend`}
+                                reducedMotion={prefersReducedMotion}
+                              />
+                            </strong>
                         </div>
                       </div>
                     </div>
@@ -957,14 +1256,242 @@ export function DatasetWorkspaceRoute({ datasetId }: DatasetWorkspaceRouteProps)
                       most active day
                     </span>
                     <div className="dataset-overview-activity-spotlight">
+                      <div className="dataset-overview-activity-spotlight__highlight">
+                        <strong>
+                          {dataset.metrics?.topFollowerActivityDay || "not detected"}
+                        </strong>
+                        {dataset.metrics?.topFollowerActivityDay ? (
+                          <small className="dataset-overview-detail-note">
+                            <AnimatedValue
+                              value={dataset.metrics.topFollowerActivityValue}
+                              variant="metric"
+                              fallback="--"
+                              animateKey={`${motionKey}-top-follower-activity`}
+                              reducedMotion={prefersReducedMotion}
+                            />{" "}
+                            follower activity
+                          </small>
+                        ) : null}
+                      </div>
+                      <div className="dataset-overview-activity-spotlight__trend">
+                        <div className="dataset-overview-activity-spotlight__trend-head">
+                          <span>follower activity trend</span>
+                          {audienceTrendChart ? (
+                            <small>peak on {audienceTrendChart.peakLabel.toLowerCase()}</small>
+                          ) : (
+                            <small>re-import to unlock the activity trend view</small>
+                          )}
+                        </div>
+                        {audienceTrendChart ? (
+                          <div className="dataset-overview-movement-chart" aria-hidden="true">
+                            <svg
+                              className="dataset-overview-movement-chart__svg"
+                              viewBox={`0 0 ${audienceTrendChart.width} ${audienceTrendChart.height}`}
+                            >
+                              <defs>
+                                <linearGradient id="movementTrendFill" x1="0" y1="0" x2="0" y2="1">
+                                  <stop offset="0%" stopColor="rgba(74, 222, 128, 0.22)" />
+                                  <stop offset="100%" stopColor="rgba(74, 222, 128, 0)" />
+                                </linearGradient>
+                              </defs>
+                              <path className="dataset-overview-movement-chart__area" d={audienceTrendChart.areaPath} />
+                              <path
+                                className="dataset-overview-movement-chart__line"
+                                d={audienceTrendChart.linePath}
+                                pathLength={1}
+                              />
+                              {audienceTrendChart.chartPoints.map((point) => (
+                                <circle
+                                  key={point.label}
+                                  className={`dataset-overview-movement-chart__point${
+                                    point.label === audienceTrendChart.peakLabel ? " is-peak" : ""
+                                  }`}
+                                  cx={point.x}
+                                  cy={point.y}
+                                  r={point.label === audienceTrendChart.peakLabel ? 3.3 : 2.6}
+                                  style={{ "--point-delay": `${220 + point.index * 36}ms` } as CSSProperties}
+                                />
+                              ))}
+                            </svg>
+                            <div className="dataset-overview-movement-chart__labels">
+                              {audienceTrendChart.chartPoints.map((point) => (
+                                <span
+                                  key={point.label}
+                                  className={point.label === audienceTrendChart.peakLabel ? "is-active" : ""}
+                                >
+                                  {point.shortLabel.toLowerCase()}
+                                </span>
+                              ))}
+                            </div>
+                          </div>
+                        ) : (
+                          <div className="dataset-overview-movement-chart dataset-overview-movement-chart--empty">
+                            <span>activity trend unavailable in this saved dataset yet</span>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </article>
+
+              <article
+                className={`dataset-overview-support-card dataset-overview-support-card--movement is-${getTrendTone(
+                  dataset.metrics?.netFollowersInRange,
+                )} dataset-overview-support-card--movement-slot`}
+              >
+                <div className="dataset-overview-support-head">
+                  <div className="dataset-overview-panel-copy">
+                    <span className="dataset-overview-panel-title">audience movement</span>
+                    <p className="dataset-overview-panel-subtitle">
+                      summary across the selected export window
+                    </p>
+                  </div>
+                </div>
+                <div className="dataset-overview-movement-grid">
+                  <div className="dataset-overview-movement-stat dataset-overview-movement-stat--positive">
+                    <i className="dataset-overview-movement-stat__icon" aria-hidden="true">
+                      <UserPlus size={14} />
+                    </i>
+                    <span>follows</span>
                       <strong>
-                        {dataset.metrics?.topFollowerActivityDay || "not detected"}
+                        <AnimatedValue
+                          value={dataset.metrics?.followsInRange}
+                          variant="signed"
+                          animateKey={`${motionKey}-follows-in-range`}
+                          reducedMotion={prefersReducedMotion}
+                        />
                       </strong>
-                      {dataset.metrics?.topFollowerActivityDay ? (
-                        <small className="dataset-overview-detail-note">
-                          {formatMetric(dataset.metrics.topFollowerActivityValue, "--")} follower activity
-                        </small>
-                      ) : null}
+                    <small>accounts gained</small>
+                  </div>
+                  <div className="dataset-overview-movement-stat dataset-overview-movement-stat--negative">
+                    <i className="dataset-overview-movement-stat__icon" aria-hidden="true">
+                      <UserMinus size={14} />
+                    </i>
+                    <span>unfollows</span>
+                      <strong>
+                        <AnimatedValue
+                          value={
+                            typeof dataset.metrics?.unfollowsInRange === "number"
+                              ? -dataset.metrics.unfollowsInRange
+                              : null
+                          }
+                          variant="signed"
+                          animateKey={`${motionKey}-unfollows-in-range`}
+                          reducedMotion={prefersReducedMotion}
+                        />
+                      </strong>
+                    <small>accounts lost</small>
+                  </div>
+                  <div
+                    className={`dataset-overview-movement-stat dataset-overview-movement-stat--net is-${getTrendTone(
+                      dataset.metrics?.netFollowersInRange,
+                    )}`}
+                  >
+                    <i className="dataset-overview-movement-stat__icon" aria-hidden="true">
+                      <ArrowDownUp size={14} />
+                    </i>
+                    <span>net change</span>
+                      <strong>
+                        <AnimatedValue
+                          value={dataset.metrics?.netFollowersInRange}
+                          variant="signed"
+                          animateKey={`${motionKey}-net-followers-in-range`}
+                          reducedMotion={prefersReducedMotion}
+                        />
+                      </strong>
+                    <small>net audience growth</small>
+                  </div>
+                </div>
+              </article>
+            </div>
+
+            <div className="dataset-overview-support-column dataset-overview-support-column--secondary">
+              <article className="dataset-overview-support-card dataset-overview-support-card--reach">
+                <div className="dataset-overview-support-head">
+                  <span className="dataset-overview-panel-title">reach mix</span>
+                </div>
+                <div className="dataset-overview-ring-row">
+                  <div className="dataset-overview-ring" aria-hidden="true">
+                    {reachRingMetrics ? (
+                      <svg className="dataset-overview-ring__svg" viewBox="0 0 96 96" aria-hidden="true">
+                        <circle className="dataset-overview-ring__track" cx="48" cy="48" r="34" />
+                        <circle
+                          className="dataset-overview-ring__arc dataset-overview-ring__arc--followers"
+                          cx="48"
+                          cy="48"
+                          r={reachRingMetrics.radius}
+                          pathLength={100}
+                          strokeDasharray={`${reachRingMetrics.followerPercentOfPath} 100`}
+                          strokeDashoffset="0"
+                          style={
+                            {
+                              "--arc-length": `${reachRingMetrics.followerPercentOfPath}`,
+                              "--arc-offset": "0",
+                            } as CSSProperties
+                          }
+                        />
+                        <circle
+                          className="dataset-overview-ring__arc dataset-overview-ring__arc--nonfollowers"
+                          cx="48"
+                          cy="48"
+                          r={reachRingMetrics.radius}
+                          pathLength={100}
+                          strokeDasharray={`${reachRingMetrics.nonFollowerPercentOfPath} 100`}
+                          strokeDashoffset={reachRingMetrics.nonFollowerOffsetPercent}
+                          style={
+                            {
+                              "--arc-length": `${reachRingMetrics.nonFollowerPercentOfPath}`,
+                              "--arc-offset": `${reachRingMetrics.nonFollowerOffsetPercent}`,
+                            } as CSSProperties
+                          }
+                        />
+                      </svg>
+                    ) : null}
+                    <div className="dataset-overview-ring__core">
+                        <strong>
+                          <AnimatedValue
+                            value={dataset.metrics?.reachNonFollowersPercent}
+                            variant="percent"
+                            precision={typeof dataset.metrics?.reachNonFollowersPercent === "number" && dataset.metrics.reachNonFollowersPercent % 1 !== 0 ? 1 : 0}
+                            fallback="--"
+                            animateKey={`${motionKey}-reach-non-followers`}
+                            reducedMotion={prefersReducedMotion}
+                          />
+                        </strong>
+                      <span>non-followers</span>
+                    </div>
+                  </div>
+                  <div className="dataset-overview-split-list">
+                    <div>
+                      <span className="dataset-overview-split-label">
+                        <i className="dataset-overview-split-dot dataset-overview-split-dot--followers" aria-hidden="true" />
+                        followers
+                      </span>
+                      <strong>
+                        <AnimatedValue
+                          value={dataset.metrics?.reachFollowersPercent}
+                          variant="percent"
+                          precision={typeof dataset.metrics?.reachFollowersPercent === "number" && dataset.metrics.reachFollowersPercent % 1 !== 0 ? 1 : 0}
+                          animateKey={`${motionKey}-reach-followers-split`}
+                          reducedMotion={prefersReducedMotion}
+                        />
+                      </strong>
+                    </div>
+                    <div>
+                      <span className="dataset-overview-split-label">
+                        <i className="dataset-overview-split-dot dataset-overview-split-dot--nonfollowers" aria-hidden="true" />
+                        non-followers
+                      </span>
+                      <strong>
+                        <AnimatedValue
+                          value={dataset.metrics?.reachNonFollowersPercent}
+                          variant="percent"
+                          precision={typeof dataset.metrics?.reachNonFollowersPercent === "number" && dataset.metrics.reachNonFollowersPercent % 1 !== 0 ? 1 : 0}
+                          animateKey={`${motionKey}-reach-non-followers-split`}
+                          reducedMotion={prefersReducedMotion}
+                        />
+                      </strong>
                     </div>
                   </div>
                 </div>
@@ -973,13 +1500,18 @@ export function DatasetWorkspaceRoute({ datasetId }: DatasetWorkspaceRouteProps)
               <article className="dataset-overview-support-card dataset-overview-support-card--interaction">
                 <div className="dataset-overview-support-head">
                   <span className="dataset-overview-panel-title">interaction mix</span>
-                  <strong className="dataset-overview-support-value">
-                    {formatMetric(
-                      (dataset.metrics?.postLikes ?? 0) +
-                        (dataset.metrics?.postComments ?? 0) +
-                        (dataset.metrics?.postSaves ?? 0),
-                    )}
-                  </strong>
+                    <strong className="dataset-overview-support-value">
+                      <AnimatedValue
+                        value={
+                          (dataset.metrics?.postLikes ?? 0) +
+                          (dataset.metrics?.postComments ?? 0) +
+                          (dataset.metrics?.postSaves ?? 0)
+                        }
+                        variant="metric"
+                        animateKey={`${motionKey}-interaction-total`}
+                        reducedMotion={prefersReducedMotion}
+                      />
+                    </strong>
                 </div>
                 <div className="dataset-overview-interaction-list">
                   {interactionMixItems.map((item) => {
@@ -997,10 +1529,20 @@ export function DatasetWorkspaceRoute({ datasetId }: DatasetWorkspaceRouteProps)
                             <Icon size={14} aria-hidden="true" />
                             {item.label}
                           </span>
-                          <strong>{formatMetric(item.value)}</strong>
+                          <strong>
+                            <AnimatedValue
+                              value={item.value}
+                              variant="metric"
+                              animateKey={`${motionKey}-interaction-${item.key}`}
+                              reducedMotion={prefersReducedMotion}
+                            />
+                          </strong>
                         </div>
                         <div className="dataset-overview-interaction-item__track" aria-hidden="true">
-                          <div className="dataset-overview-interaction-item__fill" style={{ width: barWidth }} />
+                          <div
+                            className="dataset-overview-interaction-item__fill"
+                            style={{ "--bar-width": barWidth } as CSSProperties}
+                          />
                         </div>
                       </div>
                     );
@@ -1009,31 +1551,71 @@ export function DatasetWorkspaceRoute({ datasetId }: DatasetWorkspaceRouteProps)
               </article>
 
               <article className="dataset-overview-support-card dataset-overview-support-card--details">
-                <span className="dataset-overview-panel-title">dataset details</span>
-                <div className="dataset-overview-detail-list">
-                  <div>
+                <div className="dataset-overview-support-head">
+                  <div className="dataset-overview-panel-copy">
+                    <span className="dataset-overview-panel-title">dataset details</span>
+                    <p className="dataset-overview-panel-subtitle">
+                      saved metadata and import context for this workspace
+                    </p>
+                  </div>
+                </div>
+                <div className="dataset-overview-details-stack">
+                  <div className="dataset-overview-details-row dataset-overview-details-row--paired">
+                    <div className="dataset-overview-details-cell">
+                      <span>dataset name</span>
+                      <strong>{dataset.name}</strong>
+                    </div>
+                    <div className="dataset-overview-details-cell">
+                      <span>imported on</span>
+                      <strong>{formatDate(dataset.createdAt)}</strong>
+                    </div>
+                  </div>
+                  <div className="dataset-overview-details-row">
                     <span>overview window</span>
                     <strong>{formatOverviewWindow(dataset.scope)}</strong>
                   </div>
-                  <div>
-                    <span>export type</span>
-                    <strong>{getExportRangeLabel(dataset.scope)}</strong>
+                  <div className="dataset-overview-details-row dataset-overview-details-row--paired">
+                    <div className="dataset-overview-details-cell">
+                      <span>export type</span>
+                      <strong>{getExportRangeLabel(dataset.scope)}</strong>
+                    </div>
+                    <div className="dataset-overview-details-cell">
+                      <span>import source</span>
+                      <strong>{dataset.importReview.sourceLabel}</strong>
+                    </div>
                   </div>
-                  <div>
-                    <span>import source</span>
-                    <strong>{dataset.importReview.sourceLabel}</strong>
+                  <div className="dataset-overview-details-row dataset-overview-details-row--paired">
+                    <div className="dataset-overview-details-cell">
+                      <span>media quality</span>
+                      <strong>{dataset.scope?.exportRequestMediaQuality || "not detected"}</strong>
+                    </div>
+                    <div className="dataset-overview-details-cell">
+                      <span>json files scanned</span>
+                      <strong>{formatMetric(dataset.meta?.scannedJsonCount ?? null)}</strong>
+                    </div>
                   </div>
-                  <div>
-                    <span>media quality</span>
-                    <strong>{dataset.scope?.exportRequestMediaQuality || "not detected"}</strong>
+                  <div className="dataset-overview-details-row">
+                    <span>data detected</span>
+                    {detectedDataBadges.length ? (
+                      <div className="dataset-overview-details-badges">
+                        {detectedDataBadges.map((badge) => (
+                          <span key={badge} className="dataset-overview-details-badge">
+                            {badge}
+                          </span>
+                        ))}
+                      </div>
+                    ) : (
+                      <strong>not detected</strong>
+                    )}
                   </div>
                 </div>
               </article>
             </div>
+            </div>
           </div>
         </article>
 
-        <aside className="dataset-side-panel dataset-side-panel--right">
+        <aside className="dataset-side-panel dataset-side-panel--right dataset-dashboard-section dataset-dashboard-section--sidebar">
           <div className="dataset-side-panel__head">
             <p className="section-kicker">workspace</p>
           </div>
@@ -1064,23 +1646,37 @@ export function DatasetWorkspaceRoute({ datasetId }: DatasetWorkspaceRouteProps)
 
             <article className="dataset-workspace__support-card">
               <p className="dataset-meta-label">relationship signals</p>
-              <div className="dataset-card__metrics dataset-card__metrics--compact">
-                <div>
-                  <span>followers</span>
-                  <strong>{formatMetric(dataset.metrics?.followerCount ?? null, "0")}</strong>
-                </div>
-                <div>
-                  <span>following</span>
-                  <strong>{formatMetric(dataset.metrics?.followingCount ?? null, "0")}</strong>
-                </div>
-                <div>
-                  <span>mutuals</span>
-                  <strong>{formatMetric(dataset.metrics?.mutualCount ?? null, "0")}</strong>
-                </div>
-                <div>
-                  <span>not following back</span>
-                  <strong>{formatMetric(dataset.metrics?.notFollowingBackCount ?? null, "0")}</strong>
-                </div>
+              <div className="dataset-relationship-signals">
+                {relationshipSignalRows.map((row) => {
+                  const Icon = row.Icon;
+
+                  return (
+                    <div key={row.key} className={`dataset-relationship-signal ${row.accentClassName}`}>
+                      <div className="dataset-relationship-signal__head">
+                        <div className="dataset-relationship-signal__copy">
+                          <span className="dataset-relationship-signal__label">
+                            <i className="dataset-relationship-signal__icon" aria-hidden="true">
+                              <Icon size={14} strokeWidth={1.9} />
+                            </i>
+                            {row.label}
+                          </span>
+                        </div>
+                        <div className="dataset-relationship-signal__value">
+                          <strong>
+                            <AnimatedValue
+                              value={row.value}
+                              variant="metric"
+                              fallback="0"
+                              animateKey={`${motionKey}-relationship-${row.key}`}
+                              reducedMotion={prefersReducedMotion}
+                            />
+                          </strong>
+                          <span className="dataset-relationship-signal__support">{row.badge}</span>
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })}
               </div>
             </article>
           </div>

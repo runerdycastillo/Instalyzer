@@ -14,8 +14,8 @@ export const exportQuickTipSections: readonly ExportQuickTipSection[] = [
   {
     title: "before you start",
     items: [
-      "Stay logged into Instagram in your browser so export links open smoothly.",
-      "Export prep can take minutes or hours, depending on account size.",
+      "stay logged into instagram in your browser so export links open smoothly.",
+      "export preparation can take minutes or hours, depending on account size.",
     ],
     instagramLink: true,
   },
@@ -28,9 +28,9 @@ export const exportQuickTipSections: readonly ExportQuickTipSection[] = [
   {
     title: "common issues",
     items: [
-      "No file? Check email and spam.",
-      "Wrong format? Use JSON.",
-      "Limited data? Re-export with all available information and all time.",
+      "no file? check email and spam.",
+      "wrong format? use JSON.",
+      "limited data? re-export with all available information and all time.",
     ],
     instagramLink: true,
   },
