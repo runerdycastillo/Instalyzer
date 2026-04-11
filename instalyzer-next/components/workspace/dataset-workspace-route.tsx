@@ -6,6 +6,7 @@ import {
   Bookmark,
   CalendarDays,
   Check,
+  ChevronLeft,
   ChevronDown,
   ExternalLink,
   FolderKanban,
@@ -34,6 +35,7 @@ import { useRouter } from "next/navigation";
 import { createPortal } from "react-dom";
 import { useEffect, useRef, useState, useSyncExternalStore, type CSSProperties } from "react";
 import { DatasetWorkspaceEmptyState } from "@/components/workspace/dataset-workspace-empty-state";
+import { NotFollowingBackWorkspaceView } from "@/components/workspace/not-following-back-workspace-view";
 import {
   readActiveDatasetId,
   DATASET_NAME_MAX_LENGTH,
@@ -52,6 +54,7 @@ import { getSoftLaunchToolIcon, workspaceModalTools } from "@/lib/instagram/tool
 
 type DatasetWorkspaceRouteProps = {
   datasetId?: string;
+  activeToolId?: "not-following-back";
 };
 
 function formatDate(value: string) {
@@ -148,10 +151,14 @@ function buildAudienceTrendChart(
   const points = (activityByDay || []).map((item, index) => ({
     ...item,
     index,
-    numericValue: Number(item.value),
+    numericValue:
+      typeof item.value === "number" && Number.isFinite(item.value) ? item.value : null,
   }));
 
-  const validPoints = points.filter((item) => Number.isFinite(item.numericValue));
+  const validPoints = points.filter(
+    (item): item is (typeof points)[number] & { numericValue: number } =>
+      typeof item.numericValue === "number" && Number.isFinite(item.numericValue),
+  );
   if (!validPoints.length) return null;
 
   const width = 320;
@@ -165,7 +172,8 @@ function buildAudienceTrendChart(
   const stepX = points.length > 1 ? (width - paddingX * 2) / (points.length - 1) : 0;
 
   const chartPoints = points.map((item) => {
-    const normalized = Number.isFinite(item.numericValue) ? (item.numericValue - minValue) / range : 0;
+    const normalized =
+      typeof item.numericValue === "number" ? (item.numericValue - minValue) / range : 0;
     return {
       ...item,
       x: paddingX + stepX * item.index,
@@ -308,6 +316,16 @@ function getExportRangeLabel(scope?: {
   if (scope?.exportRequestRange === "all_time") return "all-time export";
   if (scope?.exportRequestRange === "limited") return "limited export";
   return "export imported";
+}
+
+function formatExportMediaQuality(scope?: {
+  exportRequestMetadataDetected?: boolean;
+  exportRequestMediaQuality?: string;
+}) {
+  const mediaQuality = String(scope?.exportRequestMediaQuality || "").trim();
+  if (mediaQuality) return mediaQuality;
+  if (scope?.exportRequestMetadataDetected === false) return "not included in this export";
+  return "not available";
 }
 
 function getDisplayName(dataset: NonNullable<ReturnType<typeof findLocalDataset>>) {
@@ -568,9 +586,10 @@ function WorkspaceLoadingState() {
   );
 }
 
-export function DatasetWorkspaceRoute({ datasetId }: DatasetWorkspaceRouteProps) {
+export function DatasetWorkspaceRoute({ datasetId, activeToolId }: DatasetWorkspaceRouteProps) {
   const router = useRouter();
   const isWorkspaceHome = !datasetId;
+  const isNotFollowingBackView = activeToolId === "not-following-back";
   const [isDatasetsModalOpen, setIsDatasetsModalOpen] = useState(false);
   const [isToolsModalOpen, setIsToolsModalOpen] = useState(false);
   const [openDatasetMenuId, setOpenDatasetMenuId] = useState<string | null>(null);
@@ -954,6 +973,8 @@ export function DatasetWorkspaceRoute({ datasetId }: DatasetWorkspaceRouteProps)
     return datasetSortOrder === "oldest" ? dateCompare : -dateCompare;
   });
   const hasReachedDatasetLimit = hasReachedLocalDatasetLimit(datasets);
+  const overviewHref = datasetId ? `/app/datasets/${dataset.id}` : "/app";
+  const notFollowingBackHref = `/app/datasets/${dataset.id}/tools/not-following-back`;
 
   return (
     <section className="dataset-workspace dataset-workspace--hydrated" aria-labelledby="dataset-workspace-title">
@@ -983,9 +1004,17 @@ export function DatasetWorkspaceRoute({ datasetId }: DatasetWorkspaceRouteProps)
                       key={item.id}
                       className={`dataset-side-panel__recent-chip${isActiveDataset ? " is-active" : ""}`}
                     >
-                      <span className="dataset-side-panel__recent-name">{item.name}</span>
+                      <span className="dataset-side-panel__recent-name-row">
+                        <span className="dataset-side-panel__recent-name">{item.name}</span>
+                        {isActiveDataset ? (
+                          <span className="dataset-side-panel__active-pill">
+                            <span className="dataset-side-panel__active-dot" aria-hidden="true" />
+                            active
+                          </span>
+                        ) : null}
+                      </span>
                       <span className="dataset-side-panel__recent-meta">
-                        {isActiveDataset ? "active now" : formatDate(item.createdAt)}
+                        {isActiveDataset ? "selected dataset" : formatDate(item.createdAt)}
                       </span>
                     </div>
                   );
@@ -1009,22 +1038,46 @@ export function DatasetWorkspaceRoute({ datasetId }: DatasetWorkspaceRouteProps)
         <article className="dataset-workspace__surface">
           <div className="dataset-overview-head">
             <div>
-              <p className="section-kicker">{isWorkspaceHome ? "workspace overview" : "dataset overview"}</p>
+              <p className="section-kicker">
+                {isNotFollowingBackView
+                  ? "relationship tool"
+                  : isWorkspaceHome
+                    ? "workspace overview"
+                    : "dataset overview"}
+              </p>
               <h1 id="dataset-workspace-title" className="dataset-overview-title">
-                {isWorkspaceHome ? "current workspace overview" : dataset.name}
+                {isNotFollowingBackView ? "not following back" : isWorkspaceHome ? "current workspace overview" : dataset.name}
               </h1>
-              {isWorkspaceHome ? (
+              {isNotFollowingBackView ? (
+                <p className="dataset-overview-copy dataset-overview-copy--inline">
+                  Reviewing <strong>{dataset.name}</strong> inside the workspace shell.
+                </p>
+              ) : isWorkspaceHome ? (
                 <p className="dataset-overview-copy dataset-overview-copy--inline">
                   Showing your latest saved dataset: <strong>{dataset.name}</strong>
                 </p>
               ) : null}
             </div>
             <div className="dataset-overview-meta">
-              <span className="dataset-meta-label">{isWorkspaceHome ? "latest import" : "created"}</span>
-              <span className="dataset-meta-value">{formatDate(dataset.createdAt)}</span>
+              {isNotFollowingBackView ? (
+                <>
+                  <Link href={overviewHref} className="dataset-meta-value dataset-meta-value--link">
+                    <ChevronLeft size={15} aria-hidden="true" />
+                    back to overview
+                  </Link>
+                </>
+              ) : (
+                <>
+                  <span className="dataset-meta-label">{isWorkspaceHome ? "latest import" : "created"}</span>
+                  <span className="dataset-meta-value">{formatDate(dataset.createdAt)}</span>
+                </>
+              )}
             </div>
           </div>
 
+          {isNotFollowingBackView ? (
+            <NotFollowingBackWorkspaceView key={dataset.id} dataset={dataset} />
+          ) : (
           <div className="dataset-overview-body">
             <div className="dataset-profile-band dataset-dashboard-section dataset-dashboard-section--profile">
               {getInstagramProfileHref(dataset) ? (
@@ -1279,7 +1332,7 @@ export function DatasetWorkspaceRoute({ datasetId }: DatasetWorkspaceRouteProps)
                           {audienceTrendChart ? (
                             <small>peak on {audienceTrendChart.peakLabel.toLowerCase()}</small>
                           ) : (
-                            <small>re-import to unlock the activity trend view</small>
+                            <small>follower activity unavailable in this export</small>
                           )}
                         </div>
                         {audienceTrendChart ? (
@@ -1584,11 +1637,11 @@ export function DatasetWorkspaceRoute({ datasetId }: DatasetWorkspaceRouteProps)
                       <strong>{dataset.importReview.sourceLabel}</strong>
                     </div>
                   </div>
-                  <div className="dataset-overview-details-row dataset-overview-details-row--paired">
-                    <div className="dataset-overview-details-cell">
-                      <span>media quality</span>
-                      <strong>{dataset.scope?.exportRequestMediaQuality || "not detected"}</strong>
-                    </div>
+                    <div className="dataset-overview-details-row dataset-overview-details-row--paired">
+                      <div className="dataset-overview-details-cell">
+                        <span>media quality</span>
+                        <strong>{formatExportMediaQuality(dataset.scope)}</strong>
+                      </div>
                     <div className="dataset-overview-details-cell">
                       <span>json files scanned</span>
                       <strong>{formatMetric(dataset.meta?.scannedJsonCount ?? null)}</strong>
@@ -1613,6 +1666,7 @@ export function DatasetWorkspaceRoute({ datasetId }: DatasetWorkspaceRouteProps)
             </div>
             </div>
           </div>
+          )}
         </article>
 
         <aside className="dataset-side-panel dataset-side-panel--right dataset-dashboard-section dataset-dashboard-section--sidebar">
@@ -1621,19 +1675,34 @@ export function DatasetWorkspaceRoute({ datasetId }: DatasetWorkspaceRouteProps)
           </div>
 
           <div className="dataset-side-panel__body">
-            <Link
-              href={`/app/datasets/${dataset.id}/tools/not-following-back`}
-              className="workspace-tool-pill workspace-tool-pill--featured is-live"
-              aria-label="Open not following back tool"
-            >
-              <span className="workspace-tool-icon" aria-hidden="true">
-                <UserMinus size={16} strokeWidth={1.9} />
-              </span>
-              <span className="workspace-tool-copy">
-                <strong>not following back</strong>
-              </span>
-              <span className="workspace-tool-spacer" aria-hidden="true" />
-            </Link>
+            {isNotFollowingBackView ? (
+              <div
+                className="workspace-tool-pill workspace-tool-pill--featured workspace-tool-pill--current is-live"
+                aria-label="Not following back tool is open"
+              >
+                <span className="workspace-tool-icon" aria-hidden="true">
+                  <UserMinus size={16} strokeWidth={1.9} />
+                </span>
+                <span className="workspace-tool-copy">
+                  <strong>not following back</strong>
+                </span>
+                <span className="workspace-tool-spacer" aria-hidden="true" />
+              </div>
+            ) : (
+              <Link
+                href={notFollowingBackHref}
+                className="workspace-tool-pill workspace-tool-pill--featured is-live"
+                aria-label="Open not following back tool"
+              >
+                <span className="workspace-tool-icon" aria-hidden="true">
+                  <UserMinus size={16} strokeWidth={1.9} />
+                </span>
+                <span className="workspace-tool-copy">
+                  <strong>not following back</strong>
+                </span>
+                <span className="workspace-tool-spacer" aria-hidden="true" />
+              </Link>
+            )}
 
             <button
               type="button"

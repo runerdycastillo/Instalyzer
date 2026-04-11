@@ -73,6 +73,7 @@ export type DatasetScope = {
   insightDateRangeLabel: string;
   relationshipExportRange: "all_time" | "limited" | "unknown";
   exportRequestRange: "all_time" | "limited" | "unknown";
+  exportRequestMetadataDetected: boolean;
   exportRequestStartTimestamp: number | null;
   exportRequestEndTimestamp: number | null;
   exportRequestFormat: string;
@@ -1219,6 +1220,7 @@ export async function prepareDatasetDraft(files: File[]): Promise<PreparedLocalD
       insightDateRangeLabel,
       relationshipExportRange: exportRequestRange,
       exportRequestRange,
+      exportRequestMetadataDetected: latestJsonDownloadRequest !== null,
       exportRequestStartTimestamp: latestJsonDownloadRequest?.startTimestamp ?? null,
       exportRequestEndTimestamp: latestJsonDownloadRequest?.endTimestamp ?? null,
       exportRequestFormat: latestJsonDownloadRequest?.outputFormat || "",

@@ -30,6 +30,16 @@ function formatValue(value: number | string | null) {
   return "not available";
 }
 
+function formatAuditReferenceSettings(auditSnapshot: ExportAuditSnapshot) {
+  if (!auditSnapshot.hasDownloadRequestMetadata) {
+    return "request metadata not included in this export";
+  }
+
+  const exportFormat = auditSnapshot.exportFormat || "unknown format";
+  const mediaQuality = auditSnapshot.mediaQuality || "media quality not recorded";
+  return `${exportFormat}, ${mediaQuality}`;
+}
+
 export function ExportAuditRoute() {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const datasets = useSyncExternalStore(
@@ -234,8 +244,7 @@ export function ExportAuditRoute() {
                       <strong>{formatValue(auditSnapshot.audienceFollowers)}</strong>
                     </p>
                     <p>
-                      audit source: <strong>{auditFileName}</strong> ({auditSnapshot.exportFormat || "unknown format"},{" "}
-                      {auditSnapshot.mediaQuality || "unknown quality"})
+                      audit source: <strong>{auditFileName}</strong> ({formatAuditReferenceSettings(auditSnapshot)})
                     </p>
                   </div>
                 ) : null}

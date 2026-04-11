@@ -28,6 +28,7 @@ export type ExportAuditSnapshot = {
   mutuals: number;
   notFollowingBack: number;
   audienceFollowers: number | null;
+  hasDownloadRequestMetadata: boolean;
   exportStartTimestamp: number | null;
   exportEndTimestamp: number | null;
   exportFormat: string;
@@ -298,6 +299,7 @@ export async function auditInstagramExportZip(file: File): Promise<ExportAuditSn
     mutuals,
     notFollowingBack,
     audienceFollowers: parseInsightCount(getStringMapValue(audienceEntry, "Followers")),
+    hasDownloadRequestMetadata: latestJsonRequest !== null,
     exportStartTimestamp: Number(getLabelValueEntry(latestJsonRequest, "Start date")?.timestamp_value || 0) || null,
     exportEndTimestamp: Number(getLabelValueEntry(latestJsonRequest, "End date")?.timestamp_value || 0) || null,
     exportFormat: String(getLabelValueEntry(latestJsonRequest, "Output format")?.value || ""),

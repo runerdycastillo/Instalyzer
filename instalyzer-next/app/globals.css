@@ -21,6 +21,520 @@
   --marketing-hero-height: calc(100dvh - var(--marketing-header-height) - 22px);
 }
 
+.dataset-meta-value--link {
+  display: inline-flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 6px;
+  min-height: 24px;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: var(--ink-soft);
+  text-decoration: none;
+  line-height: 1;
+  transition: color 140ms ease, transform 140ms ease;
+}
+
+.dataset-meta-value--link svg {
+  position: relative;
+  top: 1px;
+  flex-shrink: 0;
+}
+
+.dataset-meta-value--link:hover,
+.dataset-meta-value--link:focus-visible {
+  color: color-mix(in srgb, white 88%, var(--accent));
+  transform: translateY(-1px);
+}
+
+.relationship-tool {
+  display: grid;
+  gap: 18px;
+}
+
+.relationship-tool__intro {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 2px 0 4px;
+}
+
+.relationship-tool__eyebrow {
+  margin: 0 0 4px;
+  color: var(--text-dim);
+  font-size: 0.72rem;
+  text-transform: uppercase;
+  letter-spacing: 0;
+}
+
+.relationship-tool__title {
+  margin: 0;
+  font-size: clamp(1.6rem, 3vw, 2rem);
+}
+
+.relationship-tool__copy {
+  margin: 8px 0 0;
+  max-width: 64ch;
+  color: var(--text-dim);
+}
+
+.relationship-tool__actions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.relationship-tool__button {
+  min-height: 40px;
+}
+
+.hero-btn.relationship-tool__button--icon {
+  width: 40px;
+  min-width: 40px;
+  height: 40px;
+  padding: 0;
+  border-radius: 999px;
+  flex: 0 0 40px;
+}
+
+.relationship-tool__summary-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.relationship-tool__summary-card {
+  width: 100%;
+  padding: 14px;
+  border-radius: 8px;
+  border: 1px solid color-mix(in srgb, var(--line) 82%, transparent);
+  background:
+    linear-gradient(
+      180deg,
+      color-mix(in srgb, var(--bg-panel) 94%, transparent) 0%,
+      color-mix(in srgb, var(--bg-panel) 88%, transparent) 100%
+    );
+  color: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.relationship-tool__summary-card.is-active {
+  border-color: color-mix(in srgb, var(--accent) 36%, var(--line));
+  box-shadow: 0 12px 22px rgba(31, 91, 196, 0.08);
+}
+
+.relationship-tool__summary-card {
+  transition:
+    border-color 140ms ease,
+    background-color 140ms ease,
+    box-shadow 140ms ease,
+    transform 140ms ease;
+}
+
+.relationship-tool__summary-card.is-pending {
+  border-color: color-mix(in srgb, #f97316 28%, var(--line));
+}
+
+.relationship-tool__summary-card.is-unfollowed {
+  border-color: color-mix(in srgb, #22c55e 28%, var(--line));
+}
+
+.relationship-tool__summary-card.is-review-later {
+  border-color: color-mix(in srgb, #f59e0b 30%, var(--line));
+}
+
+.relationship-tool__summary-card.is-not-found {
+  border-color: color-mix(in srgb, #94a3b8 28%, var(--line));
+}
+
+.relationship-tool__summary-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  margin-bottom: 12px;
+  color: var(--text-dim);
+  font-size: 0.84rem;
+}
+
+.relationship-tool__summary-card strong {
+  display: block;
+  font-size: clamp(1.5rem, 3vw, 1.9rem);
+  line-height: 1;
+}
+
+.relationship-tool__summary-card small {
+  display: block;
+  margin-top: 9px;
+  color: var(--text-dim);
+  white-space: nowrap;
+}
+
+.relationship-tool__toolbar {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 10px;
+  align-items: end;
+}
+
+.relationship-tool__search,
+.relationship-tool__sort {
+  display: grid;
+  gap: 6px;
+}
+
+.relationship-tool__search {
+  position: relative;
+}
+
+.relationship-tool__search svg {
+  position: absolute;
+  left: 12px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: var(--text-dim);
+}
+
+.relationship-tool__search input,
+.relationship-tool__sort select {
+  width: 100%;
+  min-height: 40px;
+  border-radius: 8px;
+  border: 1px solid color-mix(in srgb, var(--line) 82%, transparent);
+  background: color-mix(in srgb, var(--bg-panel) 92%, transparent);
+  color: inherit;
+  transition:
+    border-color 140ms ease,
+    background-color 140ms ease,
+    box-shadow 140ms ease;
+}
+
+.relationship-tool__search input {
+  padding: 0 14px 0 40px;
+}
+
+.relationship-tool__sort span {
+  font-size: 0.82rem;
+  color: var(--text-dim);
+  line-height: 1;
+}
+
+.relationship-tool__sort select {
+  padding: 0 12px;
+  min-width: 156px;
+}
+
+.relationship-tool__note-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+  color: var(--text-dim);
+  font-size: 0.92rem;
+}
+
+.relationship-tool__note-row p {
+  margin: 0;
+}
+
+.relationship-tool__list-shell {
+  border: 1px solid color-mix(in srgb, var(--line) 82%, transparent);
+  border-radius: 8px;
+  background: color-mix(in srgb, var(--bg-panel) 90%, transparent);
+  overflow: hidden;
+  max-height: min(62vh, 720px);
+}
+
+.relationship-tool__list {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  overflow-y: auto;
+  max-height: min(62vh, 720px);
+  scrollbar-width: auto;
+  scrollbar-color: color-mix(in srgb, var(--ink-soft) 42%, transparent)
+    color-mix(in srgb, var(--bg-main) 48%, transparent);
+}
+
+.relationship-tool__list::-webkit-scrollbar {
+  width: 12px;
+}
+
+.relationship-tool__list::-webkit-scrollbar-track {
+  background: color-mix(in srgb, var(--bg-main) 48%, transparent);
+  border-left: 1px solid color-mix(in srgb, var(--line) 52%, transparent);
+}
+
+.relationship-tool__list::-webkit-scrollbar-thumb {
+  background: color-mix(in srgb, var(--ink-soft) 42%, transparent);
+  border-radius: 999px;
+  border: 2px solid color-mix(in srgb, var(--bg-main) 48%, transparent);
+}
+
+.relationship-tool__list::-webkit-scrollbar-thumb:hover {
+  background: color-mix(in srgb, var(--ink-soft) 58%, transparent);
+}
+
+.relationship-tool__row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  padding: 14px 16px;
+  border-top: 1px solid color-mix(in srgb, var(--line) 72%, transparent);
+  transition:
+    background-color 140ms ease,
+    border-color 140ms ease;
+}
+
+.relationship-tool__row:first-child {
+  border-top: 0;
+}
+
+.relationship-tool__row:hover {
+  background: color-mix(in srgb, var(--accent) 4%, var(--bg-panel));
+  border-color: color-mix(in srgb, var(--accent) 14%, var(--line));
+}
+
+.relationship-tool__row-copy {
+  min-width: 0;
+}
+
+.relationship-tool__row-main {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-width: 0;
+  flex: 1 1 auto;
+}
+
+.relationship-tool__row-title {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+}
+
+.relationship-tool__handle {
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  font-weight: 700;
+  cursor: pointer;
+  transition: color 140ms ease;
+}
+
+.relationship-tool__handle:hover,
+.relationship-tool__handle:focus-visible {
+  color: color-mix(in srgb, white 88%, var(--accent));
+}
+
+.relationship-tool__row-title strong,
+.relationship-tool__handle {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.relationship-tool__row-copy p {
+  margin: 6px 0 0;
+  color: var(--text-dim);
+  font-size: 0.92rem;
+}
+
+.relationship-tool__row-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 4px 8px;
+  border-radius: 999px;
+  border: 1px solid color-mix(in srgb, var(--line) 86%, transparent);
+  background: color-mix(in srgb, var(--bg-panel) 94%, transparent);
+  color: var(--text-dim);
+  font-size: 0.74rem;
+  transition:
+    border-color 140ms ease,
+    background-color 140ms ease,
+    color 140ms ease;
+}
+
+.relationship-tool__row-badge.is-pending {
+  border-color: color-mix(in srgb, #f97316 24%, var(--line));
+  background: color-mix(in srgb, #f97316 10%, var(--bg-panel));
+  color: color-mix(in srgb, white 84%, #f97316);
+}
+
+.relationship-tool__row-badge.is-unfollowed {
+  border-color: color-mix(in srgb, #22c55e 24%, var(--line));
+  background: color-mix(in srgb, #22c55e 10%, var(--bg-panel));
+  color: color-mix(in srgb, white 84%, #22c55e);
+}
+
+.relationship-tool__row-badge.is-review-later {
+  border-color: color-mix(in srgb, #f59e0b 24%, var(--line));
+  background: color-mix(in srgb, #f59e0b 10%, var(--bg-panel));
+  color: color-mix(in srgb, white 84%, #f59e0b);
+}
+
+.relationship-tool__row-badge.is-not-found {
+  border-color: color-mix(in srgb, #94a3b8 24%, var(--line));
+  background: color-mix(in srgb, #94a3b8 11%, var(--bg-panel));
+  color: color-mix(in srgb, white 80%, #94a3b8);
+}
+
+.relationship-tool__row-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+}
+
+.relationship-tool__action {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  min-height: 38px;
+  padding: 0 12px;
+  border-radius: 8px;
+  border: 1px solid color-mix(in srgb, var(--line) 82%, transparent);
+  background: color-mix(in srgb, var(--bg-panel) 96%, transparent);
+  color: inherit;
+  text-decoration: none;
+  cursor: pointer;
+  position: relative;
+  transition:
+    border-color 140ms ease,
+    background-color 140ms ease,
+    color 140ms ease,
+    transform 140ms ease;
+}
+
+.relationship-tool__action:hover,
+.relationship-tool__action:focus-visible {
+  border-color: color-mix(in srgb, var(--accent) 24%, var(--line));
+  background: color-mix(in srgb, var(--accent) 7%, var(--bg-panel));
+}
+
+.relationship-tool__floating-tooltip {
+  position: fixed;
+  transform: translateX(-50%);
+  padding: 6px 8px;
+  border-radius: 6px;
+  border: 1px solid color-mix(in srgb, var(--line) 88%, transparent);
+  background: color-mix(in srgb, #0b1120 92%, var(--bg-panel));
+  box-shadow: 0 12px 28px rgba(0, 0, 0, 0.28);
+  color: color-mix(in srgb, white 88%, var(--text-dim));
+  font-size: 0.72rem;
+  line-height: 1;
+  white-space: nowrap;
+  pointer-events: none;
+  z-index: 999;
+}
+
+.relationship-tool__floating-tooltip::after {
+  content: "";
+  position: absolute;
+  left: 50%;
+  transform: translateX(-50%);
+  border-left: 5px solid transparent;
+  border-right: 5px solid transparent;
+}
+
+.relationship-tool__floating-tooltip--top::after {
+  top: 100%;
+  border-top: 5px solid color-mix(in srgb, #0b1120 92%, var(--bg-panel));
+}
+
+.relationship-tool__floating-tooltip--bottom {
+  transform: translate(-50%, 0);
+}
+
+.relationship-tool__floating-tooltip--bottom::after {
+  bottom: 100%;
+  border-bottom: 5px solid color-mix(in srgb, #0b1120 92%, var(--bg-panel));
+}
+
+.relationship-tool__action--icon {
+  width: 38px;
+  min-width: 38px;
+  height: 38px;
+  padding: 0;
+  border-radius: 999px;
+}
+
+.relationship-tool__action--primary {
+  border-color: color-mix(in srgb, var(--accent) 32%, var(--line));
+  background: color-mix(in srgb, var(--accent) 10%, var(--bg-panel));
+}
+
+.relationship-tool__empty {
+  padding: 40px 20px;
+  text-align: center;
+  max-height: min(62vh, 720px);
+  overflow-y: auto;
+}
+
+.relationship-tool__empty strong {
+  display: block;
+  font-size: 1.05rem;
+}
+
+.relationship-tool__empty p {
+  margin: 10px auto 0;
+  max-width: 46ch;
+  color: var(--text-dim);
+}
+
+@media (max-width: 960px) {
+  .relationship-tool__summary-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .relationship-tool__toolbar {
+    grid-template-columns: 1fr;
+  }
+
+  .relationship-tool__list-shell,
+  .relationship-tool__list,
+  .relationship-tool__empty {
+    max-height: min(56vh, 640px);
+  }
+}
+
+@media (max-width: 720px) {
+  .relationship-tool__intro,
+  .relationship-tool__row,
+  .relationship-tool__note-row {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .relationship-tool__row-actions {
+    justify-content: stretch;
+  }
+
+  .relationship-tool__row-main {
+    width: 100%;
+  }
+
+  .relationship-tool__action {
+    width: 100%;
+  }
+
+  .relationship-tool__action--icon {
+    width: 38px;
+  }
+}
+
 .export-audit-route {
   width: min(1120px, calc(100vw - 48px));
   margin: 0 auto;
@@ -7147,20 +7661,36 @@ img {
   border-radius: 14px;
   border: 1px solid color-mix(in srgb, var(--line) 82%, transparent);
   background: color-mix(in srgb, var(--bg-panel) 84%, transparent);
+  transition:
+    border-color 140ms ease,
+    background-color 140ms ease,
+    box-shadow 140ms ease;
 }
 
 .dataset-side-panel__recent-chip.is-active {
-  border-color: color-mix(in srgb, var(--accent) 34%, var(--line));
+  border-color: color-mix(in srgb, var(--accent) 54%, var(--line));
   background:
     linear-gradient(
       180deg,
-      color-mix(in srgb, var(--accent) 8%, var(--bg-panel)) 0%,
+      color-mix(in srgb, var(--accent) 12%, var(--bg-panel)) 0%,
       color-mix(in srgb, var(--bg-panel) 92%, transparent) 100%
     );
-  box-shadow: 0 10px 24px rgba(37, 99, 235, 0.08);
+  box-shadow:
+    0 0 0 1px color-mix(in srgb, var(--accent) 20%, transparent),
+    0 12px 30px rgba(37, 99, 235, 0.12);
+}
+
+.dataset-side-panel__recent-name-row {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 8px;
+  min-width: 0;
 }
 
 .dataset-side-panel__recent-name {
+  flex: 1 1 auto;
+  min-width: 0;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -7168,6 +7698,32 @@ img {
   font-size: 0.92rem;
   font-weight: 700;
   line-height: 1.2;
+}
+
+.dataset-side-panel__active-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 3px 7px;
+  border-radius: 999px;
+  border: 1px solid color-mix(in srgb, var(--accent) 32%, var(--line));
+  background: color-mix(in srgb, var(--accent) 12%, var(--bg-panel));
+  color: color-mix(in srgb, white 84%, var(--accent-strong));
+  font-size: 0.64rem;
+  font-weight: 700;
+  line-height: 1;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  flex: 0 0 auto;
+  margin-top: -1px;
+}
+
+.dataset-side-panel__active-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 999px;
+  background: color-mix(in srgb, white 62%, var(--accent));
+  box-shadow: 0 0 0 4px color-mix(in srgb, var(--accent) 18%, transparent);
 }
 
 .dataset-side-panel__recent-meta {
