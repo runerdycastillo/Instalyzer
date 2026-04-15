@@ -38,6 +38,7 @@ import { DatasetWorkspaceEmptyState } from "@/components/workspace/dataset-works
 import { NotFollowingBackWorkspaceView } from "@/components/workspace/not-following-back-workspace-view";
 import {
   readActiveDatasetId,
+  readRecentDatasetHistory,
   DATASET_NAME_MAX_LENGTH,
   deleteLocalDataset,
   getLocalDatasetsServerSnapshot,
@@ -960,10 +961,12 @@ export function DatasetWorkspaceRoute({ datasetId, activeToolId }: DatasetWorksp
     router.push(nextDatasets[0] ? `/app/datasets/${nextDatasets[0].id}` : "/app/datasets");
   }
 
-  const recentDatasets = [
-    dataset,
-    ...datasets.filter((item) => item.id !== dataset.id),
-  ].slice(0, 2);
+  const recentDatasets = dataset
+    ? [dataset.id, ...readRecentDatasetHistory().filter((itemId) => itemId !== dataset.id)]
+        .slice(0, 2)
+        .map((itemId) => datasets.find((item) => item.id === itemId) || null)
+        .filter((item): item is NonNullable<typeof item> => Boolean(item))
+    : [];
   const sortedModalDatasets = [...datasets].sort((left, right) => {
     if (datasetSortOrder === "a-z") {
       return left.name.localeCompare(right.name, undefined, { sensitivity: "base" });
@@ -1000,8 +1003,9 @@ export function DatasetWorkspaceRoute({ datasetId, activeToolId }: DatasetWorksp
                   const isActiveDataset = item.id === dataset.id;
 
                   return (
-                    <div
+                    <Link
                       key={item.id}
+                      href={`/app/datasets/${item.id}`}
                       className={`dataset-side-panel__recent-chip${isActiveDataset ? " is-active" : ""}`}
                     >
                       <span className="dataset-side-panel__recent-name-row">
@@ -1016,7 +1020,7 @@ export function DatasetWorkspaceRoute({ datasetId, activeToolId }: DatasetWorksp
                       <span className="dataset-side-panel__recent-meta">
                         {isActiveDataset ? "selected dataset" : formatDate(item.createdAt)}
                       </span>
-                    </div>
+                    </Link>
                   );
                 })}
               </div>
@@ -1050,7 +1054,7 @@ export function DatasetWorkspaceRoute({ datasetId, activeToolId }: DatasetWorksp
               </h1>
               {isNotFollowingBackView ? (
                 <p className="dataset-overview-copy dataset-overview-copy--inline">
-                  Reviewing <strong>{dataset.name}</strong> inside the workspace shell.
+                  review flagged accounts, mark actions taken, and keep the rest organized for later.
                 </p>
               ) : isWorkspaceHome ? (
                 <p className="dataset-overview-copy dataset-overview-copy--inline">
@@ -1675,34 +1679,37 @@ export function DatasetWorkspaceRoute({ datasetId, activeToolId }: DatasetWorksp
           </div>
 
           <div className="dataset-side-panel__body">
-            {isNotFollowingBackView ? (
-              <div
-                className="workspace-tool-pill workspace-tool-pill--featured workspace-tool-pill--current is-live"
-                aria-label="Not following back tool is open"
-              >
-                <span className="workspace-tool-icon" aria-hidden="true">
-                  <UserMinus size={16} strokeWidth={1.9} />
-                </span>
-                <span className="workspace-tool-copy">
-                  <strong>not following back</strong>
-                </span>
-                <span className="workspace-tool-spacer" aria-hidden="true" />
-              </div>
-            ) : (
-              <Link
-                href={notFollowingBackHref}
-                className="workspace-tool-pill workspace-tool-pill--featured is-live"
-                aria-label="Open not following back tool"
-              >
-                <span className="workspace-tool-icon" aria-hidden="true">
-                  <UserMinus size={16} strokeWidth={1.9} />
-                </span>
-                <span className="workspace-tool-copy">
-                  <strong>not following back</strong>
-                </span>
-                <span className="workspace-tool-spacer" aria-hidden="true" />
-              </Link>
-            )}
+            <div className="workspace-tool-launch">
+              <p className="workspace-tool-launch__label">available now</p>
+              {isNotFollowingBackView ? (
+                <div
+                  className="workspace-tool-pill workspace-tool-pill--featured workspace-tool-pill--current is-live"
+                  aria-label="Not following back tool is open"
+                >
+                  <span className="workspace-tool-icon" aria-hidden="true">
+                    <UserMinus size={16} strokeWidth={1.9} />
+                  </span>
+                  <span className="workspace-tool-copy">
+                    <strong>not following back</strong>
+                  </span>
+                  <span className="workspace-tool-spacer" aria-hidden="true" />
+                </div>
+              ) : (
+                <Link
+                  href={notFollowingBackHref}
+                  className="workspace-tool-pill workspace-tool-pill--featured is-live"
+                  aria-label="Open not following back tool"
+                >
+                  <span className="workspace-tool-icon" aria-hidden="true">
+                    <UserMinus size={16} strokeWidth={1.9} />
+                  </span>
+                  <span className="workspace-tool-copy">
+                    <strong>not following back</strong>
+                  </span>
+                  <span className="workspace-tool-spacer" aria-hidden="true" />
+                </Link>
+              )}
+            </div>
 
             <button
               type="button"

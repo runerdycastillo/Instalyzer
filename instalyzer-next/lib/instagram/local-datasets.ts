@@ -12,6 +12,7 @@ export const LOCAL_DATASETS_STORAGE_KEY = "instalyzer_next_guest_datasets_v1";
 const LOCAL_DATASETS_EVENT = "instalyzer:datasets-changed";
 export const ACTIVE_DATASET_STORAGE_KEY = "instalyzer_next_active_dataset_v1";
 const ACTIVE_DATASET_EVENT = "instalyzer:active-dataset-changed";
+export const RECENT_DATASET_HISTORY_STORAGE_KEY = "instalyzer_next_recent_dataset_history_v1";
 export const EMPTY_LOCAL_DATASETS: LocalDatasetRecord[] = [];
 export const DATASET_NAME_MAX_LENGTH = 16;
 export const MAX_LOCAL_DATASETS = 6;
@@ -120,6 +121,24 @@ export function readActiveDatasetId() {
   }
 }
 
+export function readRecentDatasetHistory() {
+  if (typeof window === "undefined") return [] as string[];
+
+  try {
+    const raw = window.localStorage.getItem(RECENT_DATASET_HISTORY_STORAGE_KEY);
+    const parsed = raw ? (JSON.parse(raw) as unknown) : [];
+    return Array.isArray(parsed)
+      ? parsed
+          .map((value) => String(value || "").trim())
+          .filter(Boolean)
+          .filter((value, index, array) => array.indexOf(value) === index)
+          .slice(0, 2)
+      : [];
+  } catch {
+    return [];
+  }
+}
+
 export function getActiveDatasetServerSnapshot() {
   return null;
 }
@@ -129,6 +148,8 @@ export function writeActiveDatasetId(datasetId: string | null) {
 
   if (datasetId) {
     window.localStorage.setItem(ACTIVE_DATASET_STORAGE_KEY, datasetId);
+    const nextHistory = [datasetId, ...readRecentDatasetHistory().filter((item) => item !== datasetId)].slice(0, 2);
+    window.localStorage.setItem(RECENT_DATASET_HISTORY_STORAGE_KEY, JSON.stringify(nextHistory));
   } else {
     window.localStorage.removeItem(ACTIVE_DATASET_STORAGE_KEY);
   }

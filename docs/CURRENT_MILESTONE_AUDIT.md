@@ -23,7 +23,7 @@ Current milestone focus:
 - [x] Dataset creation flow implemented
 - [x] Datasets index implemented
 - [x] Dataset workspace implemented
-- [ ] Native `Not Following Back` route implemented
+- [x] Native `Not Following Back` route implemented
 - [ ] Parser/domain logic extracted from static scripts
 
 ## Session Audit Template
@@ -127,7 +127,7 @@ Use this section to track the current migration flow specifically.
 - [x] Dataset creation step is clear
 - [x] Upload-to-create processing handoff feels intentional
 - [x] Dataset workspace is real
-- [ ] Tool 1 works natively in Next
+- [x] Tool 1 works natively in Next
 
 ### Technical Foundation
 
@@ -144,17 +144,17 @@ Use this section to track the current migration flow specifically.
 
 ### Fix Next
 
-- [ ] Finish the workspace tools section and tools modal polish
-- Why now: the dataset side of the workspace is now close to locked, so the next highest-signal polish should tighten the tool-selection surface before we freeze the overview
+- [ ] Polish homepage messaging across the full landing flow
+- Why now: the app-side workspace/tool handoff is now credible enough that the homepage story should catch up and explain the soft launch with the same clarity
 
-- [ ] Run a focused `data mode` review for the workspace and overview
-- Why now: before Tool 1 lands, we should decide which parsed export signals actually belong in the overview so we stop guessing and start shipping the right data story
+- [ ] Run a focused homepage polish pass after copy updates
+- Why now: once the messaging is tightened, spacing, hierarchy, and transition details on the landing page will be easier to judge cleanly
 
-- [ ] Finalize the overview with the approved data set
-- Why now: once the workspace/tool surface and data story are locked, the overview can become a stable launch surface instead of a moving target
+- [ ] Do a deliberate interaction QA pass on overview + `not following back`
+- Why now: recent polish added stronger visited, pin, dataset-switching, export, and scroll behaviors, so the next highest-value app-side work is confirming they feel stable in real use
 
-- [ ] Implement the native `Not Following Back` route in Next
-- Why now: after the workspace/tool/data handoff is settled, the remaining biggest launch gap is still the one live tool itself
+- [ ] Decide the next parser-confidence pass or next native tool after homepage messaging settles
+- Why now: Tool 1 is real now, so the next product decision should come after we lock the launch story and see what still feels weakest
 
 ### Watch Soon
 
@@ -274,3 +274,22 @@ Add one short entry per work session.
   - it would be easy to start Tool 1 before the workspace/tool/data handoff is truly locked, which could create another polish loop later
 - Next step:
   - finish the tools-side workspace panel/modal, review the real data we want to surface, finalize the overview, then implement `Not Following Back`
+
+### Session Entry - 2026-04-14
+
+- Date: 2026-04-14
+- Focus: polish the live workspace interactions and tighten the homepage behavior so the soft-launch flow feels more intentional
+- What moved forward:
+  - `not following back` got a stronger review loop with recently visited row highlighting, pinned pending accounts, cleaner lowercase tooltip labels, and immediate cleanup when rows move between lists
+  - recent datasets now behave more like true recent history instead of static chips, and the active dataset remains easy to re-enter from the left panel
+  - the workspace rail was refined with a clearer `available now` treatment and stronger active-state feedback across the tool/list surfaces
+  - homepage viewport/scroll behavior was stabilized so route changes preserve the full-viewport hero feel and the `scroll to explore` cue now lands on the tools section cleanly
+  - the `download csv` action was moved into the list controls row so it reads like a real data action instead of floating in header space
+- What remains rough:
+  - homepage copy still wants a deliberate messaging pass across the full landing flow
+  - broader mobile/manual QA is still lighter than it should be after the recent interaction polish
+  - deeper parser extraction from the static app still remains ahead
+- Biggest risk:
+  - the product is getting visually and behaviorally polished enough that unclear landing-page messaging could become the next biggest trust/conversion drag
+- Next step:
+  - do a dedicated homepage messaging pass first, then run a follow-up polish/QA sweep to catch any remaining friction across marketing and workspace surfaces

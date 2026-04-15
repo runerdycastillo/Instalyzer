@@ -11,6 +11,7 @@ import {
   type NotFollowingBackSortOrder,
 } from "@/lib/instagram/not-following-back";
 import {
+  RECENT_PROFILE_VISIT_WINDOW_MS,
   pruneNotFollowingBackToolState,
   readNotFollowingBackToolState,
   writeNotFollowingBackToolState,
@@ -28,6 +29,32 @@ type FloatingTooltipState = {
   y: number;
   placement: "top" | "bottom";
 };
+
+function PinToggleIcon({ filled }: { filled: boolean }) {
+  if (filled) {
+    return (
+      <svg viewBox="0 0 24 24" width="13" height="13" aria-hidden="true">
+        <path
+          d="M12 17V22L10.9 21.45C10.24 21.12 10 20.9 10 20.5V17H6C5.45 17 5 16.55 5 16V15.24C5 14.48 5.43 13.78 6.11 13.45L7.89 12.55C8.57 12.22 9 11.52 9 10.76V7C9 6.45 8.55 6 8 6C6.9 6 6 5.1 6 4S6.9 2 8 2H16C17.1 2 18 2.9 18 4S17.1 6 16 6C15.45 6 15 6.45 15 7V10.76C15 11.52 15.43 12.22 16.11 12.55L17.89 13.45C18.57 13.78 19 14.48 19 15.24V16C19 16.55 18.55 17 18 17H12Z"
+          fill="currentColor"
+        />
+      </svg>
+    );
+  }
+
+  return (
+    <svg viewBox="0 0 24 24" width="13" height="13" fill="none" aria-hidden="true">
+      <path d="M12 17v5" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+      <path
+        d="M9 10.76a2 2 0 0 1-1.11 1.79l-1.78.9A2 2 0 0 0 5 15.24V16a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1v-.76a2 2 0 0 0-1.11-1.79l-1.78-.9A2 2 0 0 1 15 10.76V7a1 1 0 0 1 1-1 2 2 0 0 0 0-4H8a2 2 0 0 0 0 4 1 1 0 0 1 1 1z"
+        stroke="currentColor"
+        strokeWidth="2"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+    </svg>
+  );
+}
 
 function formatMetric(value: number | null | undefined) {
   const number = Number(value);
@@ -96,6 +123,7 @@ function getToneClassName(listKey: NotFollowingBackListKey) {
 export function NotFollowingBackWorkspaceView({
   dataset,
 }: NotFollowingBackWorkspaceViewProps) {
+  const [visitClock, setVisitClock] = useState(() => Date.now());
   const [query, setQuery] = useState("");
   const [sortOrder, setSortOrder] = useState<NotFollowingBackSortOrder>("latest");
   const [copiedUsername, setCopiedUsername] = useState("");
@@ -106,8 +134,8 @@ export function NotFollowingBackWorkspaceView({
   const allEntries = useMemo(() => deriveNotFollowingBackEntries(dataset), [dataset]);
   const allUsernames = useMemo(() => allEntries.map((entry) => entry.username), [allEntries]);
   const prunedToolState = useMemo(
-    () => pruneNotFollowingBackToolState(toolState, allUsernames),
-    [allUsernames, toolState],
+    () => pruneNotFollowingBackToolState(toolState, allUsernames, visitClock),
+    [allUsernames, toolState, visitClock],
   );
 
   useEffect(() => {
@@ -142,9 +170,29 @@ export function NotFollowingBackWorkspaceView({
     };
   }, [tooltip]);
 
+  useEffect(() => {
+    const visitTimestamps = Object.values(prunedToolState.recentVisits);
+    if (!visitTimestamps.length) return undefined;
+
+    const nextExpiry = Math.min(...visitTimestamps) + RECENT_PROFILE_VISIT_WINDOW_MS;
+    const delay = Math.max(nextExpiry - Date.now(), 0) + 50;
+    const timeout = window.setTimeout(() => {
+      setVisitClock(Date.now());
+    }, delay);
+
+    return () => {
+      window.clearTimeout(timeout);
+    };
+  }, [prunedToolState.recentVisits]);
+
   const unfollowedSet = useMemo(() => new Set(prunedToolState.unfollowed), [prunedToolState.unfollowed]);
   const reviewLaterSet = useMemo(() => new Set(prunedToolState.reviewLater), [prunedToolState.reviewLater]);
   const notFoundSet = useMemo(() => new Set(prunedToolState.notFound), [prunedToolState.notFound]);
+  const pinnedSet = useMemo(() => new Set(prunedToolState.pinned), [prunedToolState.pinned]);
+  const recentVisitSet = useMemo(
+    () => new Set(Object.keys(prunedToolState.recentVisits)),
+    [prunedToolState.recentVisits],
+  );
 
   const listEntries = useMemo(() => {
     return {
@@ -168,9 +216,16 @@ export function NotFollowingBackWorkspaceView({
     const queryFilteredEntries = normalizedQuery
       ? listEntries[activeList].filter((entry) => entry.username.includes(normalizedQuery))
       : listEntries[activeList];
+    const sortedEntries = sortNotFollowingBackEntries(queryFilteredEntries, sortOrder);
 
-    return sortNotFollowingBackEntries(queryFilteredEntries, sortOrder);
-  }, [activeList, listEntries, query, sortOrder]);
+    if (activeList !== "pending") {
+      return sortedEntries;
+    }
+
+    const pinnedEntries = sortedEntries.filter((entry) => pinnedSet.has(entry.username));
+    const unpinnedEntries = sortedEntries.filter((entry) => !pinnedSet.has(entry.username));
+    return [...pinnedEntries, ...unpinnedEntries];
+  }, [activeList, listEntries, pinnedSet, query, sortOrder]);
 
   function setActiveList(nextList: NotFollowingBackListKey) {
     setToolState((current) => ({
@@ -187,6 +242,10 @@ export function NotFollowingBackWorkspaceView({
         unfollowed: current.unfollowed.filter((item) => item !== normalizedUsername),
         reviewLater: current.reviewLater.filter((item) => item !== normalizedUsername),
         notFound: current.notFound.filter((item) => item !== normalizedUsername),
+        pinned: current.pinned.filter((item) => item !== normalizedUsername),
+        recentVisits: Object.fromEntries(
+          Object.entries(current.recentVisits).filter(([item]) => item !== normalizedUsername),
+        ),
       };
 
       if (nextList === "unfollowed") {
@@ -207,6 +266,36 @@ export function NotFollowingBackWorkspaceView({
 
       return nextState;
     });
+  }
+
+  function togglePinned(username: string) {
+    const normalizedUsername = username.trim().toLowerCase();
+    if (!normalizedUsername) return;
+
+    setToolState((current) => {
+      const nextPinned = current.pinned.filter((item) => item !== normalizedUsername);
+      const isPinned = nextPinned.length !== current.pinned.length;
+
+      return {
+        ...current,
+        pinned: isPinned ? nextPinned : [normalizedUsername, ...nextPinned],
+      };
+    });
+  }
+
+  function recordProfileVisit(username: string) {
+    const normalizedUsername = username.trim().toLowerCase();
+    if (!normalizedUsername) return;
+
+    const visitedAt = Date.now();
+    setVisitClock(visitedAt);
+    setToolState((current) => ({
+      ...current,
+      recentVisits: {
+        ...current.recentVisits,
+        [normalizedUsername]: visitedAt,
+      },
+    }));
   }
 
   function downloadCsv() {
@@ -284,25 +373,6 @@ export function NotFollowingBackWorkspaceView({
 
   return (
     <div className="relationship-tool">
-      <div className="relationship-tool__intro">
-        <p className="relationship-tool__copy">
-          Review flagged accounts, mark actions taken, and keep the rest organized for later.
-        </p>
-
-        <div className="relationship-tool__actions">
-          <button
-            type="button"
-            className="hero-btn hero-btn-secondary relationship-tool__button relationship-tool__button--icon"
-            onClick={downloadCsv}
-            disabled={!visibleEntries.length}
-            aria-label="download list"
-            title="download list"
-          >
-            <Download size={18} aria-hidden="true" />
-          </button>
-        </div>
-      </div>
-
       <div className="relationship-tool__summary-grid">
         {summaryCards.map((card) => {
           const Icon = card.Icon;
@@ -342,15 +412,31 @@ export function NotFollowingBackWorkspaceView({
           />
         </label>
 
-        <label className="relationship-tool__sort">
-          <span>sort</span>
-          <select value={sortOrder} onChange={(event) => setSortOrder(event.target.value as NotFollowingBackSortOrder)}>
-            <option value="latest">latest followed</option>
-            <option value="earliest">earliest followed</option>
-            <option value="az">a-z</option>
-            <option value="za">z-a</option>
-          </select>
-        </label>
+        <div className="relationship-tool__toolbar-actions">
+          <label className="relationship-tool__sort">
+            <span>sort</span>
+            <select
+              value={sortOrder}
+              onChange={(event) => setSortOrder(event.target.value as NotFollowingBackSortOrder)}
+            >
+              <option value="latest">latest followed</option>
+              <option value="earliest">earliest followed</option>
+              <option value="az">a-z</option>
+              <option value="za">z-a</option>
+            </select>
+          </label>
+
+          <button
+            type="button"
+            className="hero-btn hero-btn-secondary relationship-tool__button relationship-tool__button--icon"
+            onClick={downloadCsv}
+            disabled={!visibleEntries.length}
+            aria-label="download csv"
+            title="download csv"
+          >
+            <Download size={18} aria-hidden="true" />
+          </button>
+        </div>
       </div>
 
       <div className="relationship-tool__note-row">
@@ -367,8 +453,14 @@ export function NotFollowingBackWorkspaceView({
       <div className="relationship-tool__list-shell">
         {visibleEntries.length ? (
           <ul className="relationship-tool__list" aria-label={`Not following back ${listMeta.label} list`}>
-            {visibleEntries.map((entry) => (
-              <li key={entry.username} className="relationship-tool__row">
+            {visibleEntries.map((entry) => {
+              const isPinned = activeList === "pending" && pinnedSet.has(entry.username);
+
+              return (
+              <li
+                key={entry.username}
+                className={`relationship-tool__row${recentVisitSet.has(entry.username) ? " is-recently-visited" : ""}${isPinned ? " is-pinned" : ""}`}
+              >
                 <div className="relationship-tool__row-main">
                   {activeList === "pending" ? (
                     <button
@@ -414,6 +506,16 @@ export function NotFollowingBackWorkspaceView({
                         @{entry.username}
                       </button>
                       <span className={`relationship-tool__row-badge ${activeToneClassName}`}>{listMeta.label}</span>
+                      {activeList === "pending" ? (
+                        <button
+                          type="button"
+                          className={`relationship-tool__pin-toggle${isPinned ? " is-pinned" : ""}`}
+                          onClick={() => togglePinned(entry.username)}
+                          aria-label={`${isPinned ? "Unpin" : "Pin"} @${entry.username}`}
+                        >
+                          <PinToggleIcon filled={isPinned} />
+                        </button>
+                      ) : null}
                     </div>
                     <p>{formatFollowedAt(entry.timestamp)}</p>
                   </div>
@@ -426,9 +528,9 @@ export function NotFollowingBackWorkspaceView({
                         type="button"
                         className="relationship-tool__action relationship-tool__action--icon"
                         onClick={() => moveUser(entry.username, "reviewLater")}
-                        onMouseEnter={(event) => showTooltip("Review later", event.currentTarget)}
+                        onMouseEnter={(event) => showTooltip("review later", event.currentTarget)}
                         onMouseLeave={hideTooltip}
-                        onFocus={(event) => showTooltip("Review later", event.currentTarget)}
+                        onFocus={(event) => showTooltip("review later", event.currentTarget)}
                         onBlur={hideTooltip}
                         aria-label={`Move @${entry.username} to review later`}
                       >
@@ -438,9 +540,9 @@ export function NotFollowingBackWorkspaceView({
                         type="button"
                         className="relationship-tool__action relationship-tool__action--icon"
                         onClick={() => moveUser(entry.username, "notFound")}
-                        onMouseEnter={(event) => showTooltip("Mark not found", event.currentTarget)}
+                        onMouseEnter={(event) => showTooltip("not found", event.currentTarget)}
                         onMouseLeave={hideTooltip}
-                        onFocus={(event) => showTooltip("Mark not found", event.currentTarget)}
+                        onFocus={(event) => showTooltip("not found", event.currentTarget)}
                         onBlur={hideTooltip}
                         aria-label={`Mark @${entry.username} as not found`}
                       >
@@ -463,9 +565,10 @@ export function NotFollowingBackWorkspaceView({
                     target="_blank"
                     rel="noreferrer noopener"
                     className="relationship-tool__action relationship-tool__action--icon"
-                    onMouseEnter={(event) => showTooltip("Open profile", event.currentTarget)}
+                    onClick={() => recordProfileVisit(entry.username)}
+                    onMouseEnter={(event) => showTooltip("open profile", event.currentTarget)}
                     onMouseLeave={hideTooltip}
-                    onFocus={(event) => showTooltip("Open profile", event.currentTarget)}
+                    onFocus={(event) => showTooltip("open profile", event.currentTarget)}
                     onBlur={hideTooltip}
                     aria-label={`Open @${entry.username}`}
                   >
@@ -473,7 +576,7 @@ export function NotFollowingBackWorkspaceView({
                   </a>
                 </div>
               </li>
-            ))}
+            )})}
           </ul>
         ) : (
           <div className="relationship-tool__empty">

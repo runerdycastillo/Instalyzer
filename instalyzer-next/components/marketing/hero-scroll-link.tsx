@@ -4,42 +4,35 @@ import type { MouseEvent, ReactNode } from "react";
 
 type HeroScrollLinkProps = {
   targetId: string;
+  centeredSelector?: string;
   className?: string;
   ariaLabel: string;
   children: ReactNode;
-  targetRatio?: number;
 };
 
 export function HeroScrollLink({
   targetId,
+  centeredSelector,
   className,
   ariaLabel,
   children,
-  targetRatio = 0.5,
 }: HeroScrollLinkProps) {
   const handleClick = (event: MouseEvent<HTMLAnchorElement>) => {
     event.preventDefault();
 
-    const target = document.getElementById(targetId);
-    if (!target) {
+    const section = document.getElementById(targetId);
+    if (!section) {
       return;
     }
 
-    const headerHeight =
-      document.querySelector<HTMLElement>(".marketing-header")?.offsetHeight ?? 0;
-    const targetRect = target.getBoundingClientRect();
-    const viewportHeight = window.innerHeight;
-    const centeredTop =
-      window.scrollY +
-      targetRect.top +
-      targetRect.height * targetRatio -
-      viewportHeight / 2 -
-      headerHeight / 2;
-
-    window.history.replaceState(null, "", `#${targetId}`);
-    window.scrollTo({
-      top: Math.max(0, centeredTop),
-      behavior: "smooth",
+    const centeredTarget = centeredSelector
+      ? section.querySelector<HTMLElement>(centeredSelector)
+      : null;
+    const scrollTarget = centeredTarget ?? section;
+    const prefersReducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    scrollTarget.scrollIntoView({
+      behavior: prefersReducedMotion ? "auto" : "smooth",
+      block: "center",
     });
   };
 

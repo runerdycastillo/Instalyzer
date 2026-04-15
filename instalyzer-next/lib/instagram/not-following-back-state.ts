@@ -5,9 +5,12 @@ export type NotFollowingBackToolState = {
   unfollowed: string[];
   reviewLater: string[];
   notFound: string[];
+  pinned: string[];
+  recentVisits: Record<string, number>;
 };
 
 const STORAGE_KEY_PREFIX = "instalyzer_next_not_following_back_tool_v1";
+export const RECENT_PROFILE_VISIT_WINDOW_MS = 30 * 1000;
 
 function normalizeUsername(value: string) {
   return String(value || "").trim().trimStart("@").toLowerCase();
@@ -23,6 +26,8 @@ export function getDefaultNotFollowingBackToolState(): NotFollowingBackToolState
     unfollowed: [],
     reviewLater: [],
     notFound: [],
+    pinned: [],
+    recentVisits: {},
   };
 }
 
@@ -50,6 +55,8 @@ export function readNotFollowingBackToolState(datasetId: string): NotFollowingBa
         ? parsed.reviewLater.map(normalizeUsername).filter(Boolean)
         : [],
       notFound: Array.isArray(parsed?.notFound) ? parsed.notFound.map(normalizeUsername).filter(Boolean) : [],
+      pinned: Array.isArray(parsed?.pinned) ? parsed.pinned.map(normalizeUsername).filter(Boolean) : [],
+      recentVisits: readRecentVisits(parsed?.recentVisits),
     };
   } catch {
     return getDefaultNotFollowingBackToolState();
@@ -64,6 +71,7 @@ export function writeNotFollowingBackToolState(datasetId: string, state: NotFoll
 export function pruneNotFollowingBackToolState(
   state: NotFollowingBackToolState,
   validUsernames: string[],
+  now = Date.now(),
 ): NotFollowingBackToolState {
   const validLookup = new Set(validUsernames.map(normalizeUsername));
   const seen = new Set<string>();
@@ -80,10 +88,50 @@ export function pruneNotFollowingBackToolState(
         return true;
       });
 
+  const unfollowed = keepUnique(state.unfollowed);
+  const reviewLater = keepUnique(state.reviewLater);
+  const notFound = keepUnique(state.notFound);
+  const pendingBlocked = new Set([...unfollowed, ...reviewLater, ...notFound]);
+  const pinnedSeen = new Set<string>();
+
   return {
     activeList: state.activeList,
-    unfollowed: keepUnique(state.unfollowed),
-    reviewLater: keepUnique(state.reviewLater),
-    notFound: keepUnique(state.notFound),
+    unfollowed,
+    reviewLater,
+    notFound,
+    pinned: state.pinned
+      .map(normalizeUsername)
+      .filter((username) => {
+        if (!username || !validLookup.has(username) || pendingBlocked.has(username) || pinnedSeen.has(username)) {
+          return false;
+        }
+
+        pinnedSeen.add(username);
+        return true;
+      }),
+    recentVisits: Object.fromEntries(
+      Object.entries(state.recentVisits || {})
+        .map(([username, timestamp]) => [normalizeUsername(username), Number(timestamp)] as const)
+        .filter(
+          ([username, timestamp]) =>
+            username &&
+            validLookup.has(username) &&
+            Number.isFinite(timestamp) &&
+            timestamp > 0 &&
+            now - timestamp <= RECENT_PROFILE_VISIT_WINDOW_MS,
+        ),
+    ),
   };
+}
+
+function readRecentVisits(value: unknown) {
+  if (!value || typeof value !== "object") {
+    return {};
+  }
+
+  return Object.fromEntries(
+    Object.entries(value)
+      .map(([username, timestamp]) => [normalizeUsername(username), Number(timestamp)] as const)
+      .filter(([, timestamp]) => Number.isFinite(timestamp) && timestamp > 0),
+  );
 }

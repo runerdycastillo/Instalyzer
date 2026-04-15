@@ -14,7 +14,7 @@ export function MarketingShellMetrics() {
 
     const syncLayoutMetrics = () => {
       const headerHeight = header.offsetHeight;
-      const heroHeight = Math.max(window.innerHeight - headerHeight - 22, 0);
+      const heroHeight = Math.max(window.innerHeight - headerHeight, 0);
 
       root.style.setProperty("--marketing-header-height", `${headerHeight}px`);
       root.style.setProperty("--marketing-hero-height", `${heroHeight}px`);

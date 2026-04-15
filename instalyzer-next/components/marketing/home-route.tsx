@@ -153,6 +153,7 @@ export function MarketingHomeRoute() {
 
         <HeroScrollLink
           targetId="tools-section"
+          centeredSelector=".section-scroll-target"
           className="hero-scroll-cue"
           ariaLabel="Scroll to tools section"
         >
@@ -399,7 +400,8 @@ export function MarketingHomeRoute() {
             <div className="pricing-footer-cta">
               <p className="pricing-footer-copy">need help choosing a plan?</p>
               <HeroScrollLink
-                targetId="tools-scroll-target"
+                targetId="tools-section"
+                centeredSelector=".section-scroll-target"
                 className="pricing-footer-link"
                 ariaLabel="Scroll to tools section"
               >

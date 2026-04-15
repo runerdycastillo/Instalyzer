@@ -18,7 +18,7 @@
   --radius-md: 16px;
   --page-max: 1200px;
   --marketing-header-height: 98px;
-  --marketing-hero-height: calc(100dvh - var(--marketing-header-height) - 22px);
+  --marketing-hero-height: calc(100dvh - var(--marketing-header-height));
 }
 
 .dataset-meta-value--link {
@@ -61,6 +61,10 @@
   padding: 2px 0 4px;
 }
 
+.relationship-tool__intro--actions-only {
+  justify-content: flex-end;
+}
+
 .relationship-tool__eyebrow {
   margin: 0 0 4px;
   color: var(--text-dim);
@@ -96,7 +100,7 @@
   min-width: 40px;
   height: 40px;
   padding: 0;
-  border-radius: 999px;
+  border-radius: 8px;
   flex: 0 0 40px;
 }
 
@@ -123,8 +127,7 @@
 }
 
 .relationship-tool__summary-card.is-active {
-  border-color: color-mix(in srgb, var(--accent) 36%, var(--line));
-  box-shadow: 0 12px 22px rgba(31, 91, 196, 0.08);
+  box-shadow: none;
 }
 
 .relationship-tool__summary-card {
@@ -139,16 +142,40 @@
   border-color: color-mix(in srgb, #f97316 28%, var(--line));
 }
 
+.relationship-tool__summary-card.is-pending.is-active {
+  border-width: 3px;
+  border-color: color-mix(in srgb, #f97316 52%, var(--line));
+  box-shadow: none;
+}
+
 .relationship-tool__summary-card.is-unfollowed {
   border-color: color-mix(in srgb, #22c55e 28%, var(--line));
+}
+
+.relationship-tool__summary-card.is-unfollowed.is-active {
+  border-width: 3px;
+  border-color: color-mix(in srgb, #22c55e 52%, var(--line));
+  box-shadow: none;
 }
 
 .relationship-tool__summary-card.is-review-later {
   border-color: color-mix(in srgb, #f59e0b 30%, var(--line));
 }
 
+.relationship-tool__summary-card.is-review-later.is-active {
+  border-width: 3px;
+  border-color: color-mix(in srgb, #f59e0b 54%, var(--line));
+  box-shadow: none;
+}
+
 .relationship-tool__summary-card.is-not-found {
   border-color: color-mix(in srgb, #94a3b8 28%, var(--line));
+}
+
+.relationship-tool__summary-card.is-not-found.is-active {
+  border-width: 3px;
+  border-color: color-mix(in srgb, #94a3b8 50%, var(--line));
+  box-shadow: none;
 }
 
 .relationship-tool__summary-head {
@@ -179,6 +206,13 @@
   grid-template-columns: minmax(0, 1fr) auto;
   gap: 10px;
   align-items: end;
+}
+
+.relationship-tool__toolbar-actions {
+  display: flex;
+  align-items: end;
+  justify-content: flex-end;
+  gap: 10px;
 }
 
 .relationship-tool__search,
@@ -289,7 +323,8 @@
   border-top: 1px solid color-mix(in srgb, var(--line) 72%, transparent);
   transition:
     background-color 140ms ease,
-    border-color 140ms ease;
+    border-color 140ms ease,
+    box-shadow 140ms ease;
 }
 
 .relationship-tool__row:first-child {
@@ -299,6 +334,29 @@
 .relationship-tool__row:hover {
   background: color-mix(in srgb, var(--accent) 4%, var(--bg-panel));
   border-color: color-mix(in srgb, var(--accent) 14%, var(--line));
+}
+
+.relationship-tool__row.is-recently-visited {
+  background:
+    linear-gradient(
+      90deg,
+      color-mix(in srgb, var(--accent) 16%, transparent) 0%,
+      color-mix(in srgb, var(--bg-panel) 96%, transparent) 22%
+    ),
+    color-mix(in srgb, var(--bg-panel) 94%, transparent);
+  border-color: color-mix(in srgb, var(--accent) 20%, var(--line));
+  box-shadow: inset 3px 0 0 color-mix(in srgb, var(--accent) 46%, transparent);
+}
+
+.relationship-tool__row.is-recently-visited:hover {
+  background:
+    linear-gradient(
+      90deg,
+      color-mix(in srgb, var(--accent) 18%, transparent) 0%,
+      color-mix(in srgb, var(--bg-panel) 94%, transparent) 24%
+    ),
+    color-mix(in srgb, var(--accent) 5%, var(--bg-panel));
+  border-color: color-mix(in srgb, var(--accent) 24%, var(--line));
 }
 
 .relationship-tool__row-copy {
@@ -318,6 +376,7 @@
   align-items: center;
   gap: 10px;
   min-width: 0;
+  flex-wrap: wrap;
 }
 
 .relationship-tool__handle {
@@ -341,6 +400,56 @@
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+}
+
+.relationship-tool__pin-toggle {
+  width: 18px;
+  min-width: 18px;
+  height: 18px;
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  color: var(--text-dim);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  opacity: 0;
+  pointer-events: none;
+  will-change: opacity, transform;
+  transform: translateY(3px) scale(0.88);
+  transition:
+    opacity 260ms cubic-bezier(0.22, 1, 0.36, 1),
+    color 180ms ease,
+    transform 260ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.relationship-tool__pin-toggle svg {
+  transform: rotate(28deg);
+  transform-origin: center;
+}
+
+.relationship-tool__row:hover .relationship-tool__pin-toggle,
+.relationship-tool__pin-toggle:focus-visible,
+.relationship-tool__row.is-pinned .relationship-tool__pin-toggle {
+  opacity: 1;
+  pointer-events: auto;
+  transform: translateY(0) scale(1);
+}
+
+.relationship-tool__pin-toggle:hover,
+.relationship-tool__pin-toggle:focus-visible {
+  color: color-mix(in srgb, white 78%, var(--accent));
+}
+
+.relationship-tool__pin-toggle.is-pinned {
+  color: color-mix(in srgb, white 72%, var(--accent));
+}
+
+.relationship-tool__pin-toggle:focus-visible {
+  outline: 2px solid color-mix(in srgb, var(--accent) 48%, transparent);
+  outline-offset: 2px;
+  border-radius: 4px;
 }
 
 .relationship-tool__row-copy p {
@@ -503,6 +612,10 @@
     grid-template-columns: 1fr;
   }
 
+  .relationship-tool__toolbar-actions {
+    justify-content: space-between;
+  }
+
   .relationship-tool__list-shell,
   .relationship-tool__list,
   .relationship-tool__empty {
@@ -532,6 +645,12 @@
 
   .relationship-tool__action--icon {
     width: 38px;
+  }
+
+  .relationship-tool__pin-toggle {
+    opacity: 1;
+    pointer-events: auto;
+    transform: translateY(0) scale(1);
   }
 }
 
@@ -7661,10 +7780,21 @@ img {
   border-radius: 14px;
   border: 1px solid color-mix(in srgb, var(--line) 82%, transparent);
   background: color-mix(in srgb, var(--bg-panel) 84%, transparent);
+  color: inherit;
+  text-decoration: none;
   transition:
     border-color 140ms ease,
     background-color 140ms ease,
-    box-shadow 140ms ease;
+    box-shadow 140ms ease,
+    transform 140ms ease;
+}
+
+.dataset-side-panel__recent-chip:hover,
+.dataset-side-panel__recent-chip:focus-visible {
+  border-color: color-mix(in srgb, var(--accent) 26%, var(--line));
+  background: color-mix(in srgb, var(--accent) 7%, var(--bg-panel));
+  box-shadow: 0 10px 26px rgba(37, 99, 235, 0.08);
+  transform: translateY(-1px);
 }
 
 .dataset-side-panel__recent-chip.is-active {
@@ -7678,6 +7808,20 @@ img {
   box-shadow:
     0 0 0 1px color-mix(in srgb, var(--accent) 20%, transparent),
     0 12px 30px rgba(37, 99, 235, 0.12);
+}
+
+.dataset-side-panel__recent-chip.is-active:hover,
+.dataset-side-panel__recent-chip.is-active:focus-visible {
+  border-color: color-mix(in srgb, var(--accent) 58%, var(--line));
+  background:
+    linear-gradient(
+      180deg,
+      color-mix(in srgb, var(--accent) 14%, var(--bg-panel)) 0%,
+      color-mix(in srgb, var(--bg-panel) 92%, transparent) 100%
+    );
+  box-shadow:
+    0 0 0 1px color-mix(in srgb, var(--accent) 22%, transparent),
+    0 14px 32px rgba(37, 99, 235, 0.14);
 }
 
 .dataset-side-panel__recent-name-row {
@@ -7840,6 +7984,49 @@ img {
 
 .workspace-tool-list {
   gap: 8px;
+}
+
+.workspace-tool-launch {
+  display: grid;
+  gap: 4px;
+  margin-top: -12px;
+}
+
+.workspace-tool-launch__label {
+  margin: 0;
+  width: 100%;
+  padding: 0 4px;
+  text-align: center;
+  font-size: 0.72rem;
+  font-weight: 800;
+  line-height: 1;
+  letter-spacing: 0.22em;
+  text-transform: lowercase;
+  background-image: linear-gradient(
+    120deg,
+    color-mix(in srgb, var(--ink-soft) 88%, white 10%) 0%,
+    color-mix(in srgb, var(--ink-soft) 92%, white 14%) 36%,
+    rgba(255, 255, 255, 0.9) 50%,
+    color-mix(in srgb, var(--ink-soft) 92%, white 14%) 64%,
+    color-mix(in srgb, var(--ink-soft) 88%, white 10%) 100%
+  );
+  background-size: 220% 100%;
+  background-position: 140% 50%;
+  background-clip: text;
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  animation: tierNoteGloss 9s ease-in-out infinite;
+}
+
+:root[data-theme="dark"] .workspace-tool-launch__label {
+  background-image: linear-gradient(
+    120deg,
+    color-mix(in srgb, var(--ink-soft) 72%, white 16%) 0%,
+    color-mix(in srgb, var(--ink-soft) 80%, white 22%) 36%,
+    rgba(255, 255, 255, 0.96) 50%,
+    color-mix(in srgb, var(--ink-soft) 80%, white 22%) 64%,
+    color-mix(in srgb, var(--ink-soft) 72%, white 16%) 100%
+  );
 }
 
 .workspace-tool-pill {
