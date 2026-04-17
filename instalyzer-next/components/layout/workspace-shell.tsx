@@ -5,7 +5,7 @@ import type { ReactNode } from "react";
 import { MarketingShellMetrics } from "@/components/layout/marketing-shell-metrics";
 import { MarketingNav } from "@/components/layout/marketing-nav";
 import { ScrollBehaviorManager } from "@/components/layout/scroll-behavior-manager";
-import { SiteFooter } from "@/components/layout/site-footer";
+import { SiteFooterV2 } from "@/components/layout/site-footer-v2";
 
 export function WorkspaceShell({ children }: { children: ReactNode }) {
   const pathname = usePathname();
@@ -29,7 +29,7 @@ export function WorkspaceShell({ children }: { children: ReactNode }) {
         <main className="workspace-focused-main">{children}</main>
       </div>
 
-      <SiteFooter />
+      <SiteFooterV2 />
     </div>
   );
 }

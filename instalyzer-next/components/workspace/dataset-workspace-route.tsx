@@ -68,11 +68,6 @@ function formatDate(value: string) {
   });
 }
 
-function formatMetric(value: number | null | undefined, fallback = "Not available") {
-  const number = Number(value);
-  return Number.isFinite(number) ? number.toLocaleString() : fallback;
-}
-
 function formatSignedMetric(value: number | null | undefined, fallback = "Not available") {
   const number = Number(value);
   if (!Number.isFinite(number)) return fallback;
@@ -319,14 +314,52 @@ function getExportRangeLabel(scope?: {
   return "export imported";
 }
 
-function formatExportMediaQuality(scope?: {
+function formatExportFormat(scope?: {
   exportRequestMetadataDetected?: boolean;
-  exportRequestMediaQuality?: string;
+  exportRequestFormat?: string;
 }) {
-  const mediaQuality = String(scope?.exportRequestMediaQuality || "").trim();
-  if (mediaQuality) return mediaQuality;
+  const exportFormat = String(scope?.exportRequestFormat || "").trim();
+  if (exportFormat) return exportFormat.toLowerCase();
   if (scope?.exportRequestMetadataDetected === false) return "not included in this export";
   return "not available";
+}
+
+function getRelationshipToolsStatus(scope?: {
+  notFollowingBackEligible?: boolean;
+  exportRequestRange?: "all_time" | "limited" | "unknown";
+}) {
+  if (scope?.notFollowingBackEligible) return "ready";
+  if (scope?.exportRequestRange === "limited") return "limited export";
+  return "not ready";
+}
+
+function getInsightsStatus(input?: {
+  scope?: {
+    insightDateRangeLabel?: string;
+  };
+  metrics?: {
+    followerTotalFromInsights?: number | null;
+    accountsReached?: number | null;
+    impressions?: number | null;
+    profileVisits?: number | null;
+    externalLinkTaps?: number | null;
+    contentInteractions?: number | null;
+    accountsEngaged?: number | null;
+  };
+}) {
+  const hasInsightSignal =
+    Boolean(String(input?.scope?.insightDateRangeLabel || "").trim()) ||
+    [
+      input?.metrics?.followerTotalFromInsights,
+      input?.metrics?.accountsReached,
+      input?.metrics?.impressions,
+      input?.metrics?.profileVisits,
+      input?.metrics?.externalLinkTaps,
+      input?.metrics?.contentInteractions,
+      input?.metrics?.accountsEngaged,
+    ].some((value) => Number.isFinite(value));
+
+  return hasInsightSignal ? "detected" : "not detected";
 }
 
 function getDisplayName(dataset: NonNullable<ReturnType<typeof findLocalDataset>>) {
@@ -1011,9 +1044,12 @@ export function DatasetWorkspaceRoute({ datasetId, activeToolId }: DatasetWorksp
                       <span className="dataset-side-panel__recent-name-row">
                         <span className="dataset-side-panel__recent-name">{item.name}</span>
                         {isActiveDataset ? (
-                          <span className="dataset-side-panel__active-pill">
+                          <span
+                            className="dataset-side-panel__active-indicator"
+                            aria-label="Active dataset"
+                            title="Active dataset"
+                          >
                             <span className="dataset-side-panel__active-dot" aria-hidden="true" />
-                            active
                           </span>
                         ) : null}
                       </span>
@@ -1619,12 +1655,12 @@ export function DatasetWorkspaceRoute({ datasetId, activeToolId }: DatasetWorksp
                 <div className="dataset-overview-details-stack">
                   <div className="dataset-overview-details-row dataset-overview-details-row--paired">
                     <div className="dataset-overview-details-cell">
-                      <span>dataset name</span>
-                      <strong>{dataset.name}</strong>
-                    </div>
-                    <div className="dataset-overview-details-cell">
                       <span>imported on</span>
                       <strong>{formatDate(dataset.createdAt)}</strong>
+                    </div>
+                    <div className="dataset-overview-details-cell">
+                      <span>export format</span>
+                      <strong>{formatExportFormat(dataset.scope)}</strong>
                     </div>
                   </div>
                   <div className="dataset-overview-details-row">
@@ -1641,14 +1677,14 @@ export function DatasetWorkspaceRoute({ datasetId, activeToolId }: DatasetWorksp
                       <strong>{dataset.importReview.sourceLabel}</strong>
                     </div>
                   </div>
-                    <div className="dataset-overview-details-row dataset-overview-details-row--paired">
-                      <div className="dataset-overview-details-cell">
-                        <span>media quality</span>
-                        <strong>{formatExportMediaQuality(dataset.scope)}</strong>
-                      </div>
+                  <div className="dataset-overview-details-row dataset-overview-details-row--paired">
                     <div className="dataset-overview-details-cell">
-                      <span>json files scanned</span>
-                      <strong>{formatMetric(dataset.meta?.scannedJsonCount ?? null)}</strong>
+                      <span>relationship tools</span>
+                      <strong>{getRelationshipToolsStatus(dataset.scope)}</strong>
+                    </div>
+                    <div className="dataset-overview-details-cell">
+                      <span>insights</span>
+                      <strong>{getInsightsStatus(dataset)}</strong>
                     </div>
                   </div>
                   <div className="dataset-overview-details-row">

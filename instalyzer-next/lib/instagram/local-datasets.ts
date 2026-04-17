@@ -61,6 +61,18 @@ export function getEntryPointLabel(entryPoint: DatasetEntryPoint) {
   return entryPointLabels[entryPoint] || entryPointLabels.unknown;
 }
 
+export function getPreferredWorkspaceHref(
+  datasets: LocalDatasetRecord[],
+  activeDatasetId: string | null | undefined,
+) {
+  const preferredDatasetId =
+    activeDatasetId && datasets.some((dataset) => dataset.id === activeDatasetId)
+      ? activeDatasetId
+      : datasets[0]?.id || null;
+
+  return preferredDatasetId ? `/app/datasets/${preferredDatasetId}` : "/app/datasets";
+}
+
 export function getNextDefaultDatasetName(datasets: LocalDatasetRecord[] = readLocalDatasets()) {
   const highestExportNumber = datasets.reduce((highest, dataset) => {
     const match = dataset.name.trim().match(/^export\s+(\d+)$/i);

@@ -17,19 +17,19 @@ const howItWorksSteps = [
   {
     step: "step 1",
     title: "upload your export",
-    copy: "download your instagram data and upload the export file.",
+    copy: "download the official instagram export zip and bring it into instalyzer.",
     icon: Upload,
   },
   {
     step: "step 2",
-    title: "we analyze your network",
-    copy: "instalyzer processes your followers, following, and engagement signals.",
+    title: "create a reusable dataset",
+    copy: "we check the export and turn it into a dataset you can come back to inside the workspace.",
     icon: ChartColumnBig,
   },
   {
     step: "step 3",
-    title: "use the first live tool",
-    copy: "create a dataset, run not following back now, and watch more tools roll out over time.",
+    title: "run the first live tool",
+    copy: "start with not following back now while the same dataset stays ready for the next tools.",
     icon: ArrowUpRight,
   },
 ] as const;
@@ -43,7 +43,18 @@ const resultsPreviewMetrics = [
   { label: "accounts engaged", value: 823 },
 ] as const;
 
-const pricingPlans = [
+const pricingPlans: ReadonlyArray<{
+  cardClassName: string;
+  tier: string;
+  price: string;
+  billingLabel: string | null;
+  copy: string;
+  features: readonly string[];
+  ctaLabel: string;
+  ctaClassName: string;
+  badge: string | null;
+  featured?: boolean;
+}> = [
   {
     cardClassName: "pricing-card-free",
     tier: "free",
@@ -88,18 +99,18 @@ const faqColumns = [
     {
       question: "how do i download my data?",
       answer:
-        "request your export from instagram in your account settings. once downloaded, upload the zip file here to start analyzing your data.",
+        "use instagram's download-your-information flow, then upload the official zip here. the help page walks through the settings step by step.",
       startsOpen: true,
     },
     {
       question: "is my data stored on your servers?",
       answer:
-        "your export is processed securely and is not permanently stored. your data stays private and is only used to generate your insights.",
+        "the current launch flow keeps your saved dataset in your browser on this device. you do not need to log into instagram through instalyzer.",
     },
     {
       question: "what happens after i upload?",
       answer:
-        "you review the import, create a reusable dataset, and unlock the first live tool now while the broader workspace keeps expanding.",
+        "instalyzer checks the export, lets you create a reusable dataset, and opens the workspace with not following back ready to use now.",
     },
   ],
   [
@@ -111,12 +122,12 @@ const faqColumns = [
     {
       question: "what file format is supported?",
       answer:
-        "we support the official instagram export zip file. no additional setup or formatting is required.",
+        "use the official instagram export as a zip with json data. for relationship tools like not following back, all time is the recommended export range.",
     },
     {
       question: "is this free right now?",
       answer:
-        "yes. the current launch version is free while we finish the broader toolset and workspace experience.",
+        "yes. the current soft launch is free while the workspace expands beyond the first live tool.",
     },
   ],
 ] as const;
@@ -128,7 +139,7 @@ export function MarketingHomeRoute() {
 
       <section className="hero-section" aria-labelledby="hero-title">
         <div className="hero-content">
-          <p className="hero-eyebrow">instagram dataset workspace</p>
+          <p className="hero-eyebrow">instagram export workspace</p>
 
           <h1 id="hero-title" className="hero-title">
             <span className="hero-title-line">unlock powerful tools</span>
@@ -136,8 +147,8 @@ export function MarketingHomeRoute() {
           </h1>
 
           <p className="hero-copy">
-            upload your instagram export once, run not following back now, and get
-            ready for more tools as the workspace expands.
+            instalyzer turns your instagram export into a reusable workspace so you
+            have access to your tools in one place.
           </p>
 
           <div className="hero-actions">
@@ -174,11 +185,12 @@ export function MarketingHomeRoute() {
           <div className="section-intro tools-section-intro">
             <p className="section-kicker">dataset tools</p>
             <h2 id="tools-section-title" className="section-title">
-              tools unlocked by your instagram export
+              one export can unlock more than one workflow
             </h2>
             <p className="section-copy">
-              launch version includes not following back live now, with more
-              dataset tools rolling out soon.
+              the soft launch starts with not following back live now. the same
+              dataset foundation is built to support audience, reach, and content
+              analysis next.
             </p>
           </div>
 
@@ -212,10 +224,10 @@ export function MarketingHomeRoute() {
 
         <div className="tier-columns-meta">
           <p className="tier-columns-note">
-            <span>more tools coming soon.</span>
+            <span>start free with the first live tool.</span>
           </p>
           <Link href="/app/datasets/new?entry=home-hero" className="hero-btn hero-btn-primary">
-            try not following back
+            open the workspace
           </Link>
         </div>
       </section>
@@ -419,8 +431,8 @@ export function MarketingHomeRoute() {
             common questions before you upload
           </h2>
           <p className="section-copy">
-            everything you need to know about your export, privacy, and how your
-            data is handled.
+            the basics on export setup, privacy, and what the current soft launch
+            already supports.
           </p>
         </div>
 

@@ -1,9 +1,9 @@
 "use client";
 
-import { ChevronLeft, ChevronRight, ExternalLink } from "lucide-react";
+import { ChevronLeft, ChevronRight, ExternalLink, RotateCcw } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
-import { useState } from "react";
+import { useState, type ReactNode } from "react";
 import {
   exportQuickTipSections,
   INSTAGRAM_APP_URL,
@@ -14,7 +14,11 @@ const guideTabs = [
   { key: "visual-guide", title: "visual guide", copy: "image flow" },
 ] as const;
 
-const quickSteps = [
+const quickSteps: ReadonlyArray<{
+  title: string;
+  copy: ReactNode;
+  accented?: boolean;
+}> = [
   {
     title: "open your instagram profile",
     copy: (
@@ -215,10 +219,11 @@ export function HelpRoute() {
   const [activeVisualIndex, setActiveVisualIndex] = useState(0);
 
   const activeVisualStep = visualSteps[activeVisualIndex];
+  const isFirstVisualStep = activeVisualIndex === 0;
+  const isLastVisualStep = activeVisualIndex === visualSteps.length - 1;
 
   const activateVisualStep = (nextIndex: number) => {
-    const count = visualSteps.length;
-    setActiveVisualIndex((nextIndex + count) % count);
+    setActiveVisualIndex(Math.max(0, Math.min(nextIndex, visualSteps.length - 1)));
   };
 
   return (
@@ -381,6 +386,7 @@ export function HelpRoute() {
                         type="button"
                         className="guide-visual-arrow guide-visual-arrow-prev"
                         aria-label="Previous visual step"
+                        disabled={isFirstVisualStep}
                         onClick={() => activateVisualStep(activeVisualIndex - 1)}
                       >
                         <ChevronLeft aria-hidden="true" strokeWidth={2.1} />
@@ -414,6 +420,18 @@ export function HelpRoute() {
                                 <h4 className="guide-visual-title">{step.title}</h4>
                                 <p className="guide-visual-copy">{step.copy}</p>
                               </figcaption>
+                              {index === visualSteps.length - 1 ? (
+                                <button
+                                  type="button"
+                                  className="guide-visual-reset-fab"
+                                  onClick={() => activateVisualStep(0)}
+                                  aria-label="Reset visual guide to step 1"
+                                  title="Reset to step 1"
+                                  hidden={!active}
+                                >
+                                  <RotateCcw aria-hidden="true" strokeWidth={2} />
+                                </button>
+                              ) : null}
                             </figure>
                           </div>
                         );
@@ -423,6 +441,7 @@ export function HelpRoute() {
                         type="button"
                         className="guide-visual-arrow guide-visual-arrow-next"
                         aria-label="Next visual step"
+                        disabled={isLastVisualStep}
                         onClick={() => activateVisualStep(activeVisualIndex + 1)}
                       >
                         <ChevronRight aria-hidden="true" strokeWidth={2.1} />

@@ -334,6 +334,12 @@ Most realistic basic stack:
 - Reach / Visibility Summary
 - Content Interaction Summary
 
+Packaging note:
+
+- export-to-export comparison should be treated as a paid retention feature, not a free overview feature
+- the lightest version fits `Basic` as part of the first real multi-dataset value unlock
+- deeper historical comparison, richer trend summaries, or report-style comparisons can expand into `Premium` later
+
 ### Premium
 
 Best fit:

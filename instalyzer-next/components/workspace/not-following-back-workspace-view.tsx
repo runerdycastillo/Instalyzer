@@ -421,8 +421,8 @@ export function NotFollowingBackWorkspaceView({
             >
               <option value="latest">latest followed</option>
               <option value="earliest">earliest followed</option>
-              <option value="az">a-z</option>
-              <option value="za">z-a</option>
+              <option value="az">a to z</option>
+              <option value="za">z to a</option>
             </select>
           </label>
 

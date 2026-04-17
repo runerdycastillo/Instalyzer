@@ -3,12 +3,12 @@
 import { CircleUserRound } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
-import { usePathname, useRouter } from "next/navigation";
-import type { MouseEvent } from "react";
+import { usePathname } from "next/navigation";
 import { useSyncExternalStore } from "react";
 import {
   getActiveDatasetServerSnapshot,
   getLocalDatasetsServerSnapshot,
+  getPreferredWorkspaceHref,
   readActiveDatasetId,
   readLocalDatasets,
   subscribeToActiveDataset,
@@ -17,7 +17,6 @@ import {
 
 export function MarketingNav() {
   const pathname = usePathname();
-  const router = useRouter();
   const activeDatasetId = useSyncExternalStore(
     subscribeToActiveDataset,
     readActiveDatasetId,
@@ -28,21 +27,23 @@ export function MarketingNav() {
     readLocalDatasets,
     getLocalDatasetsServerSnapshot,
   );
-  const preferredDatasetId = activeDatasetId && datasets.some((dataset) => dataset.id === activeDatasetId)
-    ? activeDatasetId
-    : datasets[0]?.id || null;
-  const overviewHref = preferredDatasetId ? `/app/datasets/${preferredDatasetId}` : "/app";
+  const overviewHref = getPreferredWorkspaceHref(datasets, activeDatasetId);
   const navLinks = [
-    { href: overviewHref, label: "overview" },
-    { href: "/help", label: "help" },
+    { href: overviewHref, label: "workspace" },
+    { href: "/help", label: "guide" },
   ];
 
   return (
     <nav className="top-nav" aria-label="Primary">
       <div className="top-nav-brand">
-        <span className="top-nav-icon top-nav-profile" aria-hidden="true">
+        <Link
+          href="/account"
+          className={`top-nav-icon top-nav-profile${pathname.startsWith("/account") ? " is-current" : ""}`}
+          aria-label="Open account"
+          aria-current={pathname.startsWith("/account") ? "page" : undefined}
+        >
           <CircleUserRound aria-hidden="true" strokeWidth={1.9} />
-        </span>
+        </Link>
       </div>
 
       <div className="top-nav-center">
@@ -65,20 +66,7 @@ export function MarketingNav() {
       <div className="top-nav-links">
         {navLinks.map((link) => {
           const isCurrent =
-            link.label === "overview"
-              ? pathname === overviewHref || (pathname === "/app" && !preferredDatasetId)
-              : pathname === link.href;
-          const handleClick =
-            link.label === "overview"
-              ? (event: MouseEvent<HTMLAnchorElement>) => {
-                  event.preventDefault();
-                  if (pathname === overviewHref) {
-                    router.refresh();
-                    return;
-                  }
-                  router.push(overviewHref);
-                }
-              : undefined;
+            link.label === "workspace" ? pathname.startsWith("/app") : pathname.startsWith("/help");
 
           return (
             <Link
@@ -86,7 +74,6 @@ export function MarketingNav() {
               href={link.href}
               className={`top-nav-link${isCurrent ? " is-current" : ""}`}
               aria-current={isCurrent ? "page" : undefined}
-              onClick={handleClick}
             >
               {link.label}
             </Link>

@@ -41,6 +41,25 @@ Core concept:
 - `/login`
 - `/signup`
 
+### Soft-launch marketing trust routes
+
+These are the lean public routes that make the current footer feel complete without pretending the full SaaS surface already exists.
+
+Routes to keep live during soft launch:
+
+- `/contact`
+- `/privacy`
+- `/terms`
+
+Footer items to defer until the product surface is real:
+
+- `/pricing` once plan packaging is finalized
+- `/changelog` once release notes are public-facing
+- `/about` once company/about copy is ready
+- `/status` once there is a real status page behind it
+- `/refund-policy` once paid plans are live
+- `/cookie-policy` once tracking/cookie scope needs its own page
+
 ### App routes
 
 - `/app`
