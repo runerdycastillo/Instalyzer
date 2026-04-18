@@ -144,17 +144,17 @@ Use this section to track the current migration flow specifically.
 
 ### Fix Next
 
-- [ ] Polish homepage messaging across the full landing flow
-- Why now: the app-side workspace/tool handoff is now credible enough that the homepage story should catch up and explain the soft launch with the same clarity
+- [ ] Decide the soft-launch contact support approach
+- Why now: the footer, legal pages, and trust surfaces are now strong enough that support/contact behavior is the next obvious product-trust gap
 
-- [ ] Run a focused homepage polish pass after copy updates
-- Why now: once the messaging is tightened, spacing, hierarchy, and transition details on the landing page will be easier to judge cleanly
+- [ ] Implement the chosen contact support path
+- Why now: whether the answer is `mailto`, a dedicated contact page, or both, the product should stop feeling half-wired in its support handoff
 
 - [ ] Do a deliberate interaction QA pass on overview + `not following back`
-- Why now: recent polish added stronger visited, pin, dataset-switching, export, and scroll behaviors, so the next highest-value app-side work is confirming they feel stable in real use
+- Why now: recent polish added stronger visited, move-state, footer jump, legal-route, and animation behaviors, so the next highest-value app-side work is confirming they feel stable in real use
 
-- [ ] Decide the next parser-confidence pass or next native tool after homepage messaging settles
-- Why now: Tool 1 is real now, so the next product decision should come after we lock the launch story and see what still feels weakest
+- [ ] Decide the next parser-confidence pass or next native tool after support/contact settles
+- Why now: Tool 1 and the legal/trust surfaces are both much stronger now, so the next product decision should come after we close the support handoff cleanly
 
 ### Watch Soon
 
@@ -165,6 +165,9 @@ Use this section to track the current migration flow specifically.
 
 - [ ] Revisit whether `/app` remains a true hub or redirects into datasets
 - Why later: `overview` now behaves much better, so the more urgent work is the live tool rather than app-home architecture debates
+
+- [ ] Revisit `Terms` and `Privacy` when the first paid tier is introduced
+- Why later: the current soft launch should use legal copy that matches a free product, then get a fuller billing/subscription/legal pass once hard launch and paid plans are actually live
 
 ---
 
@@ -293,3 +296,22 @@ Add one short entry per work session.
   - the product is getting visually and behaviorally polished enough that unclear landing-page messaging could become the next biggest trust/conversion drag
 - Next step:
   - do a dedicated homepage messaging pass first, then run a follow-up polish/QA sweep to catch any remaining friction across marketing and workspace surfaces
+
+### Session Entry - 2026-04-17
+
+- Date: 2026-04-17
+- Focus: tighten legal/trust surfaces, polish homepage/footer behavior, and add cleaner motion to the live `not following back` workflow
+- What moved forward:
+  - `Terms of Service` was rebuilt into a fuller legal page and adjusted to match the current free soft-launch reality instead of implying live subscriptions
+  - a new `Data Deletion Request` page was added and linked under the legal footer cluster with copy that matches the current browser-local storage model
+  - the legal-page sticky sidebars were refined so they sit with healthier spacing instead of feeling clipped against the viewport
+  - footer navigation gained a working FAQ jump, and homepage hash/logo behavior was cleaned up so FAQ and home-top actions no longer fight each other
+  - the `not following back` tool got a restrained motion pass with row exits, card/count feedback, reusable recent-activity highlighting, and more intuitive pending/unfollowed color logic
+- What remains rough:
+  - the support/contact path is still not fully decided, so `contact support` is stronger as a concept than as a finalized implementation
+  - broader manual QA is still lighter than it should be after the recent motion, legal-route, and hash-scroll changes
+  - deeper parser extraction from the static build still remains ahead
+- Biggest risk:
+  - the product is getting more polished around trust and workflow details, which raises the importance of making the contact/support handoff feel equally intentional
+- Next step:
+  - investigate the best support implementation for soft launch (`mailto` only vs dedicated contact page/form vs both), then implement the chosen path cleanly

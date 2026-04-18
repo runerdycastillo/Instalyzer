@@ -58,6 +58,15 @@ type DatasetWorkspaceRouteProps = {
   activeToolId?: "not-following-back";
 };
 
+const datasetSortOptions = [
+  { value: "latest", label: "latest" },
+  { value: "earliest", label: "earliest" },
+  { value: "a-z", label: "a to z" },
+  { value: "z-a", label: "z to a" },
+] as const;
+
+type DatasetSortOrder = (typeof datasetSortOptions)[number]["value"];
+
 function formatDate(value: string) {
   const date = new Date(`${value}T00:00:00`);
   if (Number.isNaN(date.getTime())) return value;
@@ -629,7 +638,7 @@ export function DatasetWorkspaceRoute({ datasetId, activeToolId }: DatasetWorksp
   const [openDatasetMenuId, setOpenDatasetMenuId] = useState<string | null>(null);
   const [renamingDatasetId, setRenamingDatasetId] = useState<string | null>(null);
   const [datasetNameDraft, setDatasetNameDraft] = useState("");
-  const [datasetSortOrder, setDatasetSortOrder] = useState<"newest" | "oldest" | "a-z">("newest");
+  const [datasetSortOrder, setDatasetSortOrder] = useState<DatasetSortOrder>("latest");
   const [isSortMenuOpen, setIsSortMenuOpen] = useState(false);
   const [isHydrationSettled, setIsHydrationSettled] = useState(false);
   const [floatingPanelStyle, setFloatingPanelStyle] = useState<{
@@ -1005,8 +1014,12 @@ export function DatasetWorkspaceRoute({ datasetId, activeToolId }: DatasetWorksp
       return left.name.localeCompare(right.name, undefined, { sensitivity: "base" });
     }
 
+    if (datasetSortOrder === "z-a") {
+      return right.name.localeCompare(left.name, undefined, { sensitivity: "base" });
+    }
+
     const dateCompare = left.createdAt.localeCompare(right.createdAt);
-    return datasetSortOrder === "oldest" ? dateCompare : -dateCompare;
+    return datasetSortOrder === "earliest" ? dateCompare : -dateCompare;
   });
   const hasReachedDatasetLimit = hasReachedLocalDatasetLimit(datasets);
   const overviewHref = datasetId ? `/app/datasets/${dataset.id}` : "/app";
@@ -1844,11 +1857,10 @@ export function DatasetWorkspaceRoute({ datasetId, activeToolId }: DatasetWorksp
                       aria-expanded={isSortMenuOpen}
                       aria-label="Sort exports"
                     >
-                      <span className="dataset-modal__sort-label">
-                        <ArrowDownUp size={14} aria-hidden="true" />
-                        sort
+                      <span className="dataset-modal__sort-label">sort</span>
+                      <span className="dataset-modal__sort-value">
+                        {datasetSortOptions.find((option) => option.value === datasetSortOrder)?.label}
                       </span>
-                      <span className="dataset-modal__sort-value">{datasetSortOrder}</span>
                       <ChevronDown size={14} aria-hidden="true" className="dataset-modal__sort-caret" />
                     </button>
                     {isSortMenuOpen ? (
@@ -1858,21 +1870,21 @@ export function DatasetWorkspaceRoute({ datasetId, activeToolId }: DatasetWorksp
                         aria-label="Sort exports"
                         onClick={(event) => event.stopPropagation()}
                       >
-                        {(["newest", "oldest", "a-z"] as const).map((option) => (
+                        {datasetSortOptions.map((option) => (
                           <button
-                            key={option}
+                            key={option.value}
                             type="button"
-                            className={`dataset-modal__sort-option${datasetSortOrder === option ? " is-selected" : ""}`}
+                            className={`dataset-modal__sort-option${datasetSortOrder === option.value ? " is-selected" : ""}`}
                             onClick={() => {
-                              setDatasetSortOrder(option);
+                              setDatasetSortOrder(option.value);
                               setOpenDatasetMenuId(null);
                               setRenamingDatasetId(null);
                               setIsSortMenuOpen(false);
                             }}
                             role="menuitemradio"
-                            aria-checked={datasetSortOrder === option}
+                            aria-checked={datasetSortOrder === option.value}
                           >
-                            <span>{option}</span>
+                            <span>{option.label}</span>
                           </button>
                         ))}
                       </div>

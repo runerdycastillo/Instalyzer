@@ -4,7 +4,7 @@ import { CircleUserRound } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { useSyncExternalStore } from "react";
+import { useSyncExternalStore, type MouseEvent } from "react";
 import {
   getActiveDatasetServerSnapshot,
   getLocalDatasetsServerSnapshot,
@@ -33,6 +33,16 @@ export function MarketingNav() {
     { href: "/help", label: "guide" },
   ];
 
+  const handleHomeClick = (event: MouseEvent<HTMLAnchorElement>) => {
+    if (pathname !== "/") {
+      return;
+    }
+
+    event.preventDefault();
+    window.history.replaceState(null, "", "/");
+    window.scrollTo({ top: 0, left: 0, behavior: "auto" });
+  };
+
   return (
     <nav className="top-nav" aria-label="Primary">
       <div className="top-nav-brand">
@@ -51,6 +61,7 @@ export function MarketingNav() {
           href="/"
           className={`top-nav-logo-link${pathname === "/" ? " is-current" : ""}`}
           aria-label="Show home panel"
+          onClick={handleHomeClick}
         >
           <Image
             src="/assets/logo/instaylzer-logo.png"

@@ -1,7 +1,7 @@
 "use client";
 
 import { Check, Clock3, Download, ExternalLink, RotateCcw, Search, UserMinus, UserRoundX } from "lucide-react";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import type { LocalDatasetRecord } from "@/lib/instagram/local-datasets";
 import {
@@ -29,6 +29,80 @@ type FloatingTooltipState = {
   y: number;
   placement: "top" | "bottom";
 };
+
+const ROW_EXIT_DURATION_MS = 220;
+const CARD_HIGHLIGHT_DURATION_MS = 420;
+
+function usePrefersReducedMotion() {
+  const [prefersReducedMotion, setPrefersReducedMotion] = useState(false);
+
+  useEffect(() => {
+    if (typeof window === "undefined" || typeof window.matchMedia !== "function") {
+      return;
+    }
+
+    const mediaQuery = window.matchMedia("(prefers-reduced-motion: reduce)");
+    const updatePreference = () => setPrefersReducedMotion(mediaQuery.matches);
+
+    updatePreference();
+    mediaQuery.addEventListener("change", updatePreference);
+
+    return () => {
+      mediaQuery.removeEventListener("change", updatePreference);
+    };
+  }, []);
+
+  return prefersReducedMotion;
+}
+
+function AnimatedMetric({
+  value,
+  reducedMotion,
+}: {
+  value: number;
+  reducedMotion: boolean;
+}) {
+  const [displayValue, setDisplayValue] = useState(value);
+  const previousValueRef = useRef(value);
+
+  useEffect(() => {
+    const previousValue = previousValueRef.current;
+    previousValueRef.current = value;
+
+    if (reducedMotion || previousValue === value) {
+      const frame = window.requestAnimationFrame(() => {
+        setDisplayValue(value);
+      });
+
+      return () => {
+        window.cancelAnimationFrame(frame);
+      };
+    }
+
+    const startedAt = performance.now();
+    const duration = 360;
+    let frame = 0;
+
+    const tick = (now: number) => {
+      const progress = Math.min((now - startedAt) / duration, 1);
+      const easedProgress = 1 - Math.pow(1 - progress, 3);
+      const nextValue = previousValue + (value - previousValue) * easedProgress;
+      setDisplayValue(nextValue);
+
+      if (progress < 1) {
+        frame = window.requestAnimationFrame(tick);
+      }
+    };
+
+    frame = window.requestAnimationFrame(tick);
+
+    return () => {
+      window.cancelAnimationFrame(frame);
+    };
+  }, [reducedMotion, value]);
+
+  return <>{Math.round(displayValue).toLocaleString()}</>;
+}
 
 function PinToggleIcon({ filled }: { filled: boolean }) {
   if (filled) {
@@ -123,24 +197,44 @@ function getToneClassName(listKey: NotFollowingBackListKey) {
 export function NotFollowingBackWorkspaceView({
   dataset,
 }: NotFollowingBackWorkspaceViewProps) {
+  const prefersReducedMotion = usePrefersReducedMotion();
   const [visitClock, setVisitClock] = useState(() => Date.now());
   const [query, setQuery] = useState("");
   const [sortOrder, setSortOrder] = useState<NotFollowingBackSortOrder>("latest");
   const [copiedUsername, setCopiedUsername] = useState("");
   const [tooltip, setTooltip] = useState<FloatingTooltipState | null>(null);
+  const [exitingRows, setExitingRows] = useState<Record<string, NotFollowingBackListKey>>({});
+  const [highlightedCardKey, setHighlightedCardKey] = useState<NotFollowingBackListKey | null>(null);
   const [toolState, setToolState] = useState<NotFollowingBackToolState>(() =>
     readNotFollowingBackToolState(dataset.id),
   );
+  const highlightTimeoutRef = useRef<number | null>(null);
+  const rowExitTimeoutsRef = useRef<Record<string, number>>({});
   const allEntries = useMemo(() => deriveNotFollowingBackEntries(dataset), [dataset]);
   const allUsernames = useMemo(() => allEntries.map((entry) => entry.username), [allEntries]);
   const prunedToolState = useMemo(
     () => pruneNotFollowingBackToolState(toolState, allUsernames, visitClock),
     [allUsernames, toolState, visitClock],
   );
+  const activeList = prunedToolState.activeList;
 
   useEffect(() => {
     writeNotFollowingBackToolState(dataset.id, prunedToolState);
   }, [dataset.id, prunedToolState]);
+
+  useEffect(() => {
+    const rowExitTimeouts = rowExitTimeoutsRef.current;
+
+    return () => {
+      if (highlightTimeoutRef.current) {
+        window.clearTimeout(highlightTimeoutRef.current);
+      }
+
+      Object.values(rowExitTimeouts).forEach((timeout) => {
+        window.clearTimeout(timeout);
+      });
+    };
+  }, []);
 
   useEffect(() => {
     if (!copiedUsername) return undefined;
@@ -208,7 +302,6 @@ export function NotFollowingBackWorkspaceView({
     };
   }, [allEntries, notFoundSet, reviewLaterSet, unfollowedSet]);
 
-  const activeList = prunedToolState.activeList;
   const listMeta = getListMeta(activeList);
   const activeToneClassName = getToneClassName(activeList);
   const visibleEntries = useMemo(() => {
@@ -234,7 +327,11 @@ export function NotFollowingBackWorkspaceView({
     }));
   }
 
-  function moveUser(username: string, nextList: NotFollowingBackListKey) {
+  function commitMoveUser(
+    username: string,
+    nextList: NotFollowingBackListKey,
+    recentActivityAt?: number,
+  ) {
     setToolState((current) => {
       const normalizedUsername = username.trim().toLowerCase();
       const nextState = {
@@ -264,8 +361,55 @@ export function NotFollowingBackWorkspaceView({
         nextState.activeList = "pending";
       }
 
+      if (recentActivityAt) {
+        nextState.recentVisits = {
+          ...nextState.recentVisits,
+          [normalizedUsername]: recentActivityAt,
+        };
+      }
+
       return nextState;
     });
+  }
+
+  function highlightSummaryCard(nextList: NotFollowingBackListKey) {
+    setHighlightedCardKey(nextList);
+    if (highlightTimeoutRef.current) {
+      window.clearTimeout(highlightTimeoutRef.current);
+    }
+
+    highlightTimeoutRef.current = window.setTimeout(() => {
+      setHighlightedCardKey((current) => (current === nextList ? null : current));
+    }, CARD_HIGHLIGHT_DURATION_MS);
+  }
+
+  function moveUser(username: string, nextList: NotFollowingBackListKey) {
+    const normalizedUsername = username.trim().toLowerCase();
+    if (!normalizedUsername) return;
+    if (rowExitTimeoutsRef.current[normalizedUsername]) return;
+    const recentActivityAt = Date.now();
+
+    if (prefersReducedMotion) {
+      commitMoveUser(normalizedUsername, nextList, recentActivityAt);
+      highlightSummaryCard(nextList);
+      return;
+    }
+
+    setExitingRows((current) => ({
+      ...current,
+      [normalizedUsername]: nextList,
+    }));
+
+    rowExitTimeoutsRef.current[normalizedUsername] = window.setTimeout(() => {
+      commitMoveUser(normalizedUsername, nextList, recentActivityAt);
+      highlightSummaryCard(nextList);
+      setExitingRows((current) => {
+        const nextRows = { ...current };
+        delete nextRows[normalizedUsername];
+        return nextRows;
+      });
+      delete rowExitTimeoutsRef.current[normalizedUsername];
+    }, ROW_EXIT_DURATION_MS);
   }
 
   function togglePinned(username: string) {
@@ -377,12 +521,13 @@ export function NotFollowingBackWorkspaceView({
         {summaryCards.map((card) => {
           const Icon = card.Icon;
           const isActive = activeList === card.key;
+          const isHighlighted = highlightedCardKey === card.key;
 
           return (
             <button
               key={card.key}
               type="button"
-              className={`relationship-tool__summary-card ${card.accentClassName}${isActive ? " is-active" : ""}`}
+              className={`relationship-tool__summary-card ${card.accentClassName}${isActive ? " is-active" : ""}${isHighlighted ? " is-highlighted" : ""}`}
               onClick={() => setActiveList(card.key)}
             >
               <span className="relationship-tool__summary-head">
@@ -391,7 +536,9 @@ export function NotFollowingBackWorkspaceView({
                   <Icon size={15} strokeWidth={1.9} />
                 </i>
               </span>
-              <strong>{formatMetric(card.value)}</strong>
+              <strong>
+                <AnimatedMetric value={card.value} reducedMotion={prefersReducedMotion} />
+              </strong>
               <small>{card.note}</small>
             </button>
           );
@@ -419,8 +566,8 @@ export function NotFollowingBackWorkspaceView({
               value={sortOrder}
               onChange={(event) => setSortOrder(event.target.value as NotFollowingBackSortOrder)}
             >
-              <option value="latest">latest followed</option>
-              <option value="earliest">earliest followed</option>
+              <option value="latest">latest</option>
+              <option value="earliest">earliest</option>
               <option value="az">a to z</option>
               <option value="za">z to a</option>
             </select>
@@ -455,11 +602,12 @@ export function NotFollowingBackWorkspaceView({
           <ul className="relationship-tool__list" aria-label={`Not following back ${listMeta.label} list`}>
             {visibleEntries.map((entry) => {
               const isPinned = activeList === "pending" && pinnedSet.has(entry.username);
+              const isExiting = Boolean(exitingRows[entry.username]);
 
               return (
               <li
                 key={entry.username}
-                className={`relationship-tool__row${recentVisitSet.has(entry.username) ? " is-recently-visited" : ""}${isPinned ? " is-pinned" : ""}`}
+                className={`relationship-tool__row${recentVisitSet.has(entry.username) ? " is-recently-visited" : ""}${isPinned ? " is-pinned" : ""}${isExiting ? " is-exiting" : ""}`}
               >
                 <div className="relationship-tool__row-main">
                   {activeList === "pending" ? (
@@ -467,6 +615,7 @@ export function NotFollowingBackWorkspaceView({
                       type="button"
                       className="relationship-tool__action relationship-tool__action--primary relationship-tool__action--icon"
                       onClick={() => moveUser(entry.username, "unfollowed")}
+                      disabled={isExiting}
                       aria-label={`Mark @${entry.username} unfollowed`}
                       title="mark unfollowed"
                     >
@@ -477,6 +626,7 @@ export function NotFollowingBackWorkspaceView({
                       type="button"
                       className="relationship-tool__action relationship-tool__action--primary relationship-tool__action--icon"
                       onClick={() => moveUser(entry.username, "unfollowed")}
+                      disabled={isExiting}
                       aria-label={`Mark @${entry.username} unfollowed`}
                       title="mark unfollowed"
                     >
@@ -487,6 +637,7 @@ export function NotFollowingBackWorkspaceView({
                       type="button"
                       className="relationship-tool__action relationship-tool__action--icon"
                       onClick={() => moveUser(entry.username, "pending")}
+                      disabled={isExiting}
                       aria-label={`Move @${entry.username} to pending`}
                       title="move to pending"
                     >
@@ -505,12 +656,18 @@ export function NotFollowingBackWorkspaceView({
                       >
                         @{entry.username}
                       </button>
-                      <span className={`relationship-tool__row-badge ${activeToneClassName}`}>{listMeta.label}</span>
+                      <span
+                        key={`${entry.username}-${activeList}`}
+                        className={`relationship-tool__row-badge ${activeToneClassName} is-animated`}
+                      >
+                        {listMeta.label}
+                      </span>
                       {activeList === "pending" ? (
                         <button
                           type="button"
                           className={`relationship-tool__pin-toggle${isPinned ? " is-pinned" : ""}`}
                           onClick={() => togglePinned(entry.username)}
+                          disabled={isExiting}
                           aria-label={`${isPinned ? "Unpin" : "Pin"} @${entry.username}`}
                         >
                           <PinToggleIcon filled={isPinned} />
@@ -528,6 +685,7 @@ export function NotFollowingBackWorkspaceView({
                         type="button"
                         className="relationship-tool__action relationship-tool__action--icon"
                         onClick={() => moveUser(entry.username, "reviewLater")}
+                        disabled={isExiting}
                         onMouseEnter={(event) => showTooltip("review later", event.currentTarget)}
                         onMouseLeave={hideTooltip}
                         onFocus={(event) => showTooltip("review later", event.currentTarget)}
@@ -540,6 +698,7 @@ export function NotFollowingBackWorkspaceView({
                         type="button"
                         className="relationship-tool__action relationship-tool__action--icon"
                         onClick={() => moveUser(entry.username, "notFound")}
+                        disabled={isExiting}
                         onMouseEnter={(event) => showTooltip("not found", event.currentTarget)}
                         onMouseLeave={hideTooltip}
                         onFocus={(event) => showTooltip("not found", event.currentTarget)}
@@ -554,6 +713,7 @@ export function NotFollowingBackWorkspaceView({
                       type="button"
                       className="relationship-tool__action relationship-tool__action--icon"
                       onClick={() => moveUser(entry.username, "pending")}
+                      disabled={isExiting}
                       aria-label={`Move @${entry.username} to pending`}
                       title="move to pending"
                     >
@@ -565,7 +725,15 @@ export function NotFollowingBackWorkspaceView({
                     target="_blank"
                     rel="noreferrer noopener"
                     className="relationship-tool__action relationship-tool__action--icon"
-                    onClick={() => recordProfileVisit(entry.username)}
+                    aria-disabled={isExiting}
+                    onClick={(event) => {
+                      if (isExiting) {
+                        event.preventDefault();
+                        return;
+                      }
+
+                      recordProfileVisit(entry.username);
+                    }}
                     onMouseEnter={(event) => showTooltip("open profile", event.currentTarget)}
                     onMouseLeave={hideTooltip}
                     onFocus={(event) => showTooltip("open profile", event.currentTarget)}

@@ -138,23 +138,27 @@
     transform 140ms ease;
 }
 
+.relationship-tool__summary-card.is-highlighted {
+  animation: relationshipSummaryHighlight 420ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+
 .relationship-tool__summary-card.is-pending {
-  border-color: color-mix(in srgb, #f97316 28%, var(--line));
+  border-color: color-mix(in srgb, #22c55e 28%, var(--line));
 }
 
 .relationship-tool__summary-card.is-pending.is-active {
   border-width: 3px;
-  border-color: color-mix(in srgb, #f97316 52%, var(--line));
+  border-color: color-mix(in srgb, #22c55e 52%, var(--line));
   box-shadow: none;
 }
 
 .relationship-tool__summary-card.is-unfollowed {
-  border-color: color-mix(in srgb, #22c55e 28%, var(--line));
+  border-color: color-mix(in srgb, #f97316 28%, var(--line));
 }
 
 .relationship-tool__summary-card.is-unfollowed.is-active {
   border-width: 3px;
-  border-color: color-mix(in srgb, #22c55e 52%, var(--line));
+  border-color: color-mix(in srgb, #f97316 52%, var(--line));
   box-shadow: none;
 }
 
@@ -225,6 +229,10 @@
   position: relative;
 }
 
+.relationship-tool__sort {
+  position: relative;
+}
+
 .relationship-tool__search svg {
   position: absolute;
   left: 12px;
@@ -258,8 +266,24 @@
 }
 
 .relationship-tool__sort select {
-  padding: 0 12px;
-  min-width: 156px;
+  appearance: none;
+  -webkit-appearance: none;
+  padding: 0 56px 0 12px;
+  min-width: 124px;
+}
+
+.relationship-tool__sort::after {
+  content: "";
+  position: absolute;
+  right: 18px;
+  top: calc(50% + 9px);
+  width: 7px;
+  height: 7px;
+  border-right: 2px solid currentColor;
+  border-bottom: 2px solid currentColor;
+  transform: translateY(-50%) rotate(45deg);
+  color: var(--text-dim);
+  pointer-events: none;
 }
 
 .relationship-tool__note-row {
@@ -289,6 +313,7 @@
   padding: 0;
   list-style: none;
   overflow-y: auto;
+  overflow-x: hidden;
   max-height: min(62vh, 720px);
   scrollbar-width: auto;
   scrollbar-color: color-mix(in srgb, var(--ink-soft) 42%, transparent)
@@ -320,11 +345,19 @@
   justify-content: space-between;
   gap: 14px;
   padding: 14px 16px;
+  max-height: 108px;
+  overflow: hidden;
+  will-change: opacity, transform, max-height;
   border-top: 1px solid color-mix(in srgb, var(--line) 72%, transparent);
   transition:
     background-color 140ms ease,
     border-color 140ms ease,
-    box-shadow 140ms ease;
+    box-shadow 140ms ease,
+    opacity 220ms ease,
+    transform 220ms ease,
+    max-height 220ms ease,
+    padding-top 220ms ease,
+    padding-bottom 220ms ease;
 }
 
 .relationship-tool__row:first-child {
@@ -357,6 +390,16 @@
     ),
     color-mix(in srgb, var(--accent) 5%, var(--bg-panel));
   border-color: color-mix(in srgb, var(--accent) 24%, var(--line));
+}
+
+.relationship-tool__row.is-exiting {
+  opacity: 0;
+  transform: translateY(6px) scale(0.985);
+  max-height: 0;
+  padding-top: 0;
+  padding-bottom: 0;
+  border-top-color: transparent;
+  pointer-events: none;
 }
 
 .relationship-tool__row-copy {
@@ -471,19 +514,25 @@
   transition:
     border-color 140ms ease,
     background-color 140ms ease,
-    color 140ms ease;
+    color 140ms ease,
+    transform 180ms ease,
+    opacity 180ms ease;
+}
+
+.relationship-tool__row-badge.is-animated {
+  animation: relationshipBadgeRefresh 220ms ease;
 }
 
 .relationship-tool__row-badge.is-pending {
-  border-color: color-mix(in srgb, #f97316 24%, var(--line));
-  background: color-mix(in srgb, #f97316 10%, var(--bg-panel));
-  color: color-mix(in srgb, white 84%, #f97316);
-}
-
-.relationship-tool__row-badge.is-unfollowed {
   border-color: color-mix(in srgb, #22c55e 24%, var(--line));
   background: color-mix(in srgb, #22c55e 10%, var(--bg-panel));
   color: color-mix(in srgb, white 84%, #22c55e);
+}
+
+.relationship-tool__row-badge.is-unfollowed {
+  border-color: color-mix(in srgb, #f97316 24%, var(--line));
+  background: color-mix(in srgb, #f97316 10%, var(--bg-panel));
+  color: color-mix(in srgb, white 84%, #f97316);
 }
 
 .relationship-tool__row-badge.is-review-later {
@@ -524,6 +573,7 @@
     border-color 140ms ease,
     background-color 140ms ease,
     color 140ms ease,
+    filter 140ms ease,
     transform 140ms ease;
 }
 
@@ -531,6 +581,12 @@
 .relationship-tool__action:focus-visible {
   border-color: color-mix(in srgb, var(--accent) 24%, var(--line));
   background: color-mix(in srgb, var(--accent) 7%, var(--bg-panel));
+  filter: brightness(1.04);
+  transform: scale(1.03);
+}
+
+.relationship-tool__action:active {
+  transform: scale(0.97);
 }
 
 .relationship-tool__floating-tooltip {
@@ -603,6 +659,35 @@
   color: var(--text-dim);
 }
 
+@keyframes relationshipSummaryHighlight {
+  0% {
+    transform: scale(1);
+    box-shadow: none;
+  }
+
+  45% {
+    transform: scale(1.015);
+    box-shadow: 0 0 0 1px color-mix(in srgb, var(--accent) 26%, transparent);
+  }
+
+  100% {
+    transform: scale(1);
+    box-shadow: none;
+  }
+}
+
+@keyframes relationshipBadgeRefresh {
+  0% {
+    opacity: 0.7;
+    transform: scale(0.96);
+  }
+
+  100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
 @media (max-width: 960px) {
   .relationship-tool__summary-grid {
     grid-template-columns: 1fr;
@@ -651,6 +736,16 @@
     opacity: 1;
     pointer-events: auto;
     transform: translateY(0) scale(1);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .relationship-tool__summary-card,
+  .relationship-tool__row,
+  .relationship-tool__row-badge,
+  .relationship-tool__action {
+    transition: none;
+    animation: none;
   }
 }
 
@@ -1118,6 +1213,8 @@ html[data-smooth-scroll="true"] {
   .dataset-overview-support-card,
   .dataset-relationship-signal,
   .dataset-overview-movement-chart__area,
+  .dataset-skeleton-line,
+  .dataset-profile-avatar--loading,
   .dataset-overview-movement-chart__line,
   .dataset-overview-movement-chart__point,
   .dataset-overview-ring__arc,
@@ -1928,7 +2025,10 @@ img {
 
 .privacy-policy-page__aside {
   position: sticky;
-  top: 108px;
+  top: 132px;
+  max-height: calc(100dvh - 188px);
+  overflow: auto;
+  padding-bottom: 18px;
   gap: 18px;
 }
 
@@ -2000,6 +2100,56 @@ img {
   font-size: 0.84rem;
   font-weight: 700;
   line-height: 1.2;
+}
+
+.terms-page__updated-label {
+  margin: 0;
+  color: color-mix(in srgb, var(--ink-soft) 78%, white 4%);
+  font-size: 0.9rem;
+  line-height: 1.5;
+}
+
+.terms-page__helper {
+  margin: 0;
+  color: color-mix(in srgb, var(--ink-soft) 72%, white 4%);
+  font-size: 0.92rem;
+  line-height: 1.6;
+}
+
+.terms-page__content {
+  gap: 20px;
+}
+
+.terms-page__content > .privacy-policy-page__card + .privacy-policy-page__card {
+  margin-top: 4px;
+}
+
+.terms-page__card--tall {
+  min-height: 280px;
+}
+
+.terms-page__aside {
+  position: sticky;
+  top: 132px;
+  padding-bottom: 18px;
+}
+
+.terms-page__aside-stack {
+  display: grid;
+  gap: 18px;
+}
+
+.terms-page__aside-stack > .privacy-policy-page__card + .privacy-policy-page__card {
+  margin-top: 4px;
+}
+
+.terms-page__support-actions {
+  display: flex;
+  padding-top: 4px;
+}
+
+.terms-page__support-actions .hero-btn {
+  width: fit-content;
 }
 
 :root[data-theme="dark"] .privacy-policy-page__card,
@@ -8368,13 +8518,13 @@ img {
   background:
     linear-gradient(
       90deg,
-      color-mix(in srgb, var(--ink-soft) 8%, var(--bg-panel)) 0%,
-      color-mix(in srgb, white 5%, var(--bg-panel)) 46%,
-      color-mix(in srgb, var(--accent) 10%, var(--bg-panel)) 54%,
-      color-mix(in srgb, var(--ink-soft) 8%, var(--bg-panel)) 100%
+      color-mix(in srgb, var(--ink-soft) 6%, var(--bg-panel)) 0%,
+      color-mix(in srgb, white 3%, var(--bg-panel)) 46%,
+      color-mix(in srgb, var(--accent) 6%, var(--bg-panel)) 54%,
+      color-mix(in srgb, var(--ink-soft) 6%, var(--bg-panel)) 100%
     );
   background-size: 220% 100%;
-  animation: datasetSkeletonPulse 1.8s linear infinite;
+  animation: datasetSkeletonPulse 2.1s linear infinite;
 }
 
 .dataset-skeleton-line--title {
@@ -10042,6 +10192,14 @@ a.workspace-tool-pill:focus-visible {
   .privacy-policy-page__aside {
     position: static;
     order: -1;
+  }
+
+  .terms-page__aside {
+    position: static;
+  }
+
+  .terms-page__card--tall {
+    min-height: 0;
   }
 
   .hero-section {

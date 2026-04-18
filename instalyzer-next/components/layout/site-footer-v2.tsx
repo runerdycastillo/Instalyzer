@@ -2,8 +2,8 @@
 
 import Image from "next/image";
 import Link from "next/link";
-import type { ReactNode } from "react";
-import { useSyncExternalStore } from "react";
+import { usePathname } from "next/navigation";
+import { useSyncExternalStore, type MouseEvent, type ReactNode } from "react";
 import {
   getActiveDatasetServerSnapshot,
   getLocalDatasetsServerSnapshot,
@@ -27,6 +27,7 @@ type FooterColumn = {
 };
 
 export function SiteFooterV2() {
+  const pathname = usePathname();
   const activeDatasetId = useSyncExternalStore(
     subscribeToActiveDataset,
     readActiveDatasetId,
@@ -44,6 +45,7 @@ export function SiteFooterV2() {
       links: [
         { label: "workspace", href: workspaceHref },
         { label: "guide", href: "/help" },
+        { label: "faq", href: "/#faq-section" },
       ],
     },
     {
@@ -51,6 +53,7 @@ export function SiteFooterV2() {
       links: [
         { label: "privacy policy", href: "/privacy" },
         { label: "terms of service", href: "/terms" },
+        { label: "data deletion request", href: "/data-deletion-request" },
       ],
     },
     {
@@ -69,11 +72,26 @@ export function SiteFooterV2() {
     },
   ];
 
+  const handleHomeClick = (event: MouseEvent<HTMLAnchorElement>) => {
+    if (pathname !== "/") {
+      return;
+    }
+
+    event.preventDefault();
+    window.history.replaceState(null, "", "/");
+    window.scrollTo({ top: 0, left: 0, behavior: "auto" });
+  };
+
   return (
     <footer className="site-footer" aria-label="Site footer">
       <div className="site-footer__shell">
         <div className="site-footer__brand">
-          <Link href="/" className="site-footer__brand-link" aria-label="Go to home page">
+          <Link
+            href="/"
+            className="site-footer__brand-link"
+            aria-label="Go to home page"
+            onClick={handleHomeClick}
+          >
             <Image
               src="/assets/logo/instaylzer-logo.png"
               alt="Instalyzer logo"

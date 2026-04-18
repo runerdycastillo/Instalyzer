@@ -424,7 +424,7 @@ export function MarketingHomeRoute() {
         </section>
       ) : null}
 
-      <section className="faq-section" aria-labelledby="faq-title" data-reveal>
+      <section id="faq-section" className="faq-section" aria-labelledby="faq-title" data-reveal>
         <div className="section-intro faq-intro">
           <p className="section-kicker">faq</p>
           <h2 id="faq-title" className="section-title">
