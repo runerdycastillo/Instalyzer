@@ -1,10 +1,10 @@
 "use client";
 
-import { useState } from "react";
+import { useState, type ReactNode } from "react";
 
 type FaqItem = {
   question: string;
-  answer: string;
+  answer: ReactNode;
   startsOpen?: boolean;
 };
 
@@ -60,7 +60,7 @@ export function FaqAccordion({ columns }: FaqAccordionProps) {
                   aria-hidden={!isOpen}
                 >
                   <div className="faq-placeholder-answer-inner">
-                    <p className="faq-placeholder-answer">{item.answer}</p>
+                    <div className="faq-placeholder-answer">{item.answer}</div>
                   </div>
                 </div>
               </article>

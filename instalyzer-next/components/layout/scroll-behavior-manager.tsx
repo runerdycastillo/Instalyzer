@@ -3,6 +3,17 @@
 import { useEffect } from "react";
 import { usePathname, useSearchParams } from "next/navigation";
 
+function clearHashAfterAnchorLanding(hash: string) {
+  window.setTimeout(() => {
+    if (window.location.hash.replace(/^#/, "") !== hash) {
+      return;
+    }
+
+    const nextUrl = `${window.location.pathname}${window.location.search}`;
+    window.history.replaceState(window.history.state, "", nextUrl);
+  }, 0);
+}
+
 function scrollToCurrentHash() {
   const hash = window.location.hash.replace(/^#/, "");
   if (!hash) {
@@ -32,6 +43,7 @@ function scrollToCurrentHash() {
       left: 0,
       behavior: prefersReducedMotion ? "auto" : "smooth",
     });
+    clearHashAfterAnchorLanding(hash);
     return;
   }
 

@@ -33,6 +33,27 @@ type FloatingTooltipState = {
 const ROW_EXIT_DURATION_MS = 220;
 const CARD_HIGHLIGHT_DURATION_MS = 420;
 
+function getCurrentTimestamp() {
+  if (typeof performance !== "undefined" && Number.isFinite(performance.timeOrigin)) {
+    return Math.round(performance.timeOrigin + performance.now());
+  }
+
+  return Date.now();
+}
+
+function getInteractionTimestamp(timeStamp: number) {
+  if (
+    typeof performance !== "undefined" &&
+    Number.isFinite(performance.timeOrigin) &&
+    Number.isFinite(timeStamp) &&
+    timeStamp > 0
+  ) {
+    return Math.round(performance.timeOrigin + timeStamp);
+  }
+
+  return getCurrentTimestamp();
+}
+
 function usePrefersReducedMotion() {
   const [prefersReducedMotion, setPrefersReducedMotion] = useState(false);
 
@@ -198,7 +219,7 @@ export function NotFollowingBackWorkspaceView({
   dataset,
 }: NotFollowingBackWorkspaceViewProps) {
   const prefersReducedMotion = usePrefersReducedMotion();
-  const [visitClock, setVisitClock] = useState(() => Date.now());
+  const [visitClock, setVisitClock] = useState(() => getCurrentTimestamp());
   const [query, setQuery] = useState("");
   const [sortOrder, setSortOrder] = useState<NotFollowingBackSortOrder>("latest");
   const [copiedUsername, setCopiedUsername] = useState("");
@@ -269,9 +290,9 @@ export function NotFollowingBackWorkspaceView({
     if (!visitTimestamps.length) return undefined;
 
     const nextExpiry = Math.min(...visitTimestamps) + RECENT_PROFILE_VISIT_WINDOW_MS;
-    const delay = Math.max(nextExpiry - Date.now(), 0) + 50;
+    const delay = Math.max(nextExpiry - getCurrentTimestamp(), 0) + 50;
     const timeout = window.setTimeout(() => {
-      setVisitClock(Date.now());
+      setVisitClock(getCurrentTimestamp());
     }, delay);
 
     return () => {
@@ -383,11 +404,10 @@ export function NotFollowingBackWorkspaceView({
     }, CARD_HIGHLIGHT_DURATION_MS);
   }
 
-  function moveUser(username: string, nextList: NotFollowingBackListKey) {
+  function moveUser(username: string, nextList: NotFollowingBackListKey, recentActivityAt: number) {
     const normalizedUsername = username.trim().toLowerCase();
     if (!normalizedUsername) return;
     if (rowExitTimeoutsRef.current[normalizedUsername]) return;
-    const recentActivityAt = Date.now();
 
     if (prefersReducedMotion) {
       commitMoveUser(normalizedUsername, nextList, recentActivityAt);
@@ -427,11 +447,10 @@ export function NotFollowingBackWorkspaceView({
     });
   }
 
-  function recordProfileVisit(username: string) {
+  function recordProfileVisit(username: string, visitedAt: number) {
     const normalizedUsername = username.trim().toLowerCase();
     if (!normalizedUsername) return;
 
-    const visitedAt = Date.now();
     setVisitClock(visitedAt);
     setToolState((current) => ({
       ...current,
@@ -611,35 +630,41 @@ export function NotFollowingBackWorkspaceView({
               >
                 <div className="relationship-tool__row-main">
                   {activeList === "pending" ? (
-                    <button
-                      type="button"
-                      className="relationship-tool__action relationship-tool__action--primary relationship-tool__action--icon"
-                      onClick={() => moveUser(entry.username, "unfollowed")}
-                      disabled={isExiting}
-                      aria-label={`Mark @${entry.username} unfollowed`}
-                      title="mark unfollowed"
+                      <button
+                        type="button"
+                        className="relationship-tool__action relationship-tool__action--primary relationship-tool__action--icon"
+                        onClick={(event) =>
+                          moveUser(entry.username, "unfollowed", getInteractionTimestamp(event.timeStamp))
+                        }
+                        disabled={isExiting}
+                        aria-label={`Mark @${entry.username} unfollowed`}
+                        title="mark unfollowed"
                     >
                       <Check size={15} aria-hidden="true" />
                     </button>
                   ) : activeList !== "unfollowed" ? (
-                    <button
-                      type="button"
-                      className="relationship-tool__action relationship-tool__action--primary relationship-tool__action--icon"
-                      onClick={() => moveUser(entry.username, "unfollowed")}
-                      disabled={isExiting}
-                      aria-label={`Mark @${entry.username} unfollowed`}
-                      title="mark unfollowed"
+                      <button
+                        type="button"
+                        className="relationship-tool__action relationship-tool__action--primary relationship-tool__action--icon"
+                        onClick={(event) =>
+                          moveUser(entry.username, "unfollowed", getInteractionTimestamp(event.timeStamp))
+                        }
+                        disabled={isExiting}
+                        aria-label={`Mark @${entry.username} unfollowed`}
+                        title="mark unfollowed"
                     >
                       <Check size={15} aria-hidden="true" />
                     </button>
                   ) : (
-                    <button
-                      type="button"
-                      className="relationship-tool__action relationship-tool__action--icon"
-                      onClick={() => moveUser(entry.username, "pending")}
-                      disabled={isExiting}
-                      aria-label={`Move @${entry.username} to pending`}
-                      title="move to pending"
+                      <button
+                        type="button"
+                        className="relationship-tool__action relationship-tool__action--icon"
+                        onClick={(event) =>
+                          moveUser(entry.username, "pending", getInteractionTimestamp(event.timeStamp))
+                        }
+                        disabled={isExiting}
+                        aria-label={`Move @${entry.username} to pending`}
+                        title="move to pending"
                     >
                       <RotateCcw size={14} aria-hidden="true" />
                     </button>
@@ -684,7 +709,9 @@ export function NotFollowingBackWorkspaceView({
                       <button
                         type="button"
                         className="relationship-tool__action relationship-tool__action--icon"
-                        onClick={() => moveUser(entry.username, "reviewLater")}
+                        onClick={(event) =>
+                          moveUser(entry.username, "reviewLater", getInteractionTimestamp(event.timeStamp))
+                        }
                         disabled={isExiting}
                         onMouseEnter={(event) => showTooltip("review later", event.currentTarget)}
                         onMouseLeave={hideTooltip}
@@ -697,7 +724,9 @@ export function NotFollowingBackWorkspaceView({
                       <button
                         type="button"
                         className="relationship-tool__action relationship-tool__action--icon"
-                        onClick={() => moveUser(entry.username, "notFound")}
+                        onClick={(event) =>
+                          moveUser(entry.username, "notFound", getInteractionTimestamp(event.timeStamp))
+                        }
                         disabled={isExiting}
                         onMouseEnter={(event) => showTooltip("not found", event.currentTarget)}
                         onMouseLeave={hideTooltip}
@@ -712,7 +741,9 @@ export function NotFollowingBackWorkspaceView({
                     <button
                       type="button"
                       className="relationship-tool__action relationship-tool__action--icon"
-                      onClick={() => moveUser(entry.username, "pending")}
+                      onClick={(event) =>
+                        moveUser(entry.username, "pending", getInteractionTimestamp(event.timeStamp))
+                      }
                       disabled={isExiting}
                       aria-label={`Move @${entry.username} to pending`}
                       title="move to pending"
@@ -732,7 +763,7 @@ export function NotFollowingBackWorkspaceView({
                         return;
                       }
 
-                      recordProfileVisit(entry.username);
+                      recordProfileVisit(entry.username, getInteractionTimestamp(event.timeStamp));
                     }}
                     onMouseEnter={(event) => showTooltip("open profile", event.currentTarget)}
                     onMouseLeave={hideTooltip}

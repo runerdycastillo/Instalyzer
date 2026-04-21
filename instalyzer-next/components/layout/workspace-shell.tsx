@@ -1,7 +1,7 @@
 "use client";
 
 import { usePathname } from "next/navigation";
-import type { ReactNode } from "react";
+import { Suspense, type ReactNode } from "react";
 import { MarketingShellMetrics } from "@/components/layout/marketing-shell-metrics";
 import { MarketingNav } from "@/components/layout/marketing-nav";
 import { ScrollBehaviorManager } from "@/components/layout/scroll-behavior-manager";
@@ -13,7 +13,9 @@ export function WorkspaceShell({ children }: { children: ReactNode }) {
 
   return (
     <div className="workspace-shell-frame workspace-shell-frame--focused">
-      <ScrollBehaviorManager />
+      <Suspense fallback={null}>
+        <ScrollBehaviorManager />
+      </Suspense>
 
       <MarketingShellMetrics />
 

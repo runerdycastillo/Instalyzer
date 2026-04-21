@@ -79,6 +79,9 @@ export type DatasetScope = {
   exportRequestFormat: string;
   exportRequestMediaQuality: string;
   notFollowingBackEligible: boolean;
+  accountTimelineStartTimestamp: number | null;
+  accountTimelineEndTimestamp: number | null;
+  accountTimelineStartSource: "registration" | "archive_activity" | "unknown";
 };
 
 export type DatasetMetrics = {
@@ -211,6 +214,11 @@ type ParsedDownloadRequest = {
   mediaQuality: string;
 };
 
+type TimestampBounds = {
+  earliest: number | null;
+  latest: number | null;
+};
+
 declare global {
   interface Window {
     fflate?: {
@@ -241,6 +249,10 @@ const requiredLaunchDataLabels = [
   "reach summary",
   "content interactions",
 ] as const;
+
+const MIN_REASONABLE_ARCHIVE_TIMESTAMP = 946684800;
+const MAX_FUTURE_ARCHIVE_TIMESTAMP_BUFFER_SECONDS = 7 * 24 * 60 * 60;
+const timelineTimestampKeys = new Set(["timestamp", "timestamp_value", "creation_timestamp"]);
 
 function getFilePath(file: Pick<ImportFileLike, "name" | "webkitRelativePath">) {
   return (file.webkitRelativePath || file.name || "").replaceAll("\\", "/").toLowerCase();
@@ -319,7 +331,7 @@ function loadFflateScript() {
     return Promise.reject(new Error("ZIP support is only available in the browser."));
   }
 
-  if (window.fflate?.unzipSync && window.fflate?.strFromU8) {
+  if (window.fflate) {
     return Promise.resolve(window.fflate);
   }
 
@@ -333,7 +345,7 @@ function loadFflateScript() {
     );
 
     const handleReady = () => {
-      if (window.fflate?.unzipSync && window.fflate?.strFromU8) {
+      if (window.fflate) {
         resolve(window.fflate);
         return;
       }
@@ -383,6 +395,74 @@ function detectExportRequestRange(startTimestamp: number | null) {
   if (startTimestamp === null || !Number.isFinite(startTimestamp)) return "unknown";
   if (startTimestamp < 0) return "all_time";
   return "limited";
+}
+
+function isReasonableArchiveTimestamp(value: unknown, upperBound: number) {
+  const timestamp = Number(value);
+  return Number.isFinite(timestamp) && timestamp >= MIN_REASONABLE_ARCHIVE_TIMESTAMP && timestamp <= upperBound;
+}
+
+function mergeTimestampBounds(current: TimestampBounds, next: TimestampBounds): TimestampBounds {
+  return {
+    earliest:
+      current.earliest === null
+        ? next.earliest
+        : next.earliest === null
+          ? current.earliest
+          : Math.min(current.earliest, next.earliest),
+    latest:
+      current.latest === null
+        ? next.latest
+        : next.latest === null
+          ? current.latest
+          : Math.max(current.latest, next.latest),
+  };
+}
+
+function collectTimestampBounds(data: unknown, upperBound: number): TimestampBounds {
+  const bounds: TimestampBounds = {
+    earliest: null,
+    latest: null,
+  };
+  const stack: unknown[] = [data];
+
+  while (stack.length) {
+    const current = stack.pop();
+    if (!current || typeof current !== "object") continue;
+
+    if (Array.isArray(current)) {
+      current.forEach((item) => stack.push(item));
+      continue;
+    }
+
+    for (const [key, value] of Object.entries(current)) {
+      if (timelineTimestampKeys.has(key) && isReasonableArchiveTimestamp(value, upperBound)) {
+        const timestamp = Number(value);
+        bounds.earliest = bounds.earliest === null ? timestamp : Math.min(bounds.earliest, timestamp);
+        bounds.latest = bounds.latest === null ? timestamp : Math.max(bounds.latest, timestamp);
+      }
+
+      if (value && typeof value === "object") {
+        stack.push(value);
+      }
+    }
+  }
+
+  return bounds;
+}
+
+function extractSignupTimestamp(data: unknown, upperBound: number) {
+  if (!data || typeof data !== "object") return null;
+  const entries = (data as Record<string, unknown>).account_history_registration_info;
+  if (!Array.isArray(entries)) return null;
+
+  const timestamp = (entries[0] as { string_map_data?: Record<string, { timestamp?: unknown }> } | undefined)?.string_map_data
+    ?.Time?.timestamp;
+  return isReasonableArchiveTimestamp(timestamp, upperBound) ? Number(timestamp) : null;
+}
+
+function shouldScanAccountTimelinePath(path: string) {
+  return !/(^|\/)your_instagram_activity\/messages\//i.test(path);
 }
 
 function getNotFollowingBackAccess(input: {
@@ -462,10 +542,14 @@ function getLatestJsonDownloadRequest(requests: ParsedDownloadRequest[]) {
 function getReadinessNote(
   hasRelationshipFiles: boolean,
   rangeLabel: string,
+  exportRequestRange: "all_time" | "limited" | "unknown",
   hasInsightMetrics: boolean,
 ) {
   if (hasRelationshipFiles) {
-    const relationshipAccess = getNotFollowingBackAccess(rangeLabel);
+    const relationshipAccess = getNotFollowingBackAccess({
+      rangeLabel,
+      exportRequestRange,
+    });
     if (relationshipAccess.eligible) {
       return "this export meets the required launch settings and is ready for your overview and relationship workflow.";
     }
@@ -1018,6 +1102,12 @@ export async function prepareDatasetDraft(files: File[]): Promise<PreparedLocalD
   let reachInsights: ParsedReachInsights | null = null;
   let interactionInsights: ParsedInteractionInsights | null = null;
   let latestJsonDownloadRequest: ParsedDownloadRequest | null = null;
+  let registrationTimestamp: number | null = null;
+  let accountTimelineBounds: TimestampBounds = {
+    earliest: null,
+    latest: null,
+  };
+  const accountTimelineUpperBound = Math.floor(Date.now() / 1000) + MAX_FUTURE_ARCHIVE_TIMESTAMP_BUFFER_SECONDS;
 
   for (const file of expandedJsonFiles) {
     let parsed: unknown;
@@ -1027,11 +1117,22 @@ export async function prepareDatasetDraft(files: File[]): Promise<PreparedLocalD
       continue;
     }
 
+    const normalizedPath = normalizePathForMatch(file);
+
+    if (!registrationTimestamp && /(^|\/)security_and_login_information\/login_and_profile_creation\/signup_details\.json$/i.test(normalizedPath)) {
+      registrationTimestamp = extractSignupTimestamp(parsed, accountTimelineUpperBound);
+    }
+
+    if (shouldScanAccountTimelinePath(normalizedPath)) {
+      accountTimelineBounds = mergeTimestampBounds(
+        accountTimelineBounds,
+        collectTimestampBounds(parsed, accountTimelineUpperBound),
+      );
+    }
+
     if (
       !profile &&
-      /(^|\/)personal_information\/personal_information\/personal_information\.json$/i.test(
-        normalizePathForMatch(file),
-      )
+      /(^|\/)personal_information\/personal_information\/personal_information\.json$/i.test(normalizedPath)
     ) {
       profile = extractProfileFromPersonalInfo(parsed);
       if (profile?.profilePhotoPath) {
@@ -1047,18 +1148,14 @@ export async function prepareDatasetDraft(files: File[]): Promise<PreparedLocalD
 
     if (
       !latestJsonDownloadRequest &&
-      /(^|\/)your_instagram_activity\/other_activity\/your_information_download_requests\.json$/i.test(
-        normalizePathForMatch(file),
-      )
+      /(^|\/)your_instagram_activity\/other_activity\/your_information_download_requests\.json$/i.test(normalizedPath)
     ) {
       latestJsonDownloadRequest = getLatestJsonDownloadRequest(extractDownloadRequests(parsed));
     }
 
     if (
       !audienceInsights &&
-      /(^|\/)logged_information\/past_instagram_insights\/audience_insights\.json$/i.test(
-        normalizePathForMatch(file),
-      )
+      /(^|\/)logged_information\/past_instagram_insights\/audience_insights\.json$/i.test(normalizedPath)
     ) {
       audienceInsights = extractAudienceInsights(parsed);
       categorySet.add("audience-insights");
@@ -1069,9 +1166,7 @@ export async function prepareDatasetDraft(files: File[]): Promise<PreparedLocalD
 
     if (
       !reachInsights &&
-      /(^|\/)logged_information\/past_instagram_insights\/profiles_reached\.json$/i.test(
-        normalizePathForMatch(file),
-      )
+      /(^|\/)logged_information\/past_instagram_insights\/profiles_reached\.json$/i.test(normalizedPath)
     ) {
       reachInsights = extractReachInsights(parsed);
       categorySet.add("reach-insights");
@@ -1082,9 +1177,7 @@ export async function prepareDatasetDraft(files: File[]): Promise<PreparedLocalD
 
     if (
       !interactionInsights &&
-      /(^|\/)logged_information\/past_instagram_insights\/content_interactions\.json$/i.test(
-        normalizePathForMatch(file),
-      )
+      /(^|\/)logged_information\/past_instagram_insights\/content_interactions\.json$/i.test(normalizedPath)
     ) {
       interactionInsights = extractInteractionInsights(parsed);
       categorySet.add("interaction-insights");
@@ -1145,6 +1238,14 @@ export async function prepareDatasetDraft(files: File[]): Promise<PreparedLocalD
     rangeLabel: insightDateRangeLabel,
     exportRequestRange,
   });
+  const accountTimelineStartTimestamp = registrationTimestamp ?? accountTimelineBounds.earliest;
+  const accountTimelineEndTimestamp = accountTimelineBounds.latest;
+  const accountTimelineStartSource =
+    registrationTimestamp !== null
+      ? "registration"
+      : accountTimelineStartTimestamp !== null
+        ? "archive_activity"
+        : "unknown";
 
   if (!relationshipAccess.eligible) {
     throw new Error(
@@ -1213,7 +1314,7 @@ export async function prepareDatasetDraft(files: File[]): Promise<PreparedLocalD
       categoryCount: categoryLabelsList.length,
       tools,
       uploadSummary,
-      readinessNote: getReadinessNote(true, insightDateRangeLabel, hasInsightMetrics),
+      readinessNote: getReadinessNote(true, insightDateRangeLabel, exportRequestRange, hasInsightMetrics),
     },
     profile,
     scope: {
@@ -1226,6 +1327,9 @@ export async function prepareDatasetDraft(files: File[]): Promise<PreparedLocalD
       exportRequestFormat: latestJsonDownloadRequest?.outputFormat || "",
       exportRequestMediaQuality: latestJsonDownloadRequest?.mediaQuality || "",
       notFollowingBackEligible: relationshipAccess.eligible,
+      accountTimelineStartTimestamp,
+      accountTimelineEndTimestamp,
+      accountTimelineStartSource,
     },
     metrics,
     meta: {

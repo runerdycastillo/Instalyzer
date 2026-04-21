@@ -57,15 +57,15 @@ export function SiteFooterV2() {
       ],
     },
     {
-      heading: "contact support",
+      heading: "support",
       content: (
         <div className="site-footer__support">
-          <p className="site-footer__support-copy">
-            questions, export issues, or product feedback.
-          </p>
-          <a href="mailto:support@instalyzer.app" className="site-footer__email">
+          <Link href="/contact" className="site-footer__link">
+            contact
+          </Link>
+          <p className="site-footer__email">
             support@instalyzer.app
-          </a>
+          </p>
           <p className="site-footer__copyright">Instalyzer &copy; 2026</p>
         </div>
       ),

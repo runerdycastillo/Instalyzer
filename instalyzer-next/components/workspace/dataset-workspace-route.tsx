@@ -315,6 +315,67 @@ function formatOverviewWindow(scope?: {
   return `${formatter.format(startDate)} - ${formatter.format(endDate)}`;
 }
 
+function getPositiveTimestamp(value: unknown) {
+  const timestamp = Number(value);
+  return Number.isFinite(timestamp) && timestamp > 0 ? timestamp : null;
+}
+
+function getDatasetTimelineLabel(scope?: {
+  accountTimelineStartSource?: "registration" | "archive_activity" | "unknown";
+}) {
+  return scope?.accountTimelineStartSource === "registration" ? "account timeline" : "archive coverage";
+}
+
+function formatTimestampSpan(startTimestamp: number | null, endTimestamp: number | null) {
+  const formatter = new Intl.DateTimeFormat("en-US", {
+    month: "short",
+    day: "numeric",
+    year: "numeric",
+  });
+  const startDate = startTimestamp ? formatter.format(new Date(startTimestamp * 1000)) : "";
+  const endDate = endTimestamp ? formatter.format(new Date(endTimestamp * 1000)) : "";
+
+  if (startDate && endDate) {
+    return startDate === endDate ? startDate : `${startDate} - ${endDate}`;
+  }
+
+  if (startDate) return `since ${startDate}`;
+  if (endDate) return `through ${endDate}`;
+  return "";
+}
+
+function getDatasetTimeline(dataset: NonNullable<ReturnType<typeof findLocalDataset>>) {
+  const followerTimestamps = dataset.records?.followers
+    ?.map((record) => getPositiveTimestamp(record.timestamp))
+    .filter((timestamp): timestamp is number => timestamp !== null) || [];
+  const followingTimestamps = dataset.records?.following
+    ?.map((record) => getPositiveTimestamp(record.timestamp))
+    .filter((timestamp): timestamp is number => timestamp !== null) || [];
+  const startCandidates = [
+    getPositiveTimestamp(dataset.scope?.accountTimelineStartTimestamp),
+    getPositiveTimestamp(dataset.profile?.profilePhotoCreatedAt),
+    ...followerTimestamps,
+    ...followingTimestamps,
+  ].filter((timestamp): timestamp is number => timestamp !== null);
+  const endCandidates = [
+    getPositiveTimestamp(dataset.scope?.accountTimelineEndTimestamp),
+    getPositiveTimestamp(dataset.scope?.exportRequestEndTimestamp),
+    getPositiveTimestamp(dataset.profile?.profilePhotoCreatedAt),
+    ...followerTimestamps,
+    ...followingTimestamps,
+  ].filter((timestamp): timestamp is number => timestamp !== null);
+  const startTimestamp = startCandidates.length ? Math.min(...startCandidates) : null;
+  const endTimestamp = endCandidates.length ? Math.max(...endCandidates) : null;
+  const value = formatTimestampSpan(startTimestamp, endTimestamp);
+
+  if (!value) return null;
+
+  return {
+    label: getDatasetTimelineLabel(dataset.scope),
+    value,
+  };
+}
+
 function getExportRangeLabel(scope?: {
   exportRequestRange?: "all_time" | "limited" | "unknown";
 }) {
@@ -651,7 +712,8 @@ export function DatasetWorkspaceRoute({ datasetId, activeToolId }: DatasetWorksp
   const sortMenuRef = useRef<HTMLDivElement | null>(null);
   const listRef = useRef<HTMLDivElement | null>(null);
   const rowActionsRef = useRef<HTMLDivElement | null>(null);
-  const floatingPanelRef = useRef<HTMLDivElement | HTMLFormElement | null>(null);
+  const floatingMenuRef = useRef<HTMLDivElement | null>(null);
+  const floatingRenameRef = useRef<HTMLFormElement | null>(null);
   const menuTriggerRefs = useRef<Record<string, HTMLButtonElement | null>>({});
   const hasMounted = useSyncExternalStore(
     () => () => {},
@@ -668,6 +730,7 @@ export function DatasetWorkspaceRoute({ datasetId, activeToolId }: DatasetWorksp
   const dataset = datasetId
     ? datasets.find((item) => item.id === datasetId) || findLocalDataset(datasetId)
     : datasets.find((item) => item.id === activeDatasetId) || datasets[0] || null;
+  const datasetTimeline = dataset ? getDatasetTimeline(dataset) : null;
   const motionKey = dataset?.id || "dataset-workspace";
   const datasetUsername = dataset?.profile?.username?.trim().toLowerCase() || "";
   const previousComparableDataset = datasetUsername
@@ -894,7 +957,10 @@ export function DatasetWorkspaceRoute({ datasetId, activeToolId }: DatasetWorksp
 
     function handlePointerDown(event: PointerEvent) {
       const target = event.target as Node;
-      if (!rowActionsRef.current?.contains(target) && !floatingPanelRef.current?.contains(target)) {
+      const isInsideFloatingPanel =
+        floatingMenuRef.current?.contains(target) || floatingRenameRef.current?.contains(target);
+
+      if (!rowActionsRef.current?.contains(target) && !isInsideFloatingPanel) {
         setOpenDatasetMenuId(null);
         setRenamingDatasetId(null);
         setDatasetNameDraft("");
@@ -997,7 +1063,7 @@ export function DatasetWorkspaceRoute({ datasetId, activeToolId }: DatasetWorksp
     setFloatingPanelStyle(null);
     setDatasetNameDraft("");
 
-    if (targetId !== dataset.id) return;
+    if (!dataset || targetId !== dataset.id) return;
 
     closeDatasetsModal();
     router.push(nextDatasets[0] ? `/app/datasets/${nextDatasets[0].id}` : "/app/datasets");
@@ -1680,6 +1746,12 @@ export function DatasetWorkspaceRoute({ datasetId, activeToolId }: DatasetWorksp
                     <span>overview window</span>
                     <strong>{formatOverviewWindow(dataset.scope)}</strong>
                   </div>
+                  {datasetTimeline ? (
+                    <div className="dataset-overview-details-row">
+                      <span>{datasetTimeline.label}</span>
+                      <strong>{datasetTimeline.value}</strong>
+                    </div>
+                  ) : null}
                   <div className="dataset-overview-details-row dataset-overview-details-row--paired">
                     <div className="dataset-overview-details-cell">
                       <span>export type</span>
@@ -1985,7 +2057,7 @@ export function DatasetWorkspaceRoute({ datasetId, activeToolId }: DatasetWorksp
                       {isMenuOpen
                         ? createPortal(
                             <div
-                              ref={floatingPanelRef}
+                              ref={floatingMenuRef}
                               className="dataset-modal__menu"
                               style={floatingPanelStyle ?? undefined}
                               role="menu"
@@ -2021,7 +2093,7 @@ export function DatasetWorkspaceRoute({ datasetId, activeToolId }: DatasetWorksp
                       {isRenaming
                         ? createPortal(
                             <form
-                              ref={floatingPanelRef}
+                              ref={floatingRenameRef}
                               className="dataset-modal__rename-popover"
                               style={floatingPanelStyle ?? undefined}
                               onSubmit={(event) => {

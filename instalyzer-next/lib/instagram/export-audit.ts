@@ -113,7 +113,7 @@ function extractEntries(data: unknown, key: string) {
 }
 
 function normalizeUsername(value: string) {
-  return value.trim().trimStart("@").toLowerCase();
+  return value.trim().replace(/^@+/, "").toLowerCase();
 }
 
 function extractUsernameFromHref(href: string) {
@@ -167,7 +167,7 @@ async function loadFflateScript() {
     throw new Error("ZIP audit is only available in the browser.");
   }
 
-  if (window.fflate?.unzipSync && window.fflate?.strFromU8) {
+  if (window.fflate) {
     return window.fflate;
   }
 
@@ -181,7 +181,7 @@ async function loadFflateScript() {
     );
 
     const handleReady = () => {
-      if (window.fflate?.unzipSync && window.fflate?.strFromU8) {
+      if (window.fflate) {
         resolve(window.fflate);
         return;
       }

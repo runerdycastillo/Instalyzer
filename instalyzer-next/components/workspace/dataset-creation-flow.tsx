@@ -468,9 +468,14 @@ export function DatasetCreationFlow() {
                         try again
                       </button>
                     </div>
-                    <Link href="/help" className="dataset-invalid-export-state__guide-link">
-                      view export setup guide
-                    </Link>
+                    <div className="dataset-invalid-export-state__links">
+                      <Link href="/help" className="dataset-invalid-export-state__guide-link">
+                        view export setup guide
+                      </Link>
+                      <Link href="/contact" className="dataset-invalid-export-state__guide-link">
+                        contact support
+                      </Link>
+                    </div>
                   </div>
                 ) : (
                   <div
@@ -572,14 +577,24 @@ export function DatasetCreationFlow() {
                             <li>format → JSON</li>
                           </ul>
                         </div>
-                        <Link href="/help" className="hero-btn hero-btn-secondary dataset-upload-alert__action">
-                          view export setup guide
-                        </Link>
+                        <div className="dataset-upload-alert__links">
+                          <Link href="/help" className="hero-btn hero-btn-secondary dataset-upload-alert__action">
+                            view export setup guide
+                          </Link>
+                          <Link href="/contact" className="dataset-dropzone__help-link">
+                            contact support
+                          </Link>
+                        </div>
                       </>
                     ) : (
-                      <Link href="/help" className="dataset-dropzone__help-link">
-                        view export setup guide
-                      </Link>
+                      <div className="dataset-upload-alert__links">
+                        <Link href="/help" className="dataset-dropzone__help-link">
+                          view export setup guide
+                        </Link>
+                        <Link href="/contact" className="dataset-dropzone__help-link">
+                          contact support
+                        </Link>
+                      </div>
                     )}
                   </div>
                 ) : null}
@@ -634,7 +649,14 @@ export function DatasetCreationFlow() {
                         onChange={(event) => setDatasetDate(event.target.value)}
                       />
                     </label>
-                    {creationError ? <small className="dataset-field__error">{creationError}</small> : null}
+                    {creationError ? (
+                      <div className="dataset-field__error-group">
+                        <small className="dataset-field__error">{creationError}</small>
+                        <Link href="/contact" className="dataset-field__support-link">
+                          need help? contact support
+                        </Link>
+                      </div>
+                    ) : null}
                   </form>
                 </div>
               ) : null}

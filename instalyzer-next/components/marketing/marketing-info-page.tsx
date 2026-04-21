@@ -5,16 +5,19 @@ type MarketingInfoPageProps = {
   eyebrow: string;
   title: string;
   description: string;
+  heroMeta?: string[];
   sections: Array<{
     title: string;
     body: ReactNode;
   }>;
   asideTitle: string;
   asideBody: ReactNode;
+  asideFooter?: ReactNode;
   actions?: Array<{
     href: string;
     label: string;
     external?: boolean;
+    variant?: "primary" | "secondary";
   }>;
 };
 
@@ -22,9 +25,11 @@ export function MarketingInfoPage({
   eyebrow,
   title,
   description,
+  heroMeta = [],
   sections,
   asideTitle,
   asideBody,
+  asideFooter,
   actions = [],
 }: MarketingInfoPageProps) {
   return (
@@ -33,6 +38,15 @@ export function MarketingInfoPage({
         <p className="section-kicker">{eyebrow}</p>
         <h1 className="marketing-info-page__title">{title}</h1>
         <p className="marketing-info-page__description">{description}</p>
+        {heroMeta.length ? (
+          <div className="marketing-info-page__hero-meta" aria-label="Support details">
+            {heroMeta.map((item) => (
+              <span key={item} className="marketing-info-page__hero-meta-item">
+                {item}
+              </span>
+            ))}
+          </div>
+        ) : null}
       </section>
 
       <div className="marketing-info-page__grid">
@@ -49,15 +63,29 @@ export function MarketingInfoPage({
           <span className="marketing-info-page__aside-label">{asideTitle}</span>
           <div className="marketing-info-page__aside-copy">{asideBody}</div>
 
+          {asideFooter ? <div className="marketing-info-page__aside-footer">{asideFooter}</div> : null}
+
           {actions.length ? (
             <div className="marketing-info-page__actions">
               {actions.map((action) =>
                 action.external ? (
-                  <a key={action.href} href={action.href} className="hero-btn hero-btn-secondary">
+                  <a
+                    key={action.href}
+                    href={action.href}
+                    className={`hero-btn ${
+                      action.variant === "primary" ? "hero-btn-primary" : "hero-btn-secondary"
+                    }`}
+                  >
                     {action.label}
                   </a>
                 ) : (
-                  <Link key={action.href} href={action.href} className="hero-btn hero-btn-secondary">
+                  <Link
+                    key={action.href}
+                    href={action.href}
+                    className={`hero-btn ${
+                      action.variant === "primary" ? "hero-btn-primary" : "hero-btn-secondary"
+                    }`}
+                  >
                     {action.label}
                   </Link>
                 ),

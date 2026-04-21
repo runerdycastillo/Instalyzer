@@ -9,7 +9,7 @@ export type NotFollowingBackEntry = {
 export type NotFollowingBackSortOrder = "latest" | "earliest" | "az" | "za";
 
 function normalizeUsername(value: string) {
-  return String(value || "").trim().trimStart("@").toLowerCase();
+  return String(value || "").trim().replace(/^@+/, "").toLowerCase();
 }
 
 export function getInstagramProfileHref(username: string, href = "") {

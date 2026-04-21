@@ -153,6 +153,9 @@ Use this section to track the current migration flow specifically.
 - [ ] Do a deliberate interaction QA pass on overview + `not following back`
 - Why now: recent polish added stronger visited, move-state, footer jump, legal-route, and animation behaviors, so the next highest-value app-side work is confirming they feel stable in real use
 
+- [ ] Run a focused responsive pass on the current core flow before auth work begins
+- Why now: homepage, trust pages, dataset creation, overview, workspace, and Tool 1 are real enough that responsive cleanup now will be much cheaper than waiting until auth adds more route and layout complexity
+
 - [ ] Decide the next parser-confidence pass or next native tool after support/contact settles
 - Why now: Tool 1 and the legal/trust surfaces are both much stronger now, so the next product decision should come after we close the support handoff cleanly
 

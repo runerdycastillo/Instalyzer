@@ -15,6 +15,7 @@ export default function AccountPage() {
       links={[
         { href: "/", label: "back home" },
         { href: "/app", label: "open workspace" },
+        { href: "/contact", label: "contact support" },
       ]}
     />
   );

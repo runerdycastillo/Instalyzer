@@ -53,6 +53,9 @@ export function DatasetWorkspaceEmptyState({
           <Link href="/help" className="dataset-empty-state__help">
             need help exporting your instagram data?
           </Link>
+          <Link href="/contact" className="dataset-empty-state__support">
+            questions about imports or parsing? contact support
+          </Link>
         </div>
 
         <p className="dataset-empty-state__note">

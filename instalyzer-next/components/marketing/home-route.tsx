@@ -125,9 +125,23 @@ const faqColumns = [
         "use the official instagram export as a zip with json data. for relationship tools like not following back, all time is the recommended export range.",
     },
     {
-      question: "is this free right now?",
-      answer:
-        "yes. the current soft launch is free while the workspace expands beyond the first live tool.",
+      question: "need more help?",
+      answer: (
+        <>
+          <p>
+            If you still have questions, you can reach us through our support inbox
+            or visit the help guide.
+          </p>
+          <div className="faq-placeholder-actions">
+            <Link href="/contact" className="faq-placeholder-link">
+              Contact
+            </Link>
+            <Link href="/help" className="faq-placeholder-link">
+              Guide
+            </Link>
+          </div>
+        </>
+      ),
     },
   ],
 ] as const;
@@ -440,9 +454,9 @@ export function MarketingHomeRoute() {
 
         <div className="faq-footer">
           <p className="faq-footer-copy">still have questions?</p>
-          <a href="#" className="faq-footer-link">
+          <Link href="/contact" className="faq-footer-link">
             contact support
-          </a>
+          </Link>
         </div>
       </section>
 
@@ -471,10 +485,9 @@ export function MarketingHomeRoute() {
           </Link>
           <p
             className="final-cta-placeholder-trust"
-            aria-label="no instagram login required, free launch, your data stays private"
+            aria-label="no instagram login required, your data stays private"
           >
             <span>no instagram login required</span>
-            <span>free launch</span>
             <span>your data stays private</span>
           </p>
         </div>

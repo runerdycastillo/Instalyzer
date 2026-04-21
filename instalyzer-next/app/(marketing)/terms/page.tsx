@@ -1,4 +1,13 @@
-const legalSections = [
+import type { ReactNode } from "react";
+
+type LegalSection = {
+  id: string;
+  title: string;
+  body: ReactNode;
+  className?: string;
+};
+
+const legalSections: readonly LegalSection[] = [
   {
     id: "eligibility",
     title: "Eligibility",

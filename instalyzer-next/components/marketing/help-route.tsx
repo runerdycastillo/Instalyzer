@@ -513,6 +513,10 @@ export function HelpRoute() {
                 </ul>
               </div>
             ))}
+
+            <p className="guide-side-support-inline">
+              need help? <Link href="/contact">contact support</Link>
+            </p>
           </div>
 
           <div className="guide-side-cta">
@@ -528,6 +532,7 @@ export function HelpRoute() {
           </div>
         </aside>
       </section>
+
     </main>
   );
 }

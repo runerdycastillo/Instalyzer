@@ -13,7 +13,7 @@ const STORAGE_KEY_PREFIX = "instalyzer_next_not_following_back_tool_v1";
 export const RECENT_PROFILE_VISIT_WINDOW_MS = 30 * 1000;
 
 function normalizeUsername(value: string) {
-  return String(value || "").trim().trimStart("@").toLowerCase();
+  return String(value || "").trim().replace(/^@+/, "").toLowerCase();
 }
 
 function getStorageKey(datasetId: string) {
@@ -44,12 +44,7 @@ export function readNotFollowingBackToolState(datasetId: string): NotFollowingBa
 
     const parsed = JSON.parse(raw) as Partial<NotFollowingBackToolState> | null;
     return {
-      activeList:
-        parsed?.activeList === "unfollowed" ||
-        parsed?.activeList === "reviewLater" ||
-        parsed?.activeList === "notFound"
-          ? parsed.activeList
-          : "pending",
+      activeList: "pending",
       unfollowed: Array.isArray(parsed?.unfollowed) ? parsed.unfollowed.map(normalizeUsername).filter(Boolean) : [],
       reviewLater: Array.isArray(parsed?.reviewLater)
         ? parsed.reviewLater.map(normalizeUsername).filter(Boolean)
