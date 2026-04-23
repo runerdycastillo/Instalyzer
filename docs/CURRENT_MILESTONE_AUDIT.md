@@ -30,77 +30,110 @@ Current milestone focus:
 
 ### 1. What Changed Today
 
-- [ ] New feature or route was added
-- [ ] Existing flow was refined
-- [ ] Bug or regression was fixed
-- [ ] Docs were updated
+- [x] New feature or route was added
+- [x] Existing flow was refined
+- [x] Bug or regression was fixed
+- [x] Docs were updated
 
 Notes:
 
 - Summary:
+  - the contact/support path moved from a copy-first inbox surface into a real live contact form backed by Microsoft Graph mail delivery, then went through several UX/content/layout polish passes until it felt ready to lock
 - Files/routes touched:
+  - `instalyzer-next/app/(marketing)/contact/page.tsx`
+  - `instalyzer-next/components/marketing/contact-support-form.tsx`
+  - `instalyzer-next/components/marketing/marketing-info-page.tsx`
+  - `instalyzer-next/app/api/contact/route.ts`
+  - `instalyzer-next/lib/contact/contact-support.ts`
+  - `instalyzer-next/lib/contact/support-mail.ts`
+  - `instalyzer-next/app/globals.css`
+  - `instalyzer-next/.env.example`
+  - `docs/contact-form-microsoft-setup.md`
+  - `docs/CURRENT_MILESTONE_AUDIT.md`
 - Anything user-visible:
+  - `/contact` now has a real support form instead of a copy-only inbox handoff
+  - submitted messages now send into `support@instalyzer.app`
+  - the contact page sidebar/layout/copy were tightened substantially
+  - support inbox messages now arrive in a cleaner, more readable format
 
 ### 2. What Is Stable Right Now
 
-- [ ] The updated flow works locally
-- [ ] No obvious regressions were introduced
-- [ ] The new UI matches the product direction
-- [ ] Navigation into and out of the changed area still works
+- [x] The updated flow works locally
+- [x] No obvious regressions were introduced
+- [x] The new UI matches the product direction
+- [x] Navigation into and out of the changed area still works
 
 Notes:
 
 - Stable areas:
+  - contact page UI and copy
+  - live support-form submission path
+  - Microsoft Graph delivery into the support mailbox
+  - support inbox formatting
+  - desktop sticky sidebar behavior after the overlap fixes
 - Confidence level:
+  - high for the desktop contact/support flow
 
 ### 3. What Still Feels Incomplete
 
-- [ ] Placeholder content still remains
-- [ ] UX still needs polish
-- [ ] Error handling is still thin
-- [ ] Mobile behavior still needs review
-- [ ] Copy still needs cleanup
+- [x] Error handling is still thin
+- [x] Mobile behavior still needs review
 
 Notes:
 
 - Main gaps:
+  - the next major task is the desktop-first mobile gate for `/app` and the workspace flow
+  - parser/domain extraction from the static build still remains ahead
+  - the Microsoft client secret should be rotated after setup because it was handled during live configuration/testing
 - Anything intentionally deferred:
+  - auth/accounts until after the mobile gate / responsive decision is implemented
+  - auto-reply acknowledgements for support email until there is a real need
 
 ### 4. Quick Risk Check
 
-- [ ] No major blocker discovered
-- [ ] No hidden dependency surfaced
-- [ ] No serious product-direction mismatch discovered
-- [ ] No major trust/privacy concern introduced
+- [x] No major blocker discovered
+- [x] No hidden dependency surfaced
+- [x] No serious product-direction mismatch discovered
+- [x] No major trust/privacy concern introduced
 
 Notes:
 
 - Biggest current risk:
+  - without a deliberate mobile gate, mobile traffic can still reach a flow that is fundamentally desktop-first
 - What could slow the next session down:
+  - turning the mobile-gate task into a full mobile app redesign instead of a clear desktop-first handoff
 
 ### 5. Quick Manual Checks
 
-- [ ] Tested the changed route manually
-- [ ] Tested related buttons/links
-- [ ] Tested refresh behavior if relevant
-- [ ] Tested theme behavior if relevant
-- [ ] Tested mobile layout if relevant
+- [x] Tested the changed route manually
+- [x] Tested related buttons/links
+- [x] Tested refresh behavior if relevant
 
 Notes:
 
 - What was tested:
+  - repeated contact-form UI/manual submissions
+  - direct API submission against `/api/contact`
+  - live mailbox delivery into `support@instalyzer.app`
+  - support inbox formatting after multiple refinement passes
 - What was not tested:
+  - deliberate mobile behavior for the contact page
+  - the next desktop-only mobile gate flow because it has not been built yet
 
 ### 6. Next Best Move
 
-- [ ] Next task is clearly defined
-- [ ] Needed docs/context are captured
-- [ ] No important handoff detail is missing
+- [x] Next task is clearly defined
+- [x] Needed docs/context are captured
+- [x] No important handoff detail is missing
 
 Notes:
 
 - Next recommended task:
+  - build the desktop-first mobile gate for `/app`, dataset creation, dataset workspace, and tool routes while keeping marketing/trust pages accessible on phone
 - Prerequisites for next session:
+  - keep the support form as the locked contact path
+  - keep forwarding disabled unless there is a real destination mailbox to forward to
+  - rotate the Microsoft client secret once testing/setup is finished
 
 ---
 
@@ -144,20 +177,17 @@ Use this section to track the current migration flow specifically.
 
 ### Fix Next
 
-- [ ] Decide the soft-launch contact support approach
-- Why now: the footer, legal pages, and trust surfaces are now strong enough that support/contact behavior is the next obvious product-trust gap
-
-- [ ] Implement the chosen contact support path
-- Why now: whether the answer is `mailto`, a dedicated contact page, or both, the product should stop feeling half-wired in its support handoff
-
 - [ ] Do a deliberate interaction QA pass on overview + `not following back`
 - Why now: recent polish added stronger visited, move-state, footer jump, legal-route, and animation behaviors, so the next highest-value app-side work is confirming they feel stable in real use
 
-- [ ] Run a focused responsive pass on the current core flow before auth work begins
-- Why now: homepage, trust pages, dataset creation, overview, workspace, and Tool 1 are real enough that responsive cleanup now will be much cheaper than waiting until auth adds more route and layout complexity
+- [ ] Build the desktop-first mobile gate for the app/workspace flow
+- Why now: the contact path is now live, but the actual export upload + workspace flow is still fundamentally desktop-first and should stop pretending to be broadly mobile-ready
 
 - [ ] Decide the next parser-confidence pass or next native tool after support/contact settles
 - Why now: Tool 1 and the legal/trust surfaces are both much stronger now, so the next product decision should come after we close the support handoff cleanly
+
+- [ ] Run a focused responsive pass on the current core flow before auth work begins
+- Why now: homepage, trust pages, dataset creation, overview, workspace, and Tool 1 are real enough that responsive cleanup now will be much cheaper than waiting until auth adds more route and layout complexity
 
 ### Watch Soon
 
@@ -318,3 +348,20 @@ Add one short entry per work session.
   - the product is getting more polished around trust and workflow details, which raises the importance of making the contact/support handoff feel equally intentional
 - Next step:
   - investigate the best support implementation for soft launch (`mailto` only vs dedicated contact page/form vs both), then implement the chosen path cleanly
+
+### Session Entry - 2026-04-22
+
+- Date: 2026-04-22
+- Focus: lock the contact/support surface by turning it into a real live form and verifying end-to-end delivery
+- What moved forward:
+  - `/contact` was rebuilt into a real support form with cleaner field structure, lighter copy, a polished sidebar, and multiple final layout refinements
+  - the backend contact route was added and wired to Microsoft Graph so submissions now deliver to `support@instalyzer.app`
+  - mailbox setup was verified with real test sends, email body formatting was cleaned up, and the forwarding issue was identified and disabled
+  - setup docs/env scaffolding were added so the Microsoft integration is understandable and maintainable
+- What remains rough:
+  - the desktop-first mobile gate for app/workspace routes still needs to be built
+  - parser/domain extraction still remains ahead
+- Biggest risk:
+  - mobile visitors can still hit a flow that is better treated as desktop-only until the gate is in place
+- Next step:
+  - implement the mobile gate next, then continue the broader responsive/desktop-first sweep before auth work

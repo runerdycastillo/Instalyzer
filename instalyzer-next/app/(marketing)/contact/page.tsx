@@ -1,5 +1,6 @@
 import { MarketingInfoPage } from "@/components/marketing/marketing-info-page";
 import { ContactInboxEmail } from "@/components/marketing/contact-inbox-email";
+import { ContactSupportForm } from "@/components/marketing/contact-support-form";
 import Link from "next/link";
 
 export default function ContactPage() {
@@ -7,54 +8,35 @@ export default function ContactPage() {
     <MarketingInfoPage
       eyebrow="contact"
       title="Contact Us"
-      description="questions, support requests, and product feedback can come through our support inbox during the current soft launch."
+      description="reach out for export help, workspace questions, or product feedback."
       heroMeta={[
         "typical response time: 24-48 hours",
-        "support available monday-friday",
+        "support available: monday-friday",
       ]}
       sections={[
         {
-          title: "Best place to start",
-          body: (
-            <>
-              <p>
-                The guide is usually faster for export setup, upload issues, and
-                understanding tool results.
-              </p>
-              <Link href="/help" className="marketing-info-page__inline-link">
-                open guide
-              </Link>
-            </>
-          ),
-        },
-        {
-          title: "What to include in your email",
-          body: (
-            <>
-              <p>A few details help us troubleshoot faster.</p>
-              <ul className="marketing-info-page__checklist">
-                <li>what happened</li>
-                <li>tool or page being used</li>
-                <li>screenshot if possible</li>
-                <li>browser or device</li>
-                <li>whether it involved an export upload</li>
-                <li>export ZIP or JSON if you are comfortable sharing it</li>
-              </ul>
-            </>
-          ),
+          title: "Send a support message",
+          body: <ContactSupportForm />,
         },
       ]}
       asideTitle="Support Inbox"
       asideBody={
         <>
           <ContactInboxEmail />
-          <p>best for export issues, parsing questions, and workspace help.</p>
-          <p>copy the address and email us from gmail, outlook, or any inbox you already use.</p>
+          <p>prefer email? copy the address and send from your usual inbox.</p>
         </>
       }
-      actions={[
-        { href: "/help", label: "Open guide", variant: "secondary" },
-      ]}
+      asideSecondary={
+        <article className="marketing-info-page__aside-subcard">
+          <span className="marketing-info-page__aside-subcard-label">best place to start</span>
+          <p>
+            the guide walks you through your instagram export settings and how to download it properly.
+          </p>
+          <Link href="/help" className="marketing-info-page__inline-link">
+            open guide
+          </Link>
+        </article>
+      }
     />
   );
 }

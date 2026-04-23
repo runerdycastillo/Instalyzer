@@ -13,6 +13,7 @@ type MarketingInfoPageProps = {
   asideTitle: string;
   asideBody: ReactNode;
   asideFooter?: ReactNode;
+  asideSecondary?: ReactNode;
   actions?: Array<{
     href: string;
     label: string;
@@ -30,6 +31,7 @@ export function MarketingInfoPage({
   asideTitle,
   asideBody,
   asideFooter,
+  asideSecondary,
   actions = [],
 }: MarketingInfoPageProps) {
   return (
@@ -59,40 +61,44 @@ export function MarketingInfoPage({
           ))}
         </div>
 
-        <aside className="marketing-info-page__aside">
-          <span className="marketing-info-page__aside-label">{asideTitle}</span>
-          <div className="marketing-info-page__aside-copy">{asideBody}</div>
+        <div className="marketing-info-page__aside-stack">
+          <aside className="marketing-info-page__aside">
+            <span className="marketing-info-page__aside-label">{asideTitle}</span>
+            <div className="marketing-info-page__aside-copy">{asideBody}</div>
 
-          {asideFooter ? <div className="marketing-info-page__aside-footer">{asideFooter}</div> : null}
+            {asideFooter ? <div className="marketing-info-page__aside-footer">{asideFooter}</div> : null}
 
-          {actions.length ? (
-            <div className="marketing-info-page__actions">
-              {actions.map((action) =>
-                action.external ? (
-                  <a
-                    key={action.href}
-                    href={action.href}
-                    className={`hero-btn ${
-                      action.variant === "primary" ? "hero-btn-primary" : "hero-btn-secondary"
-                    }`}
-                  >
-                    {action.label}
-                  </a>
-                ) : (
-                  <Link
-                    key={action.href}
-                    href={action.href}
-                    className={`hero-btn ${
-                      action.variant === "primary" ? "hero-btn-primary" : "hero-btn-secondary"
-                    }`}
-                  >
-                    {action.label}
-                  </Link>
-                ),
-              )}
-            </div>
-          ) : null}
-        </aside>
+            {actions.length ? (
+              <div className="marketing-info-page__actions">
+                {actions.map((action) =>
+                  action.external ? (
+                    <a
+                      key={action.href}
+                      href={action.href}
+                      className={`hero-btn ${
+                        action.variant === "primary" ? "hero-btn-primary" : "hero-btn-secondary"
+                      }`}
+                    >
+                      {action.label}
+                    </a>
+                  ) : (
+                    <Link
+                      key={action.href}
+                      href={action.href}
+                      className={`hero-btn ${
+                        action.variant === "primary" ? "hero-btn-primary" : "hero-btn-secondary"
+                      }`}
+                    >
+                      {action.label}
+                    </Link>
+                  ),
+                )}
+              </div>
+            ) : null}
+          </aside>
+
+          {asideSecondary ? <div className="marketing-info-page__aside-secondary">{asideSecondary}</div> : null}
+        </div>
       </div>
     </main>
   );
