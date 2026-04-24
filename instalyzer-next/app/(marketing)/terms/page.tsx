@@ -1,3 +1,4 @@
+import Link from "next/link";
 import type { ReactNode } from "react";
 
 type LegalSection = {
@@ -156,9 +157,9 @@ const sideCards = [
           support@instalyzer.app
         </a>
         <div className="terms-page__support-actions">
-          <a href="mailto:support@instalyzer.app" className="hero-btn hero-btn-secondary">
+          <Link href="/contact" className="hero-btn hero-btn-secondary">
             Contact support
-          </a>
+          </Link>
         </div>
       </>
     ),

@@ -38,23 +38,21 @@ Current milestone focus:
 Notes:
 
 - Summary:
-  - the contact/support path moved from a copy-first inbox surface into a real live contact form backed by Microsoft Graph mail delivery, then went through several UX/content/layout polish passes until it felt ready to lock
+  - the session turned into a focused responsive audit across the real product surfaces so the next implementation pass can be intentional instead of reactive
+  - we stepped through `1440`, `1280`, `1180`, `1024`, and `900` widths, documented the actual breakpoints in `docs/responsive-audit.md`, and confirmed that the workspace/tool flow stops being honestly workable around `900px`
+  - the `Terms` page support action was also updated to use the real `/contact` route instead of a direct `mailto` button
 - Files/routes touched:
-  - `instalyzer-next/app/(marketing)/contact/page.tsx`
-  - `instalyzer-next/components/marketing/contact-support-form.tsx`
-  - `instalyzer-next/components/marketing/marketing-info-page.tsx`
-  - `instalyzer-next/app/api/contact/route.ts`
-  - `instalyzer-next/lib/contact/contact-support.ts`
-  - `instalyzer-next/lib/contact/support-mail.ts`
-  - `instalyzer-next/app/globals.css`
-  - `instalyzer-next/.env.example`
-  - `docs/contact-form-microsoft-setup.md`
+  - `instalyzer-next/app/(marketing)/terms/page.tsx`
   - `docs/CURRENT_MILESTONE_AUDIT.md`
+  - `docs/responsive-audit.md`
+  - `docs/day-wraps/2026-04-23/end-of-day.md`
+  - `docs/day-wraps/2026-04-23/milestone-audit.md`
 - Anything user-visible:
-  - `/contact` now has a real support form instead of a copy-only inbox handoff
-  - submitted messages now send into `support@instalyzer.app`
-  - the contact page sidebar/layout/copy were tightened substantially
-  - support inbox messages now arrive in a cleaner, more readable format
+  - the `Terms` page `Contact support` button now leads into the real contact flow
+  - the responsive implementation direction is now much clearer:
+    - keep marketing/trust pages responsive below desktop
+    - support a compact desktop range above `900px`
+    - gate workspace/tool routes at `900px` and below
 
 ### 2. What Is Stable Right Now
 
@@ -66,13 +64,11 @@ Notes:
 Notes:
 
 - Stable areas:
-  - contact page UI and copy
-  - live support-form submission path
-  - Microsoft Graph delivery into the support mailbox
-  - support inbox formatting
-  - desktop sticky sidebar behavior after the overlap fixes
+  - the current desktop baseline still feels strong at `1440`
+  - the compact-pressure breakpoints are now documented instead of guessed
+  - the contact/support handoff remains live and the `Terms` page now routes into it correctly
 - Confidence level:
-  - high for the desktop contact/support flow
+  - high for the responsive implementation plan, especially the `900px` gate decision
 
 ### 3. What Still Feels Incomplete
 
@@ -82,12 +78,13 @@ Notes:
 Notes:
 
 - Main gaps:
-  - the next major task is the desktop-first mobile gate for `/app` and the workspace flow
+  - the responsive fixes themselves are still unimplemented
+  - the desktop-first gate for `/app`, dataset creation, dataset workspace, and tool routes still needs to be built in code
+  - the compact desktop range between roughly `901px` and `1180px` still needs a deliberate layout pass
   - parser/domain extraction from the static build still remains ahead
-  - the Microsoft client secret should be rotated after setup because it was handled during live configuration/testing
 - Anything intentionally deferred:
-  - auth/accounts until after the mobile gate / responsive decision is implemented
-  - auto-reply acknowledgements for support email until there is a real need
+  - auth/accounts until after the responsive pass and workspace gate are implemented
+  - deeper phone-specific auditing for the workspace, because the current plan is to gate before that range
 
 ### 4. Quick Risk Check
 
@@ -99,9 +96,9 @@ Notes:
 Notes:
 
 - Biggest current risk:
-  - without a deliberate mobile gate, mobile traffic can still reach a flow that is fundamentally desktop-first
+  - without implementing the gate soon, users can still reach a workspace flow that is already proven to become unworkable around `900px`
 - What could slow the next session down:
-  - turning the mobile-gate task into a full mobile app redesign instead of a clear desktop-first handoff
+  - trying to rescue every sub-desktop width instead of honoring the audit and implementing the compact-desktop-plus-gate plan
 
 ### 5. Quick Manual Checks
 
@@ -112,13 +109,11 @@ Notes:
 Notes:
 
 - What was tested:
-  - repeated contact-form UI/manual submissions
-  - direct API submission against `/api/contact`
-  - live mailbox delivery into `support@instalyzer.app`
-  - support inbox formatting after multiple refinement passes
+  - manual responsive checks across home, help, dataset creation, dataset workspace, `not following back`, contact, and terms
+  - practical width checkpoints at `1440`, `1280`, `1180`, `1024`, and `900`
 - What was not tested:
-  - deliberate mobile behavior for the contact page
-  - the next desktop-only mobile gate flow because it has not been built yet
+  - the still-unbuilt desktop-only gate flow
+  - deeper phone-range workspace behavior, because the workspace is now expected to gate before that range
 
 ### 6. Next Best Move
 
@@ -129,11 +124,14 @@ Notes:
 Notes:
 
 - Next recommended task:
-  - build the desktop-first mobile gate for `/app`, dataset creation, dataset workspace, and tool routes while keeping marketing/trust pages accessible on phone
+  - implement the responsive plan from `docs/responsive-audit.md`:
+    - build the desktop-first gate for workspace/tool routes at `900px` and below
+    - do the compact desktop layout pass for the `901px` to `1180px` range
+    - simplify the tablet-range marketing sections where the audit showed too much density
 - Prerequisites for next session:
-  - keep the support form as the locked contact path
-  - keep forwarding disabled unless there is a real destination mailbox to forward to
-  - rotate the Microsoft client secret once testing/setup is finished
+  - use `docs/responsive-audit.md` as the implementation checklist
+  - keep the desktop `1440` baseline protected while tightening smaller ranges
+  - avoid turning the gate task into a full mobile redesign
 
 ---
 
@@ -365,3 +363,20 @@ Add one short entry per work session.
   - mobile visitors can still hit a flow that is better treated as desktop-only until the gate is in place
 - Next step:
   - implement the mobile gate next, then continue the broader responsive/desktop-first sweep before auth work
+
+### Session Entry - 2026-04-23
+
+- Date: 2026-04-23
+- Focus: run the first deliberate responsive audit so the next session can implement the desktop-first gate and compact-width fixes from a clear plan
+- What moved forward:
+  - a new `docs/responsive-audit.md` was created and filled with real findings across `1440`, `1280`, `1180`, `1024`, and `900`
+  - the audit confirmed that `1440` is still the safe baseline, `1180` is where compact-layout issues become real, `1024` actively breaks multiple workspace/tool components, and `900` is no longer honestly workable for the workspace
+  - the `Terms` page support action was updated to route into `/contact`, keeping the real support flow consistent
+- What remains rough:
+  - none of the responsive fixes are implemented yet
+  - the workspace/tool gate still needs to be built
+  - several marketing sections still need a lighter tablet-range treatment
+- Biggest risk:
+  - if the next session drifts back into open-ended auditing instead of implementation, we lose the benefit of the now-clear breakpoint decisions
+- Next step:
+  - implement the `900px` workspace/tool gate first, then do the compact desktop pass for the `901px` to `1180px` range using the new audit doc as the checklist
