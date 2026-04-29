@@ -38,21 +38,24 @@ Current milestone focus:
 Notes:
 
 - Summary:
-  - the session turned into a focused responsive audit across the real product surfaces so the next implementation pass can be intentional instead of reactive
-  - we stepped through `1440`, `1280`, `1180`, `1024`, and `900` widths, documented the actual breakpoints in `docs/responsive-audit.md`, and confirmed that the workspace/tool flow stops being honestly workable around `900px`
-  - the `Terms` page support action was also updated to use the real `/contact` route instead of a direct `mailto` button
+  - the session completed the compact desktop workspace pass and updated the gate decision from `900px` to a cleaner `1024px` workspace minimum
+  - `1180`, `1080`, and `1024` are now considered solid enough for the full workspace/tool experience
+  - the next implementation pass should build a polished tablet/mobile gate for workspace/tool routes below `1024px`
 - Files/routes touched:
-  - `instalyzer-next/app/(marketing)/terms/page.tsx`
+  - `instalyzer-next/app/globals.css`
+  - `instalyzer-next/components/workspace/dataset-workspace-route.tsx`
+  - `instalyzer-next/components/workspace/not-following-back-workspace-view.tsx`
   - `docs/CURRENT_MILESTONE_AUDIT.md`
   - `docs/responsive-audit.md`
-  - `docs/day-wraps/2026-04-23/end-of-day.md`
-  - `docs/day-wraps/2026-04-23/milestone-audit.md`
+  - `docs/day-wraps/2026-04-29/end-of-day.md`
+  - `docs/day-wraps/2026-04-29/milestone-audit.md`
 - Anything user-visible:
-  - the `Terms` page `Contact support` button now leads into the real contact flow
-  - the responsive implementation direction is now much clearer:
-    - keep marketing/trust pages responsive below desktop
-    - support a compact desktop range above `900px`
-    - gate workspace/tool routes at `900px` and below
+  - workspace overview and `not following back` now behave much better at compact desktop widths
+  - manage exports has cleaner icon actions, an `active` badge, a smaller sort menu, and a delete confirmation
+  - static side-panel stats no longer advertise clickability through hover states
+  - responsive implementation direction is now:
+    - support full workspace/tools at `1024px+`
+    - gate workspace/tool routes at `1023px` and below
 
 ### 2. What Is Stable Right Now
 
@@ -65,10 +68,11 @@ Notes:
 
 - Stable areas:
   - the current desktop baseline still feels strong at `1440`
-  - the compact-pressure breakpoints are now documented instead of guessed
-  - the contact/support handoff remains live and the `Terms` page now routes into it correctly
+  - compact desktop is now polished through `1024`
+  - the contact/support handoff remains live
+  - the `1024px` workspace minimum is now documented instead of guessed
 - Confidence level:
-  - high for the responsive implementation plan, especially the `900px` gate decision
+  - high for the compact desktop pass and the `1024px` gate decision
 
 ### 3. What Still Feels Incomplete
 
@@ -78,13 +82,13 @@ Notes:
 Notes:
 
 - Main gaps:
-  - the responsive fixes themselves are still unimplemented
-  - the desktop-first gate for `/app`, dataset creation, dataset workspace, and tool routes still needs to be built in code
-  - the compact desktop range between roughly `901px` and `1180px` still needs a deliberate layout pass
+  - the tablet/mobile gate for workspace/tool routes still needs to be built in code
+  - the gate needs a tablet treatment from `768px - 1023px`
+  - the gate needs a mobile treatment below `768px`
   - parser/domain extraction from the static build still remains ahead
 - Anything intentionally deferred:
   - auth/accounts until after the responsive pass and workspace gate are implemented
-  - deeper phone-specific auditing for the workspace, because the current plan is to gate before that range
+  - deeper phone-specific workspace layout work, because the current plan is to gate before that range
 
 ### 4. Quick Risk Check
 
@@ -96,9 +100,9 @@ Notes:
 Notes:
 
 - Biggest current risk:
-  - without implementing the gate soon, users can still reach a workspace flow that is already proven to become unworkable around `900px`
+  - without implementing the gate soon, users can still reach a workspace flow that should now be considered unsupported below `1024px`
 - What could slow the next session down:
-  - trying to rescue every sub-desktop width instead of honoring the audit and implementing the compact-desktop-plus-gate plan
+  - trying to rescue every sub-`1024px` workspace width instead of honoring the gate decision
 
 ### 5. Quick Manual Checks
 
@@ -109,10 +113,10 @@ Notes:
 Notes:
 
 - What was tested:
-  - manual responsive checks across home, help, dataset creation, dataset workspace, `not following back`, contact, and terms
-  - practical width checkpoints at `1440`, `1280`, `1180`, `1024`, and `900`
+  - manual responsive checks across workspace overview and `not following back`
+  - practical width checkpoints around `1180`, `1080`, and `1024`
 - What was not tested:
-  - the still-unbuilt desktop-only gate flow
+  - the still-unbuilt tablet/mobile gate flow
   - deeper phone-range workspace behavior, because the workspace is now expected to gate before that range
 
 ### 6. Next Best Move
@@ -124,13 +128,12 @@ Notes:
 Notes:
 
 - Next recommended task:
-  - implement the responsive plan from `docs/responsive-audit.md`:
-    - build the desktop-first gate for workspace/tool routes at `900px` and below
-    - do the compact desktop layout pass for the `901px` to `1180px` range
-    - simplify the tablet-range marketing sections where the audit showed too much density
+  - implement the workspace/tool gate below `1024px`:
+    - tablet gate: `768px - 1023px`
+    - mobile gate: below `768px`
 - Prerequisites for next session:
   - use `docs/responsive-audit.md` as the implementation checklist
-  - keep the desktop `1440` baseline protected while tightening smaller ranges
+  - keep the desktop and compact desktop `1024px+` behavior protected
   - avoid turning the gate task into a full mobile redesign
 
 ---
@@ -179,7 +182,7 @@ Use this section to track the current migration flow specifically.
 - Why now: recent polish added stronger visited, move-state, footer jump, legal-route, and animation behaviors, so the next highest-value app-side work is confirming they feel stable in real use
 
 - [ ] Build the desktop-first mobile gate for the app/workspace flow
-- Why now: the contact path is now live, but the actual export upload + workspace flow is still fundamentally desktop-first and should stop pretending to be broadly mobile-ready
+- Why now: compact desktop is now polished down to `1024px`, so workspace/tool routes below that need an intentional tablet/mobile gate instead of more squeezing
 
 - [ ] Decide the next parser-confidence pass or next native tool after support/contact settles
 - Why now: Tool 1 and the legal/trust surfaces are both much stronger now, so the next product decision should come after we close the support handoff cleanly
@@ -379,4 +382,22 @@ Add one short entry per work session.
 - Biggest risk:
   - if the next session drifts back into open-ended auditing instead of implementation, we lose the benefit of the now-clear breakpoint decisions
 - Next step:
-  - implement the `900px` workspace/tool gate first, then do the compact desktop pass for the `901px` to `1180px` range using the new audit doc as the checklist
+  - originally: implement the `900px` workspace/tool gate first, then do the compact desktop pass for the `901px` to `1180px` range using the new audit doc as the checklist
+  - superseded on 2026-04-29: compact desktop is now polished through `1024px`, so the next gate should start below `1024px`
+
+### Session Entry - 2026-04-29
+
+- Date: 2026-04-29
+- Focus: finish the compact desktop polish pass and reset the workspace gate decision around the real minimum usable width
+- What moved forward:
+  - workspace overview was polished across `1180`, `1080`, and `1024`, including reach/gender rings, activity chart labels, audience movement, manage exports, and misleading hover affordances
+  - `not following back` was tightened at compact desktop widths with cleaner rows, better action behavior, username truncation, smoother tooltip handling, and less redundant row copy
+  - manage exports gained cleaner icon-only actions, an `active` badge, a delete confirmation, and correct full export date display
+  - the product decision changed from a `900px` gate to a `1024px` workspace/tool minimum
+- What remains rough:
+  - the actual tablet/mobile gate below `1024px` is still unbuilt
+  - parser/domain extraction still remains ahead
+- Biggest risk:
+  - continuing to tweak below `1024px` instead of implementing the gate would waste the clarity gained from this pass
+- Next step:
+  - build the workspace/tool gate for `1023px` and below, with tablet layout for `768px - 1023px` and mobile layout below `768px`

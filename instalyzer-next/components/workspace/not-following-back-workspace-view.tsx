@@ -23,15 +23,8 @@ type NotFollowingBackWorkspaceViewProps = {
   dataset: LocalDatasetRecord;
 };
 
-type FloatingTooltipState = {
-  label: string;
-  x: number;
-  y: number;
-  placement: "top" | "bottom";
-};
-
 const ROW_EXIT_DURATION_MS = 220;
-const CARD_HIGHLIGHT_DURATION_MS = 420;
+const CARD_HIGHLIGHT_DURATION_MS = 320;
 
 function getCurrentTimestamp() {
   if (typeof performance !== "undefined" && Number.isFinite(performance.timeOrigin)) {
@@ -223,7 +216,6 @@ export function NotFollowingBackWorkspaceView({
   const [query, setQuery] = useState("");
   const [sortOrder, setSortOrder] = useState<NotFollowingBackSortOrder>("latest");
   const [copiedUsername, setCopiedUsername] = useState("");
-  const [tooltip, setTooltip] = useState<FloatingTooltipState | null>(null);
   const [exitingRows, setExitingRows] = useState<Record<string, NotFollowingBackListKey>>({});
   const [highlightedCardKey, setHighlightedCardKey] = useState<NotFollowingBackListKey | null>(null);
   const [toolState, setToolState] = useState<NotFollowingBackToolState>(() =>
@@ -231,6 +223,7 @@ export function NotFollowingBackWorkspaceView({
   );
   const highlightTimeoutRef = useRef<number | null>(null);
   const rowExitTimeoutsRef = useRef<Record<string, number>>({});
+  const tooltipRef = useRef<HTMLDivElement | null>(null);
   const allEntries = useMemo(() => deriveNotFollowingBackEntries(dataset), [dataset]);
   const allUsernames = useMemo(() => allEntries.map((entry) => entry.username), [allEntries]);
   const prunedToolState = useMemo(
@@ -270,10 +263,12 @@ export function NotFollowingBackWorkspaceView({
   }, [copiedUsername]);
 
   useEffect(() => {
-    if (!tooltip) return undefined;
-
     function handleViewportChange() {
-      setTooltip(null);
+      const tooltipNode = tooltipRef.current;
+      if (!tooltipNode) return;
+
+      tooltipNode.className = "relationship-tool__floating-tooltip";
+      tooltipNode.setAttribute("aria-hidden", "true");
     }
 
     window.addEventListener("scroll", handleViewportChange, true);
@@ -283,7 +278,7 @@ export function NotFollowingBackWorkspaceView({
       window.removeEventListener("scroll", handleViewportChange, true);
       window.removeEventListener("resize", handleViewportChange);
     };
-  }, [tooltip]);
+  }, []);
 
   useEffect(() => {
     const visitTimestamps = Object.values(prunedToolState.recentVisits);
@@ -484,19 +479,25 @@ export function NotFollowingBackWorkspaceView({
   }
 
   function showTooltip(label: string, target: HTMLElement) {
+    const tooltipNode = tooltipRef.current;
+    if (!tooltipNode) return;
+
     const rect = target.getBoundingClientRect();
     const placement = rect.top > 64 ? "top" : "bottom";
 
-    setTooltip({
-      label,
-      x: rect.left + rect.width / 2,
-      y: placement === "top" ? rect.top - 8 : rect.bottom + 8,
-      placement,
-    });
+    tooltipNode.textContent = label;
+    tooltipNode.style.left = `${rect.left + rect.width / 2}px`;
+    tooltipNode.style.top = `${placement === "top" ? rect.top - 8 : rect.bottom + 8}px`;
+    tooltipNode.className = `relationship-tool__floating-tooltip is-visible relationship-tool__floating-tooltip--${placement}`;
+    tooltipNode.setAttribute("aria-hidden", "false");
   }
 
   function hideTooltip() {
-    setTooltip(null);
+    const tooltipNode = tooltipRef.current;
+    if (!tooltipNode) return;
+
+    tooltipNode.className = "relationship-tool__floating-tooltip";
+    tooltipNode.setAttribute("aria-hidden", "true");
   }
 
   const summaryCards = [
@@ -564,6 +565,11 @@ export function NotFollowingBackWorkspaceView({
         })}
       </div>
 
+      <p className="relationship-tool__context">
+        compared <strong>{formatMetric(dataset.metrics?.followerCount)}</strong> followers against{" "}
+        <strong>{formatMetric(dataset.metrics?.followingCount)}</strong> following.
+      </p>
+
       <div className="relationship-tool__toolbar">
         <label className="relationship-tool__search">
           <Search size={15} aria-hidden="true" />
@@ -607,11 +613,8 @@ export function NotFollowingBackWorkspaceView({
 
       <div className="relationship-tool__note-row">
         <p>
-          Compared <strong>{formatMetric(dataset.metrics?.followerCount)}</strong> followers against{" "}
-          <strong>{formatMetric(dataset.metrics?.followingCount)}</strong> following.
-        </p>
-        <p>
-          <strong>{listMeta.label}</strong>: {listMeta.description}. Showing{" "}
+          <strong className={`relationship-tool__note-tone ${activeToneClassName}`}>{listMeta.label}</strong>:{" "}
+          {listMeta.description}. Showing{" "}
           <strong>{visibleEntries.length.toLocaleString()}</strong> result{visibleEntries.length === 1 ? "" : "s"}.
         </p>
       </div>
@@ -677,16 +680,10 @@ export function NotFollowingBackWorkspaceView({
                         className="relationship-tool__handle"
                         onClick={() => copyHandle(entry.username)}
                         aria-label={`Copy @${entry.username}`}
-                        title={copiedUsername === entry.username ? "copied" : "copy handle"}
+                        title={copiedUsername === entry.username ? "copied" : "copy"}
                       >
                         @{entry.username}
                       </button>
-                      <span
-                        key={`${entry.username}-${activeList}`}
-                        className={`relationship-tool__row-badge ${activeToneClassName} is-animated`}
-                      >
-                        {listMeta.label}
-                      </span>
                       {activeList === "pending" ? (
                         <button
                           type="button"
@@ -791,18 +788,14 @@ export function NotFollowingBackWorkspaceView({
         )}
       </div>
 
-      {tooltip && typeof document !== "undefined"
+      {typeof document !== "undefined"
         ? createPortal(
             <div
-              className={`relationship-tool__floating-tooltip relationship-tool__floating-tooltip--${tooltip.placement}`}
-              style={{
-                left: tooltip.x,
-                top: tooltip.y,
-              }}
+              ref={tooltipRef}
+              className="relationship-tool__floating-tooltip"
               role="tooltip"
-            >
-              {tooltip.label}
-            </div>,
+              aria-hidden="true"
+            />,
             document.body,
           )
         : null}

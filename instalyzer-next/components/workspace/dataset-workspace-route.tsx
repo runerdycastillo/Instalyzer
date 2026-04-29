@@ -62,7 +62,6 @@ const datasetSortOptions = [
   { value: "latest", label: "latest" },
   { value: "earliest", label: "earliest" },
   { value: "a-z", label: "a to z" },
-  { value: "z-a", label: "z to a" },
 ] as const;
 
 type DatasetSortOrder = (typeof datasetSortOptions)[number]["value"];
@@ -315,6 +314,45 @@ function formatOverviewWindow(scope?: {
   return `${formatter.format(startDate)} - ${formatter.format(endDate)}`;
 }
 
+function formatCompactOverviewWindow(scope?: {
+  insightDateRangeLabel?: string;
+  exportRequestEndTimestamp?: number | null;
+}) {
+  const rangeLabel = String(scope?.insightDateRangeLabel || "").trim();
+  if (!rangeLabel) return "window not detected";
+
+  const endTimestamp = Number(scope?.exportRequestEndTimestamp);
+  const match = rangeLabel.match(
+    /^([A-Za-z]{3})\s+(\d{1,2})\s*-\s*([A-Za-z]{3})\s+(\d{1,2})$/,
+  );
+
+  if (!match || !Number.isFinite(endTimestamp) || endTimestamp <= 0) {
+    return rangeLabel.replace(/\s+-\s+/, " - ");
+  }
+
+  const [, startMonthRaw, startDayRaw, endMonthRaw, endDayRaw] = match;
+  const startMonth = monthIndex[startMonthRaw.toLowerCase()];
+  const endMonth = monthIndex[endMonthRaw.toLowerCase()];
+  const startDay = Number(startDayRaw);
+  const endDay = Number(endDayRaw);
+
+  if (
+    startMonth === undefined ||
+    endMonth === undefined ||
+    !Number.isFinite(startDay) ||
+    !Number.isFinite(endDay)
+  ) {
+    return rangeLabel.replace(/\s+-\s+/, " - ");
+  }
+
+  const endReference = new Date(endTimestamp * 1000);
+  const endYear = endReference.getFullYear();
+  const startYear =
+    startMonth > endMonth || (startMonth === endMonth && startDay > endDay) ? endYear - 1 : endYear;
+
+  return `${startMonth + 1}/${startDay}/${String(startYear).slice(-2)} - ${endMonth + 1}/${endDay}/${String(endYear).slice(-2)}`;
+}
+
 function getPositiveTimestamp(value: unknown) {
   const timestamp = Number(value);
   return Number.isFinite(timestamp) && timestamp > 0 ? timestamp : null;
@@ -382,6 +420,23 @@ function getExportRangeLabel(scope?: {
   if (scope?.exportRequestRange === "all_time") return "all-time export";
   if (scope?.exportRequestRange === "limited") return "limited export";
   return "export imported";
+}
+
+function getDatasetExportWindowValue(dataset: NonNullable<ReturnType<typeof findLocalDataset>>) {
+  if (dataset.scope?.exportRequestRange === "all_time") {
+    return getDatasetTimeline(dataset)?.value || "";
+  }
+
+  if (dataset.scope?.exportRequestRange === "limited") {
+    return (
+      formatTimestampSpan(
+        getPositiveTimestamp(dataset.scope?.exportRequestStartTimestamp),
+        getPositiveTimestamp(dataset.scope?.exportRequestEndTimestamp),
+      ) || formatOverviewWindow(dataset.scope)
+    );
+  }
+
+  return formatOverviewWindow(dataset.scope);
 }
 
 function formatExportFormat(scope?: {
@@ -664,7 +719,6 @@ function WorkspaceLoadingState() {
               <span className="workspace-tool-copy">
                 <span className="dataset-skeleton-line dataset-skeleton-line--tool" aria-hidden="true" />
               </span>
-              <span className="workspace-tool-spacer" aria-hidden="true" />
             </div>
 
             <div className="hero-btn hero-btn-secondary dataset-side-panel__action dataset-side-panel__action--loading">
@@ -698,6 +752,7 @@ export function DatasetWorkspaceRoute({ datasetId, activeToolId }: DatasetWorksp
   const [isToolsModalOpen, setIsToolsModalOpen] = useState(false);
   const [openDatasetMenuId, setOpenDatasetMenuId] = useState<string | null>(null);
   const [renamingDatasetId, setRenamingDatasetId] = useState<string | null>(null);
+  const [deleteConfirmDatasetId, setDeleteConfirmDatasetId] = useState<string | null>(null);
   const [datasetNameDraft, setDatasetNameDraft] = useState("");
   const [datasetSortOrder, setDatasetSortOrder] = useState<DatasetSortOrder>("latest");
   const [isSortMenuOpen, setIsSortMenuOpen] = useState(false);
@@ -916,13 +971,17 @@ export function DatasetWorkspaceRoute({ datasetId, activeToolId }: DatasetWorksp
     }
 
     const anchorRect = anchor.getBoundingClientRect();
-    const width = panel === "menu" ? 158 : Math.min(260, window.innerWidth - 72);
-    const height = panel === "menu" ? 96 : 76;
-    const gap = 10;
+    const width = panel === "menu" ? 86 : Math.min(260, window.innerWidth - 72);
+    const height = panel === "menu" ? 46 : 76;
+    const gap = panel === "menu" ? 6 : 10;
     const viewportPadding = 16;
 
-    let left = anchorRect.left - width - gap;
+    let left = panel === "menu" ? anchorRect.right + gap : anchorRect.left - width - gap;
     let top = anchorRect.top + anchorRect.height / 2 - height / 2;
+
+    if (panel === "menu" && left > window.innerWidth - width - viewportPadding) {
+      left = anchorRect.left - width - gap;
+    }
 
     left = Math.max(viewportPadding, Math.min(left, window.innerWidth - width - viewportPadding));
     top = Math.max(viewportPadding, Math.min(top, window.innerHeight - height - viewportPadding));
@@ -973,6 +1032,22 @@ export function DatasetWorkspaceRoute({ datasetId, activeToolId }: DatasetWorksp
       document.removeEventListener("pointerdown", handlePointerDown);
     };
   }, [isDatasetsModalOpen, openDatasetMenuId, renamingDatasetId]);
+
+  useEffect(() => {
+    if (!deleteConfirmDatasetId) return undefined;
+
+    function handleKeyDown(event: KeyboardEvent) {
+      if (event.key === "Escape") {
+        setDeleteConfirmDatasetId(null);
+      }
+    }
+
+    document.addEventListener("keydown", handleKeyDown);
+
+    return () => {
+      document.removeEventListener("keydown", handleKeyDown);
+    };
+  }, [deleteConfirmDatasetId]);
 
   useEffect(() => {
     if (!datasetId || !dataset) return;
@@ -1034,6 +1109,7 @@ export function DatasetWorkspaceRoute({ datasetId, activeToolId }: DatasetWorksp
     setIsDatasetsModalOpen(false);
     setOpenDatasetMenuId(null);
     setRenamingDatasetId(null);
+    setDeleteConfirmDatasetId(null);
     setIsSortMenuOpen(false);
     setFloatingPanelStyle(null);
     setDatasetNameDraft("");
@@ -1060,6 +1136,7 @@ export function DatasetWorkspaceRoute({ datasetId, activeToolId }: DatasetWorksp
     setIsSortMenuOpen(false);
     setOpenDatasetMenuId(null);
     setRenamingDatasetId(null);
+    setDeleteConfirmDatasetId(null);
     setFloatingPanelStyle(null);
     setDatasetNameDraft("");
 
@@ -1080,13 +1157,12 @@ export function DatasetWorkspaceRoute({ datasetId, activeToolId }: DatasetWorksp
       return left.name.localeCompare(right.name, undefined, { sensitivity: "base" });
     }
 
-    if (datasetSortOrder === "z-a") {
-      return right.name.localeCompare(left.name, undefined, { sensitivity: "base" });
-    }
-
     const dateCompare = left.createdAt.localeCompare(right.createdAt);
     return datasetSortOrder === "earliest" ? dateCompare : -dateCompare;
   });
+  const deleteConfirmDataset = deleteConfirmDatasetId
+    ? datasets.find((item) => item.id === deleteConfirmDatasetId) || null
+    : null;
   const hasReachedDatasetLimit = hasReachedLocalDatasetLimit(datasets);
   const overviewHref = datasetId ? `/app/datasets/${dataset.id}` : "/app";
   const notFollowingBackHref = `/app/datasets/${dataset.id}/tools/not-following-back`;
@@ -1133,7 +1209,7 @@ export function DatasetWorkspaceRoute({ datasetId, activeToolId }: DatasetWorksp
                         ) : null}
                       </span>
                       <span className="dataset-side-panel__recent-meta">
-                        {isActiveDataset ? "selected dataset" : formatDate(item.createdAt)}
+                        {isActiveDataset ? "selected" : formatDate(item.createdAt)}
                       </span>
                     </Link>
                   );
@@ -1169,7 +1245,7 @@ export function DatasetWorkspaceRoute({ datasetId, activeToolId }: DatasetWorksp
               </h1>
               {isNotFollowingBackView ? (
                 <p className="dataset-overview-copy dataset-overview-copy--inline">
-                  review flagged accounts, mark actions taken, and keep the rest organized for later.
+                  review flagged accounts and organize cleanup.
                 </p>
               ) : isWorkspaceHome ? (
                 <p className="dataset-overview-copy dataset-overview-copy--inline">
@@ -1233,7 +1309,12 @@ export function DatasetWorkspaceRoute({ datasetId, activeToolId }: DatasetWorksp
                 <p className="dataset-profile-handle">{getHandle(dataset)}</p>
                 <h3 className="dataset-profile-name">{getDisplayName(dataset)}</h3>
                 <p className="dataset-profile-range">
-                  overview window: {formatOverviewWindow(dataset.scope)}
+                  <span className="dataset-profile-range__full">
+                    overview window: {formatOverviewWindow(dataset.scope)}
+                  </span>
+                  <span className="dataset-profile-range__compact">
+                    overview window: {formatCompactOverviewWindow(dataset.scope)}
+                  </span>
                 </p>
               </div>
             </div>
@@ -1334,9 +1415,13 @@ export function DatasetWorkspaceRoute({ datasetId, activeToolId }: DatasetWorksp
                       gender split
                     </span>
                     <div className="dataset-overview-snapshot-gender-row">
-                      <div className="dataset-overview-snapshot-gender-ring" aria-hidden="true">
+                      <div className="dataset-overview-snapshot-gender-ring">
                         {genderRingMetrics ? (
-                          <svg className="dataset-overview-snapshot-gender-ring__svg" viewBox="0 0 72 72" aria-hidden="true">
+                          <svg
+                            className="dataset-overview-snapshot-gender-ring__svg"
+                            viewBox="0 0 72 72"
+                            aria-label="Gender split breakdown"
+                          >
                             <circle className="dataset-overview-snapshot-gender-ring__track" cx="36" cy="36" r="27" />
                             <circle
                               className="dataset-overview-snapshot-gender-ring__arc dataset-overview-snapshot-gender-ring__arc--women"
@@ -1368,6 +1453,28 @@ export function DatasetWorkspaceRoute({ datasetId, activeToolId }: DatasetWorksp
                                 } as CSSProperties
                               }
                             />
+                            <circle
+                              className="dataset-overview-snapshot-gender-ring__hit dataset-overview-snapshot-gender-ring__hit--women"
+                              cx="36"
+                              cy="36"
+                              r={genderRingMetrics.radius}
+                              pathLength={100}
+                              strokeDasharray={`${genderRingMetrics.primaryPercentOfPath} 100`}
+                              strokeDashoffset="0"
+                              tabIndex={0}
+                              aria-label={`women ${formatCompactPercent(dataset.metrics?.womenFollowerPercent)}`}
+                            />
+                            <circle
+                              className="dataset-overview-snapshot-gender-ring__hit dataset-overview-snapshot-gender-ring__hit--men"
+                              cx="36"
+                              cy="36"
+                              r={genderRingMetrics.radius}
+                              pathLength={100}
+                              strokeDasharray={`${genderRingMetrics.secondaryPercentOfPath} 100`}
+                              strokeDashoffset={genderRingMetrics.secondaryOffsetPercent}
+                              tabIndex={0}
+                              aria-label={`men ${formatCompactPercent(dataset.metrics?.menFollowerPercent)}`}
+                            />
                           </svg>
                         ) : null}
                         <div className="dataset-overview-snapshot-gender-ring__core">
@@ -1384,6 +1491,26 @@ export function DatasetWorkspaceRoute({ datasetId, activeToolId }: DatasetWorksp
                             </strong>
                             <span className="dataset-overview-snapshot-gender-ring__label">women</span>
                           </div>
+                        </div>
+                        <div
+                          className="dataset-overview-snapshot-gender-tooltip dataset-overview-snapshot-gender-tooltip--women"
+                          aria-hidden="true"
+                        >
+                          <span className="dataset-overview-snapshot-gender-tooltip__label">
+                            <i className="dataset-overview-snapshot-gender-dot dataset-overview-snapshot-gender-dot--women" aria-hidden="true" />
+                            women
+                          </span>
+                          <strong>{formatCompactPercent(dataset.metrics?.womenFollowerPercent)}</strong>
+                        </div>
+                        <div
+                          className="dataset-overview-snapshot-gender-tooltip dataset-overview-snapshot-gender-tooltip--men"
+                          aria-hidden="true"
+                        >
+                          <span className="dataset-overview-snapshot-gender-tooltip__label">
+                            <i className="dataset-overview-snapshot-gender-dot dataset-overview-snapshot-gender-dot--men" aria-hidden="true" />
+                            men
+                          </span>
+                          <strong>{formatCompactPercent(dataset.metrics?.menFollowerPercent)}</strong>
                         </div>
                       </div>
                       <div className="dataset-overview-snapshot-gender-legend" aria-hidden="true">
@@ -1446,14 +1573,15 @@ export function DatasetWorkspaceRoute({ datasetId, activeToolId }: DatasetWorksp
                         ) : null}
                       </div>
                       <div className="dataset-overview-activity-spotlight__trend">
-                        <div className="dataset-overview-activity-spotlight__trend-head">
-                          <span>follower activity trend</span>
-                          {audienceTrendChart ? (
-                            <small>peak on {audienceTrendChart.peakLabel.toLowerCase()}</small>
-                          ) : (
+                        {audienceTrendChart ? (
+                          <div className="dataset-overview-activity-spotlight__trend-head dataset-overview-activity-spotlight__trend-head--chart">
+                            <span>follower activity trend</span>
+                          </div>
+                        ) : (
+                          <div className="dataset-overview-activity-spotlight__trend-head">
                             <small>follower activity unavailable in this export</small>
-                          )}
-                        </div>
+                          </div>
+                        )}
                         {audienceTrendChart ? (
                           <div className="dataset-overview-movement-chart" aria-hidden="true">
                             <svg
@@ -1490,6 +1618,8 @@ export function DatasetWorkspaceRoute({ datasetId, activeToolId }: DatasetWorksp
                                 <span
                                   key={point.label}
                                   className={point.label === audienceTrendChart.peakLabel ? "is-active" : ""}
+                                  aria-label={point.label.toLowerCase()}
+                                  data-compact-label={point.shortLabel.slice(0, 2).toLowerCase()}
                                 >
                                   {point.shortLabel.toLowerCase()}
                                 </span>
@@ -1584,9 +1714,9 @@ export function DatasetWorkspaceRoute({ datasetId, activeToolId }: DatasetWorksp
                   <span className="dataset-overview-panel-title">reach mix</span>
                 </div>
                 <div className="dataset-overview-ring-row">
-                  <div className="dataset-overview-ring" aria-hidden="true">
+                  <div className="dataset-overview-ring">
                     {reachRingMetrics ? (
-                      <svg className="dataset-overview-ring__svg" viewBox="0 0 96 96" aria-hidden="true">
+                      <svg className="dataset-overview-ring__svg" viewBox="0 0 96 96" aria-label="Reach mix breakdown">
                         <circle className="dataset-overview-ring__track" cx="48" cy="48" r="34" />
                         <circle
                           className="dataset-overview-ring__arc dataset-overview-ring__arc--followers"
@@ -1618,6 +1748,28 @@ export function DatasetWorkspaceRoute({ datasetId, activeToolId }: DatasetWorksp
                             } as CSSProperties
                           }
                         />
+                        <circle
+                          className="dataset-overview-ring__hit dataset-overview-ring__hit--followers"
+                          cx="48"
+                          cy="48"
+                          r={reachRingMetrics.radius}
+                          pathLength={100}
+                          strokeDasharray={`${reachRingMetrics.followerPercentOfPath} 100`}
+                          strokeDashoffset="0"
+                          tabIndex={0}
+                          aria-label={`followers ${formatCompactPercent(dataset.metrics?.reachFollowersPercent)}`}
+                        />
+                        <circle
+                          className="dataset-overview-ring__hit dataset-overview-ring__hit--nonfollowers"
+                          cx="48"
+                          cy="48"
+                          r={reachRingMetrics.radius}
+                          pathLength={100}
+                          strokeDasharray={`${reachRingMetrics.nonFollowerPercentOfPath} 100`}
+                          strokeDashoffset={reachRingMetrics.nonFollowerOffsetPercent}
+                          tabIndex={0}
+                          aria-label={`non-followers ${formatCompactPercent(dataset.metrics?.reachNonFollowersPercent)}`}
+                        />
                       </svg>
                     ) : null}
                     <div className="dataset-overview-ring__core">
@@ -1632,6 +1784,26 @@ export function DatasetWorkspaceRoute({ datasetId, activeToolId }: DatasetWorksp
                           />
                         </strong>
                       <span>non-followers</span>
+                    </div>
+                    <div
+                      className="dataset-overview-ring__tooltip dataset-overview-ring__tooltip--followers"
+                      aria-hidden="true"
+                    >
+                      <span className="dataset-overview-ring__tooltip-label">
+                        <i className="dataset-overview-split-dot dataset-overview-split-dot--followers" aria-hidden="true" />
+                        followers
+                      </span>
+                      <strong>{formatCompactPercent(dataset.metrics?.reachFollowersPercent)}</strong>
+                    </div>
+                    <div
+                      className="dataset-overview-ring__tooltip dataset-overview-ring__tooltip--nonfollowers"
+                      aria-hidden="true"
+                    >
+                      <span className="dataset-overview-ring__tooltip-label">
+                        <i className="dataset-overview-split-dot dataset-overview-split-dot--nonfollowers" aria-hidden="true" />
+                        non-followers
+                      </span>
+                      <strong>{formatCompactPercent(dataset.metrics?.reachNonFollowersPercent)}</strong>
                     </div>
                   </div>
                   <div className="dataset-overview-split-list">
@@ -1671,19 +1843,24 @@ export function DatasetWorkspaceRoute({ datasetId, activeToolId }: DatasetWorksp
 
               <article className="dataset-overview-support-card dataset-overview-support-card--interaction">
                 <div className="dataset-overview-support-head">
-                  <span className="dataset-overview-panel-title">interaction mix</span>
-                    <strong className="dataset-overview-support-value">
-                      <AnimatedValue
-                        value={
-                          (dataset.metrics?.postLikes ?? 0) +
-                          (dataset.metrics?.postComments ?? 0) +
-                          (dataset.metrics?.postSaves ?? 0)
-                        }
-                        variant="metric"
-                        animateKey={`${motionKey}-interaction-total`}
-                        reducedMotion={prefersReducedMotion}
-                      />
-                    </strong>
+                  <div className="dataset-overview-panel-copy">
+                    <span className="dataset-overview-panel-title">post engagement mix</span>
+                    <p className="dataset-overview-panel-subtitle">
+                      interactions across this window
+                    </p>
+                  </div>
+                  <strong className="dataset-overview-support-value">
+                    <AnimatedValue
+                      value={
+                        (dataset.metrics?.postLikes ?? 0) +
+                        (dataset.metrics?.postComments ?? 0) +
+                        (dataset.metrics?.postSaves ?? 0)
+                      }
+                      variant="metric"
+                      animateKey={`${motionKey}-interaction-total`}
+                      reducedMotion={prefersReducedMotion}
+                    />
+                  </strong>
                 </div>
                 <div className="dataset-overview-interaction-list">
                   {interactionMixItems.map((item) => {
@@ -1691,7 +1868,7 @@ export function DatasetWorkspaceRoute({ datasetId, activeToolId }: DatasetWorksp
                     const numericValue = Number(item.value);
                     const barWidth =
                       interactionMixTotal > 0 && Number.isFinite(numericValue)
-                        ? `${Math.max((numericValue / interactionMixTotal) * 100, 8)}%`
+                        ? `${(numericValue / interactionMixTotal) * 100}%`
                         : "0%";
 
                     return (
@@ -1726,9 +1903,6 @@ export function DatasetWorkspaceRoute({ datasetId, activeToolId }: DatasetWorksp
                 <div className="dataset-overview-support-head">
                   <div className="dataset-overview-panel-copy">
                     <span className="dataset-overview-panel-title">dataset details</span>
-                    <p className="dataset-overview-panel-subtitle">
-                      saved metadata and import context for this workspace
-                    </p>
                   </div>
                 </div>
                 <div className="dataset-overview-details-stack">
@@ -1813,7 +1987,6 @@ export function DatasetWorkspaceRoute({ datasetId, activeToolId }: DatasetWorksp
                   <span className="workspace-tool-copy">
                     <strong>not following back</strong>
                   </span>
-                  <span className="workspace-tool-spacer" aria-hidden="true" />
                 </div>
               ) : (
                 <Link
@@ -1827,7 +2000,6 @@ export function DatasetWorkspaceRoute({ datasetId, activeToolId }: DatasetWorksp
                   <span className="workspace-tool-copy">
                     <strong>not following back</strong>
                   </span>
-                  <span className="workspace-tool-spacer" aria-hidden="true" />
                 </Link>
               )}
             </div>
@@ -1987,8 +2159,7 @@ export function DatasetWorkspaceRoute({ datasetId, activeToolId }: DatasetWorksp
                 const isCurrentDataset = item.id === dataset.id;
                 const isRenaming = renamingDatasetId === item.id;
                 const isMenuOpen = openDatasetMenuId === item.id;
-                const dateRangeLabel =
-                  (item.scope ? formatOverviewWindow(item.scope) : "") || item.importReview.sourceLabel;
+                const dateRangeLabel = getDatasetExportWindowValue(item) || item.importReview.sourceLabel;
 
                 return (
                   <div
@@ -2002,7 +2173,7 @@ export function DatasetWorkspaceRoute({ datasetId, activeToolId }: DatasetWorksp
                           <div className="dataset-modal__row-topmeta">
                             <p className="dataset-modal__row-date">imported {formatDate(item.createdAt)}</p>
                             <span className={`dataset-modal__row-status${isCurrentDataset ? " is-current" : ""}`}>
-                              {isCurrentDataset ? "current" : "saved"}
+                              {isCurrentDataset ? "active" : "saved"}
                             </span>
                           </div>
                         </div>
@@ -2019,7 +2190,7 @@ export function DatasetWorkspaceRoute({ datasetId, activeToolId }: DatasetWorksp
                           <div className="dataset-modal__row-topmeta">
                             <p className="dataset-modal__row-date">imported {formatDate(item.createdAt)}</p>
                             <span className={`dataset-modal__row-status${isCurrentDataset ? " is-current" : ""}`}>
-                              {isCurrentDataset ? "current" : "saved"}
+                              {isCurrentDataset ? "active" : "saved"}
                             </span>
                           </div>
                         </div>
@@ -2058,7 +2229,7 @@ export function DatasetWorkspaceRoute({ datasetId, activeToolId }: DatasetWorksp
                         ? createPortal(
                             <div
                               ref={floatingMenuRef}
-                              className="dataset-modal__menu"
+                              className="dataset-modal__menu dataset-modal__menu--actions"
                               style={floatingPanelStyle ?? undefined}
                               role="menu"
                               aria-label={`Actions for ${item.name}`}
@@ -2067,24 +2238,31 @@ export function DatasetWorkspaceRoute({ datasetId, activeToolId }: DatasetWorksp
                               <button
                                 type="button"
                                 className="dataset-modal__menu-item"
+                                role="menuitem"
+                                aria-label={`edit ${item.name}`}
+                                title="edit"
                                 onClick={(event) => {
                                   event.stopPropagation();
                                   startRenamingDataset(item.id, item.name);
                                 }}
                               >
                                 <Pencil size={14} aria-hidden="true" />
-                                <span>change name</span>
                               </button>
                               <button
                                 type="button"
                                 className="dataset-modal__menu-item dataset-modal__menu-item--danger"
+                                role="menuitem"
+                                aria-label={`delete ${item.name}`}
+                                title="delete"
                                 onClick={(event) => {
                                   event.stopPropagation();
-                                  removeDataset(item.id);
+                                  setOpenDatasetMenuId(null);
+                                  setRenamingDatasetId(null);
+                                  setFloatingPanelStyle(null);
+                                  setDeleteConfirmDatasetId(item.id);
                                 }}
                               >
                                 <Trash2 size={14} aria-hidden="true" />
-                                <span>delete</span>
                               </button>
                             </div>,
                             document.body,
@@ -2170,6 +2348,48 @@ export function DatasetWorkspaceRoute({ datasetId, activeToolId }: DatasetWorksp
           </div>
         </div>
       ) : null}
+
+      {deleteConfirmDataset
+        ? createPortal(
+            <div
+              className="dataset-modal-backdrop dataset-modal-backdrop--confirm"
+              role="presentation"
+              onClick={() => setDeleteConfirmDatasetId(null)}
+            >
+              <div
+                className="dataset-modal dataset-modal--confirm"
+                role="alertdialog"
+                aria-modal="true"
+                aria-labelledby="delete-export-title"
+                aria-describedby="delete-export-copy"
+                onClick={(event) => event.stopPropagation()}
+              >
+                <div className="dataset-modal__confirm-copy">
+                  <h2 id="delete-export-title">delete export?</h2>
+                  <p id="delete-export-copy">this removes this saved export from your workspace.</p>
+                </div>
+                <div className="dataset-modal__confirm-actions">
+                  <button
+                    type="button"
+                    className="dataset-modal__confirm-button dataset-modal__confirm-button--ghost"
+                    onClick={() => setDeleteConfirmDatasetId(null)}
+                    autoFocus
+                  >
+                    cancel
+                  </button>
+                  <button
+                    type="button"
+                    className="dataset-modal__confirm-button dataset-modal__confirm-button--danger"
+                    onClick={() => removeDataset(deleteConfirmDataset.id)}
+                  >
+                    delete
+                  </button>
+                </div>
+              </div>
+            </div>,
+            document.body,
+          )
+        : null}
 
       {isToolsModalOpen ? (
         <div
