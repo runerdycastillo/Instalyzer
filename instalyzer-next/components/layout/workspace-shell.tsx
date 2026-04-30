@@ -4,6 +4,7 @@ import { usePathname } from "next/navigation";
 import { Suspense, type ReactNode } from "react";
 import { MarketingShellMetrics } from "@/components/layout/marketing-shell-metrics";
 import { MarketingNav } from "@/components/layout/marketing-nav";
+import { ResponsiveWorkspaceGate } from "@/components/layout/responsive-workspace-gate";
 import { ScrollBehaviorManager } from "@/components/layout/scroll-behavior-manager";
 import { SiteFooterV2 } from "@/components/layout/site-footer-v2";
 
@@ -22,6 +23,8 @@ export function WorkspaceShell({ children }: { children: ReactNode }) {
       <header className="marketing-header">
         <MarketingNav />
       </header>
+
+      <ResponsiveWorkspaceGate />
 
       <div
         className={`workspace-focused-shell${

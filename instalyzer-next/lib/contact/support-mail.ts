@@ -12,6 +12,18 @@ export type ContactSupportSubmission = {
   ipAddress: string;
 };
 
+type MailRecipient = {
+  email: string;
+  name?: string;
+};
+
+type SupportMailboxMessage = {
+  toRecipients: MailRecipient[];
+  subject: string;
+  body: string;
+  replyTo?: MailRecipient[];
+};
+
 export class SupportMailConfigError extends Error {}
 
 function getEnvValue(name: string) {
@@ -36,6 +48,15 @@ function buildRecipientList(input: string) {
         address,
       },
     }));
+}
+
+function buildRecipientListFromRecipients(recipients: MailRecipient[]) {
+  return recipients.map((recipient) => ({
+    emailAddress: {
+      address: recipient.email,
+      name: recipient.name,
+    },
+  }));
 }
 
 function buildSupportMessageBody(submission: ContactSupportSubmission) {
@@ -114,10 +135,8 @@ async function getMicrosoftGraphAccessToken() {
   return payload.access_token;
 }
 
-export async function sendSupportEmail(submission: ContactSupportSubmission) {
+export async function sendSupportMailboxMessage(message: SupportMailboxMessage) {
   const senderUser = getRequiredEnvValue("MICROSOFT_GRAPH_SENDER_USER");
-  const recipientList = buildRecipientList(getEnvValue("CONTACT_SUPPORT_TO") || senderUser);
-  const subjectPrefix = getEnvValue("CONTACT_SUPPORT_SUBJECT_PREFIX") || "[Instalyzer Contact]";
   const accessToken = await getMicrosoftGraphAccessToken();
   const response = await fetch(
     `https://graph.microsoft.com/v1.0/users/${encodeURIComponent(senderUser)}/sendMail`,
@@ -129,20 +148,15 @@ export async function sendSupportEmail(submission: ContactSupportSubmission) {
       },
       body: JSON.stringify({
         message: {
-          subject: `${subjectPrefix} ${submission.subject}`,
+          subject: message.subject,
           body: {
             contentType: "Text",
-            content: buildSupportMessageBody(submission),
+            content: message.body,
           },
-          toRecipients: recipientList,
-          replyTo: [
-            {
-              emailAddress: {
-                address: submission.email,
-                name: submission.name,
-              },
-            },
-          ],
+          toRecipients: buildRecipientListFromRecipients(message.toRecipients),
+          replyTo: message.replyTo
+            ? buildRecipientListFromRecipients(message.replyTo)
+            : undefined,
         },
         saveToSentItems: true,
       }),
@@ -155,4 +169,23 @@ export async function sendSupportEmail(submission: ContactSupportSubmission) {
       `Microsoft Graph sendMail failed with status ${response.status}: ${details || "no details returned"}`,
     );
   }
+}
+
+export async function sendSupportEmail(submission: ContactSupportSubmission) {
+  const senderUser = getRequiredEnvValue("MICROSOFT_GRAPH_SENDER_USER");
+  const recipientList = buildRecipientList(getEnvValue("CONTACT_SUPPORT_TO") || senderUser);
+  const subjectPrefix = getEnvValue("CONTACT_SUPPORT_SUBJECT_PREFIX") || "[Instalyzer Contact]";
+  await sendSupportMailboxMessage({
+    toRecipients: recipientList.map((recipient) => ({
+      email: recipient.emailAddress.address,
+    })),
+    subject: `${subjectPrefix} ${submission.subject}`,
+    body: buildSupportMessageBody(submission),
+    replyTo: [
+      {
+        email: submission.email,
+        name: submission.name,
+      },
+    ],
+  });
 }

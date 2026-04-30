@@ -1,6 +1,6 @@
 "use client";
 
-import { ChevronLeft, ChevronRight, ExternalLink, RotateCcw } from "lucide-react";
+import { ArrowRight, ChevronLeft, ChevronRight, ExternalLink, RotateCcw } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
 import { useState, type ReactNode } from "react";
@@ -348,6 +348,21 @@ export function HelpRoute() {
                       ))}
                     </ol>
                   </div>
+
+                  <div className="guide-mobile-workspace-cta">
+                    <div>
+                      <p className="guide-mobile-workspace-cta__label">ready when you are</p>
+                      <p className="guide-mobile-workspace-cta__copy">
+                        send yourself the workspace link and continue on desktop.
+                      </p>
+                    </div>
+                    <Link
+                      href="/app?entry=guide-mobile-cta"
+                      className="hero-btn hero-btn-primary guide-mobile-workspace-cta__button"
+                    >
+                      get started
+                    </Link>
+                  </div>
                 </section>
 
                 <section
@@ -421,16 +436,27 @@ export function HelpRoute() {
                                 <p className="guide-visual-copy">{step.copy}</p>
                               </figcaption>
                               {index === visualSteps.length - 1 ? (
-                                <button
-                                  type="button"
-                                  className="guide-visual-reset-fab"
-                                  onClick={() => activateVisualStep(0)}
-                                  aria-label="Reset visual guide to step 1"
-                                  title="Reset to step 1"
-                                  hidden={!active}
-                                >
-                                  <RotateCcw aria-hidden="true" strokeWidth={2} />
-                                </button>
+                                <>
+                                  <button
+                                    type="button"
+                                    className="guide-visual-reset-fab"
+                                    onClick={() => activateVisualStep(0)}
+                                    aria-label="Reset visual guide to step 1"
+                                    title="Reset to step 1"
+                                    hidden={!active}
+                                  >
+                                    <RotateCcw aria-hidden="true" strokeWidth={2} />
+                                  </button>
+                                  <Link
+                                    href="/app?entry=guide-visual-finish"
+                                    className="guide-visual-start-fab"
+                                    aria-label="Continue to Instalyzer workspace"
+                                    title="Continue to workspace"
+                                    hidden={!active}
+                                  >
+                                    <ArrowRight aria-hidden="true" strokeWidth={2} />
+                                  </Link>
+                                </>
                               ) : null}
                             </figure>
                           </div>

@@ -24,6 +24,7 @@ Current milestone focus:
 - [x] Datasets index implemented
 - [x] Dataset workspace implemented
 - [x] Native `Not Following Back` route implemented
+- [x] Tablet/mobile workspace gate implemented below `1024px`
 - [ ] Parser/domain logic extracted from static scripts
 
 ## Session Audit Template
@@ -38,24 +39,30 @@ Current milestone focus:
 Notes:
 
 - Summary:
-  - the session completed the compact desktop workspace pass and updated the gate decision from `900px` to a cleaner `1024px` workspace minimum
-  - `1180`, `1080`, and `1024` are now considered solid enough for the full workspace/tool experience
-  - the next implementation pass should build a polished tablet/mobile gate for workspace/tool routes below `1024px`
+  - the session implemented the desktop-first workspace gate below `1024px`
+  - mobile/tablet visitors who enter `/app` now get a polished desktop-link handoff instead of the full workspace
+  - the desktop-link email sends through the existing Microsoft Graph mail path
+  - the `/help` guide was adjusted below `1024px` so it supports the gate instead of pushing directly into upload
 - Files/routes touched:
   - `instalyzer-next/app/globals.css`
-  - `instalyzer-next/components/workspace/dataset-workspace-route.tsx`
-  - `instalyzer-next/components/workspace/not-following-back-workspace-view.tsx`
+  - `instalyzer-next/components/layout/workspace-shell.tsx`
+  - `instalyzer-next/components/layout/responsive-workspace-gate.tsx`
+  - `instalyzer-next/components/marketing/help-route.tsx`
+  - `instalyzer-next/app/api/desktop-link/route.ts`
+  - `instalyzer-next/lib/contact/desktop-link.ts`
+  - `instalyzer-next/lib/contact/desktop-link-shared.ts`
+  - `instalyzer-next/lib/contact/support-mail.ts`
   - `docs/CURRENT_MILESTONE_AUDIT.md`
   - `docs/responsive-audit.md`
-  - `docs/day-wraps/2026-04-29/end-of-day.md`
-  - `docs/day-wraps/2026-04-29/milestone-audit.md`
+  - `docs/day-wraps/2026-04-30/end-of-day.md`
+  - `docs/day-wraps/2026-04-30/milestone-audit.md`
 - Anything user-visible:
-  - workspace overview and `not following back` now behave much better at compact desktop widths
-  - manage exports has cleaner icon actions, an `active` badge, a smaller sort menu, and a delete confirmation
-  - static side-panel stats no longer advertise clickability through hover states
-  - responsive implementation direction is now:
-    - support full workspace/tools at `1024px+`
-    - gate workspace/tool routes at `1023px` and below
+  - `/app` and workspace/tool routes now gate at `1023px` and below
+  - the gate can send the exact current desktop link by email or copy it as a fallback
+  - the optional updates checkbox is present but unchecked by default
+  - the gate includes a contextual export guide panel and trust/legal links
+  - `/help` hides the quick-tips/upload CTA side rail below `1024px`
+  - `/help` adds a mobile/tablet `get started` handoff into the workspace gate from the quick guide and a small final-step visual-guide action
 
 ### 2. What Is Stable Right Now
 
@@ -70,9 +77,11 @@ Notes:
   - the current desktop baseline still feels strong at `1440`
   - compact desktop is now polished through `1024`
   - the contact/support handoff remains live
-  - the `1024px` workspace minimum is now documented instead of guessed
+  - the `1024px` workspace minimum is now implemented in code
+  - the desktop-link API validates email and preserves the intended `/app` URL
 - Confidence level:
-  - high for the compact desktop pass and the `1024px` gate decision
+  - high for the gate direction and transactional email handoff
+  - medium-high for final visual polish until one more manual sweep is completed
 
 ### 3. What Still Feels Incomplete
 
@@ -82,13 +91,13 @@ Notes:
 Notes:
 
 - Main gaps:
-  - the tablet/mobile gate for workspace/tool routes still needs to be built in code
-  - the gate needs a tablet treatment from `768px - 1023px`
-  - the gate needs a mobile treatment below `768px`
+  - the desktop-link request is not persisted to a database or lead store yet
+  - the optional marketing opt-in is sent to the API but not saved permanently yet
+  - the gate and guide should get one final visual QA pass across tablet/phone widths
   - parser/domain extraction from the static build still remains ahead
 - Anything intentionally deferred:
-  - auth/accounts until after the responsive pass and workspace gate are implemented
-  - deeper phone-specific workspace layout work, because the current plan is to gate before that range
+  - auth/accounts until after gate polish and capture/storage are settled
+  - full mobile workspace design, because mobile/tablet now intentionally hand off to desktop
 
 ### 4. Quick Risk Check
 
@@ -100,9 +109,9 @@ Notes:
 Notes:
 
 - Biggest current risk:
-  - without implementing the gate soon, users can still reach a workspace flow that should now be considered unsupported below `1024px`
+  - desktop-link requests can be sent but are not yet retained for follow-up or opt-in tracking
 - What could slow the next session down:
-  - trying to rescue every sub-`1024px` workspace width instead of honoring the gate decision
+  - jumping into auth or parser extraction before closing the gate QA and capture/storage loop
 
 ### 5. Quick Manual Checks
 
@@ -113,11 +122,15 @@ Notes:
 Notes:
 
 - What was tested:
-  - manual responsive checks across workspace overview and `not following back`
-  - practical width checkpoints around `1180`, `1080`, and `1024`
+  - gate behavior at the tablet breakpoint
+  - desktop-link email sending with a real inbox check
+  - copy-link behavior and success-state polish
+  - `/help` guide adjustments around the `1023px` range
+  - `npm run lint`
+  - `npm run build`
 - What was not tested:
-  - the still-unbuilt tablet/mobile gate flow
-  - deeper phone-range workspace behavior, because the workspace is now expected to gate before that range
+  - persistent lead storage, because it is not built yet
+  - a full phone-width visual QA sweep after the final polish changes
 
 ### 6. Next Best Move
 
@@ -128,13 +141,13 @@ Notes:
 Notes:
 
 - Next recommended task:
-  - implement the workspace/tool gate below `1024px`:
-    - tablet gate: `768px - 1023px`
-    - mobile gate: below `768px`
+  - do a focused gate QA/polish pass, then implement lightweight desktop-link capture/storage:
+    - record email, intended URL, device range, marketing opt-in, source/referrer/UTM, timestamp
+    - keep marketing opt-in separate from the functional desktop-link request
 - Prerequisites for next session:
-  - use `docs/responsive-audit.md` as the implementation checklist
-  - keep the desktop and compact desktop `1024px+` behavior protected
-  - avoid turning the gate task into a full mobile redesign
+  - test `/app`, dataset detail, `not-following-back`, and `/help` at `1023`, `768`, and phone widths
+  - decide whether first capture storage should be an internal notification email, a database table, or a marketing/contact integration
+  - keep auth/accounts deferred until capture/storage is clear
 
 ---
 
@@ -162,6 +175,8 @@ Use this section to track the current migration flow specifically.
 - [x] Upload-to-create processing handoff feels intentional
 - [x] Dataset workspace is real
 - [x] Tool 1 works natively in Next
+- [x] Workspace/tool routes gate below `1024px`
+- [x] Desktop-link email handoff is implemented
 
 ### Technical Foundation
 
@@ -171,6 +186,8 @@ Use this section to track the current migration flow specifically.
 - [ ] Parser logic is extracted into reusable modules
 - [x] Storage/data boundaries are intentionally designed
 - [x] Placeholder routes are being retired in order
+- [x] Microsoft Graph mail helper supports reusable transactional mail
+- [ ] Desktop-link requests are persisted for lead/opt-in tracking
 
 ---
 
@@ -178,19 +195,22 @@ Use this section to track the current migration flow specifically.
 
 ### Fix Next
 
-- [ ] Do a deliberate interaction QA pass on overview + `not following back`
-- Why now: recent polish added stronger visited, move-state, footer jump, legal-route, and animation behaviors, so the next highest-value app-side work is confirming they feel stable in real use
+- [ ] Do a focused tablet/mobile gate QA pass
+- Why now: the gate is implemented and mail works, but the last visual pass should confirm `/app`, tool routes, and `/help` feel clean across `1023`, `768`, and phone widths
 
-- [ ] Build the desktop-first mobile gate for the app/workspace flow
-- Why now: compact desktop is now polished down to `1024px`, so workspace/tool routes below that need an intentional tablet/mobile gate instead of more squeezing
+- [ ] Implement desktop-link capture/storage
+- Why now: the gate now collects email for a real desktop-link action, but the request and optional marketing opt-in are not persisted yet
 
-- [ ] Decide the next parser-confidence pass or next native tool after support/contact settles
-- Why now: Tool 1 and the legal/trust surfaces are both much stronger now, so the next product decision should come after we close the support handoff cleanly
+- [ ] Decide the next parser-confidence pass or next native tool after gate capture settles
+- Why now: Tool 1, support, and the workspace gate are all stronger now, so the next product decision should happen after the desktop-link handoff can retain opt-ins
 
 - [ ] Run a focused responsive pass on the current core flow before auth work begins
 - Why now: homepage, trust pages, dataset creation, overview, workspace, and Tool 1 are real enough that responsive cleanup now will be much cheaper than waiting until auth adds more route and layout complexity
 
 ### Watch Soon
+
+- [ ] Do a deliberate interaction QA pass on overview + `not following back`
+- Why soon: recent polish added stronger visited, move-state, footer jump, legal-route, and animation behaviors, so a focused app-side QA pass is still valuable
 
 - [ ] Port deeper parser logic from the static flow into reusable modules
 - Why soon: the current route supports the launch flow, but real archive inspection is still lighter than the static prototype
@@ -401,3 +421,22 @@ Add one short entry per work session.
   - continuing to tweak below `1024px` instead of implementing the gate would waste the clarity gained from this pass
 - Next step:
   - build the workspace/tool gate for `1023px` and below, with tablet layout for `768px - 1023px` and mobile layout below `768px`
+
+### Session Entry - 2026-04-30
+
+- Date: 2026-04-30
+- Focus: implement the tablet/mobile workspace gate and turn mobile workspace traffic into a desktop-link handoff
+- What moved forward:
+  - `/app` and all workspace/tool routes now show a responsive gate below `1024px` instead of the full workspace
+  - the gate sends the exact current desktop link through a new `/api/desktop-link` endpoint using the existing Microsoft Graph mail setup
+  - copy-link fallback, optional updates consent, success/error states, trust copy, and the export-guide handoff were added and polished
+  - `/help` was adjusted below `1024px` so quick tips/upload CTAs do not conflict with the gate, while quick-guide and visual-guide handoffs route into the gate
+  - the desktop-link email copy was upgraded and Reply-To is set to `Instalyzer <support@instalyzer.app>`
+- What remains rough:
+  - desktop-link requests and marketing opt-ins are not persisted yet
+  - the gate and help-route tablet/mobile polish should get one more focused QA pass
+  - parser/domain extraction still remains ahead
+- Biggest risk:
+  - collecting email for a useful desktop-link action without storing the request means opt-ins can be lost until capture/storage is implemented
+- Next step:
+  - run final gate QA, then implement lightweight desktop-link capture/storage before auth or parser work

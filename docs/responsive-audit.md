@@ -2,15 +2,17 @@
 
 Use this doc to capture real layout and usability issues while stepping down through viewport widths.
 
-## Current Decision - April 29, 2026
+## Current Decision - April 30, 2026
 
 - Full workspace/tool routes should be supported at `1024px+`.
-- Workspace/tool routes should show a polished gate at `1023px` and below.
+- Workspace/tool routes now show a polished gate at `1023px` and below.
 - Gate layout ranges:
   - tablet: `768px - 1023px`
   - mobile: below `768px`
 - The compact desktop pass for `1180`, `1080`, and `1024` is now substantially complete.
-- Do not keep chasing workspace fixes below `1024px`; build the gate instead.
+- Do not keep chasing workspace fixes below `1024px`; preserve the gate instead.
+- The gate sends the exact desktop link by email, includes a quieter copy-link fallback, and keeps marketing updates optional and unchecked by default.
+- `/help` remains responsive below `1024px`, but upload/workspace CTAs now route into the gate instead of implying the workspace is usable on tablet/mobile.
 
 Focus routes:
 
@@ -51,20 +53,23 @@ Focus routes:
 - Help: checked and polished enough for this pass.
 - Workspace overview: checked and polished enough for this pass.
 - Not Following Back: checked and polished enough for this pass.
-- Remaining decision: anything below this should gate instead of continuing to squeeze the full workspace.
+- Current rule: anything below this gates instead of continuing to squeeze the full workspace.
 
 ## 900
 
 - Superseded by the `1024px` gate decision.
 - Marketing/home/help pages can continue responsive treatment below `1024px`.
-- Workspace/tool routes should not attempt the full UI here.
+- Workspace/tool routes now show the desktop-link gate here.
+- Help page side rail is hidden here; quick-guide and visual-guide handoffs route to the gate.
 
 ## 768
 
-- Planned tablet gate check.
-- Use the same gate content as mobile, but with roomier spacing and a centered panel.
+- Tablet gate implemented.
+- Gate uses the concise desktop-workspace handoff, email send, copy fallback, export-guide panel, and trust/legal footer.
+- Help page uses the tablet-friendly one-column guide layout with a bottom `get started` handoff in quick guide.
 
 ## Phone
 
-- Planned mobile gate check.
-- Keep the gate shorter, single-column, and clear.
+- Mobile gate implemented.
+- Needs one final phone-width QA pass after the latest copy/layout polish.
+- Keep the gate shorter, single-column, and clear; do not build the full mobile workspace yet.
