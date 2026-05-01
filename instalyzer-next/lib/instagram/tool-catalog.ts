@@ -140,7 +140,7 @@ export const homeShowcaseTools = softLaunchTools;
 export const workspaceModalTools = softLaunchTools.filter((tool) => tool.showInWorkspaceModal);
 
 export const resultsPreviewPills = workspaceModalTools.map((tool) => ({
-  label: `${tool.title} ${tool.availability}`,
+  label: tool.title,
   className: tool.pillClassName,
 }));
 

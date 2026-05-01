@@ -2677,6 +2677,7 @@ img {
   margin-left: auto;
   gap: 8px;
   justify-content: center;
+  box-shadow: 0 6px 16px rgba(37, 99, 235, 0.1);
 }
 
 .contact-support-form__spinner {
@@ -5688,7 +5689,7 @@ img {
   width: min(1380px, calc(100vw - 48px));
   margin: 0 auto;
   padding-top: 22px;
-  transform: translateX(-28px);
+  transform: none;
 }
 
 .guide-layout {
@@ -5705,17 +5706,16 @@ img {
 
 .guide-workbench {
   display: grid;
-  grid-template-columns: 146px minmax(0, 1fr);
-  gap: 22px;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 0;
   align-items: start;
 }
 
 .guide-tabs-rail {
   display: grid;
-  gap: 12px;
-  position: sticky;
-  top: 20px;
-  padding-top: 92px;
+  justify-items: center;
+  gap: 10px;
+  padding: 14px 0 2px;
 }
 
 .guide-tabs-rail-label,
@@ -5735,8 +5735,10 @@ img {
 }
 
 .guide-tab-list-vertical {
-  display: grid;
-  gap: 10px;
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 8px;
 }
 
 .guide-tab-button {
@@ -5759,15 +5761,17 @@ img {
 }
 
 .guide-tab-list-vertical .guide-tab-button {
-  min-height: 76px;
-  width: 100%;
-  padding: 13px 12px 12px;
-  border-radius: 18px;
-  display: grid;
-  justify-items: start;
+  min-height: 44px;
+  width: auto;
+  padding: 0 14px;
+  border-radius: 999px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  justify-items: center;
   align-content: center;
-  gap: 4px;
-  text-align: left;
+  gap: 0;
+  text-align: center;
   background: color-mix(in srgb, var(--ink-soft) 6%, var(--bg-panel));
   position: relative;
   overflow: hidden;
@@ -5780,6 +5784,7 @@ img {
 }
 
 .guide-tab-button-copy {
+  display: none;
   color: var(--ink-soft);
   font-size: 0.75rem;
   line-height: 1.35;
@@ -11326,8 +11331,8 @@ a.workspace-tool-pill:focus-visible {
   }
 
   .guide-workbench {
-    grid-template-columns: 168px minmax(0, 1fr);
-    gap: 18px;
+    grid-template-columns: minmax(0, 1fr);
+    gap: 0;
   }
 
   .guide-side-stack-v2 {
@@ -11337,8 +11342,8 @@ a.workspace-tool-pill:focus-visible {
   }
 
   .guide-tab-list-vertical .guide-tab-button {
-    min-height: 72px;
-    padding: 12px 14px;
+    min-height: 44px;
+    padding: 0 14px;
   }
 
   .workspace-tool-pill--featured .workspace-tool-copy strong {
@@ -11806,6 +11811,14 @@ a.workspace-tool-pill:focus-visible {
 }
 
 @media (max-width: 1023px) {
+  html {
+    scrollbar-gutter: auto;
+  }
+
+  .hero-scroll-cue {
+    display: none;
+  }
+
   .guide-layout {
     grid-template-columns: minmax(0, 1fr);
   }
@@ -11865,31 +11878,40 @@ a.workspace-tool-pill:focus-visible {
 }
 
 @media (min-width: 768px) and (max-width: 1023px) {
-  .responsive-workspace-gate {
-    padding-top: 36px;
+  .workspace-shell-frame--focused .responsive-workspace-gate {
+    min-height: auto;
+    padding: 20px 0 24px;
   }
 
   .responsive-workspace-gate__shell {
     width: min(100%, 720px);
     grid-template-columns: minmax(0, 1fr);
-    gap: 16px;
+    gap: 14px;
   }
 
   .responsive-workspace-gate__main {
-    gap: 20px;
-    padding: 28px;
+    gap: 16px;
+    padding: 24px 28px;
   }
 
   .responsive-workspace-gate__guide {
-    padding: 24px;
+    padding: 20px 24px;
     grid-template-columns: minmax(0, 1fr) auto;
     align-items: center;
-    gap: 18px;
+    gap: 16px;
   }
 
   .responsive-workspace-gate h1 {
     max-width: 20ch;
-    font-size: 2.42rem;
+    font-size: 2.28rem;
+  }
+
+  .responsive-workspace-gate__field input {
+    min-height: 48px;
+  }
+
+  .responsive-workspace-gate__submit {
+    height: 46px;
   }
 
   .guide-visual-overlay {
@@ -11913,7 +11935,7 @@ a.workspace-tool-pill:focus-visible {
 
   .responsive-workspace-gate__guide-link {
     justify-self: end;
-    min-height: 46px;
+    min-height: 42px;
     padding: 0 18px;
     border: 1px solid color-mix(in srgb, var(--accent) 32%, var(--line));
     background: color-mix(in srgb, var(--accent) 8%, var(--bg-panel));
@@ -11951,7 +11973,7 @@ a.workspace-tool-pill:focus-visible {
     grid-column: 1 / -1;
     display: block;
     margin-top: 2px;
-    padding-top: 14px;
+    padding-top: 12px;
     border-top: 1px solid color-mix(in srgb, var(--line) 54%, transparent);
   }
 
@@ -11959,6 +11981,7 @@ a.workspace-tool-pill:focus-visible {
     grid-template-columns: minmax(0, 1fr) auto;
     justify-items: start;
     align-items: center;
+    gap: 10px;
     text-align: left;
   }
 
@@ -12353,7 +12376,7 @@ a.workspace-tool-pill:focus-visible {
   .guide-tabs-rail {
     position: static;
     top: auto;
-    padding-top: 0;
+    padding: 14px 0 2px;
   }
 
   .guide-tab-list-vertical {
@@ -12383,10 +12406,319 @@ a.workspace-tool-pill:focus-visible {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 
+  .guide-step-card-v2 {
+    border-top: 0;
+  }
+
+  .guide-step-card-v2:nth-child(n + 3) {
+    border-top: 1px solid color-mix(in srgb, var(--line) 30%, transparent);
+  }
+
   .guide-side-stack-v2 {
     position: static;
     top: auto;
     max-width: none;
+  }
+}
+
+@media (min-width: 768px) and (max-width: 920px) {
+  .top-nav {
+    grid-template-columns: auto minmax(0, 1fr) auto auto;
+    justify-items: stretch;
+    gap: 8px;
+    min-height: 100px;
+    padding: 11px 20px;
+  }
+
+  .top-nav-brand {
+    grid-column: 4;
+    grid-row: 1;
+    width: 42px;
+    min-width: 42px;
+    justify-self: end;
+  }
+
+  .top-nav-center {
+    grid-column: 1;
+    grid-row: 1;
+    min-width: 0;
+    justify-self: start;
+    padding: 0;
+  }
+
+  .top-nav-links {
+    grid-column: 3;
+    grid-row: 1;
+    justify-self: end;
+    gap: 8px;
+    min-width: 0;
+    flex-wrap: nowrap;
+  }
+
+  .top-nav-icon {
+    width: 42px;
+    height: 42px;
+    min-width: 42px;
+  }
+
+  .top-nav-logo-link {
+    padding: 5px 10px;
+  }
+
+  .top-nav-logo {
+    width: 84px;
+    height: 84px;
+  }
+
+  .top-nav-link {
+    min-height: 40px;
+    padding: 0 14px;
+    font-size: 0.9rem;
+  }
+
+  .tools-showcase-grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 10px;
+  }
+
+  .tools-showcase-card {
+    align-content: center;
+    justify-items: center;
+    gap: 9px;
+    min-height: 136px;
+    padding: 14px;
+    border-radius: 16px;
+    text-align: center;
+  }
+
+  .tools-showcase-card__head {
+    display: contents;
+  }
+
+  .tools-showcase-icon {
+    position: relative;
+    z-index: 1;
+    grid-row: 1;
+    width: 34px;
+    height: 34px;
+    border-radius: 10px;
+  }
+
+  .tools-showcase-icon svg {
+    width: 16px;
+    height: 16px;
+  }
+
+  .tools-showcase-badge {
+    position: relative;
+    z-index: 1;
+    grid-row: 3;
+    justify-self: center;
+    max-width: 100%;
+    padding: 5px 8px;
+    font-size: 0.56rem;
+    letter-spacing: 0.11em;
+  }
+
+  .tools-showcase-card__body {
+    grid-row: 2;
+    gap: 0;
+  }
+
+  .tools-showcase-title {
+    font-size: 0.9rem;
+    line-height: 1.18;
+  }
+
+  .tools-showcase-copy {
+    display: none;
+  }
+
+  .how-it-works-grid {
+    grid-template-columns: minmax(0, 1fr) 18px minmax(0, 1fr) 18px minmax(0, 1fr);
+    gap: 10px;
+    margin-top: 32px;
+  }
+
+  .how-it-works-card {
+    gap: 10px;
+  }
+
+  .how-it-works-step {
+    font-size: 0.68rem;
+    letter-spacing: 0.11em;
+  }
+
+  .how-it-works-icon {
+    width: 54px;
+    height: 54px;
+    margin-bottom: 2px;
+    border-radius: 16px;
+  }
+
+  .how-it-works-icon svg {
+    width: 26px;
+    height: 26px;
+  }
+
+  .how-it-works-card-title {
+    max-width: 13ch;
+    font-size: 0.98rem;
+    line-height: 1.18;
+  }
+
+  .how-it-works-card-copy {
+    display: none;
+  }
+
+  .how-it-works-chevron {
+    display: block;
+    width: 22px;
+    height: 22px;
+    margin-top: 58px;
+  }
+
+  .how-it-works-chevron::before {
+    width: 8px;
+    height: 8px;
+    margin-top: 7px;
+  }
+
+  .results-preview-side {
+    display: none;
+  }
+
+  [data-reveal] {
+    opacity: 1;
+    transform: none;
+    transition: none;
+  }
+
+  .landing-tools-section {
+    margin-top: 40px;
+  }
+
+  .guide-visual-stage {
+    width: 100%;
+    justify-items: center;
+  }
+
+  .guide-visual-display {
+    justify-self: center;
+    width: min(100%, 620px);
+    aspect-ratio: 4 / 3;
+    margin-inline: auto;
+    border: 1px solid color-mix(in srgb, var(--line) 80%, transparent);
+    background:
+      radial-gradient(circle at top left, color-mix(in srgb, var(--accent) 9%, transparent) 0%, transparent 34%),
+      linear-gradient(
+        140deg,
+        color-mix(in srgb, white 6%, var(--bg-panel)) 0%,
+        color-mix(in srgb, var(--bg-panel) 90%, transparent) 52%,
+        color-mix(in srgb, var(--bg-panel) 96%, transparent) 100%
+      );
+    box-shadow:
+      inset 0 1px 0 color-mix(in srgb, white 8%, transparent),
+      0 14px 30px rgba(0, 0, 0, 0.1);
+    backdrop-filter: blur(10px);
+    overflow: hidden;
+  }
+
+  .guide-visual-figure {
+    width: min(500px, calc(100% - 96px));
+  }
+
+  .guide-visual-arrow {
+    width: 40px;
+    height: 40px;
+    box-shadow: 0 10px 22px rgba(0, 0, 0, 0.1);
+  }
+
+  .guide-visual-arrow-prev {
+    left: 12px;
+  }
+
+  .guide-visual-arrow-next {
+    right: 12px;
+  }
+
+  .privacy-policy-page {
+    padding-top: 24px;
+  }
+
+  .marketing-info-page {
+    padding-top: 24px;
+  }
+
+  .marketing-info-page__aside-stack {
+    display: none;
+  }
+
+  .privacy-policy-page--privacy .privacy-policy-page__aside {
+    display: none;
+  }
+
+  .site-footer {
+    width: min(100%, calc(100% - 16px));
+    margin-top: 72px;
+    padding: 0 8px 28px;
+  }
+
+  .site-footer__shell {
+    grid-template-columns: minmax(84px, 104px) minmax(0, 1fr);
+    align-items: center;
+    gap: 22px;
+    padding: 24px 22px;
+  }
+
+  .site-footer__brand {
+    justify-items: center;
+    text-align: center;
+  }
+
+  .site-footer__brand-link {
+    justify-self: center;
+  }
+
+  .site-footer__logo {
+    width: 82px;
+  }
+
+  .site-footer__grid {
+    grid-template-columns: minmax(88px, max-content) minmax(142px, max-content) minmax(160px, 1fr);
+    gap: 22px;
+    width: 100%;
+    padding-top: 0;
+    padding-left: 22px;
+    border-top: 0;
+    border-left: 1px solid color-mix(in srgb, var(--line) 62%, transparent);
+  }
+
+  .site-footer__column:last-child {
+    grid-column: auto;
+  }
+
+  .site-footer__heading {
+    font-size: 0.7rem;
+  }
+
+  .site-footer__list {
+    gap: 9px;
+  }
+
+  .site-footer__link,
+  .site-footer__copyright {
+    font-size: 0.86rem;
+  }
+
+  .site-footer__email {
+    font-size: 0.88rem;
+  }
+
+  .site-footer__support {
+    justify-items: start;
+    gap: 9px;
+    text-align: left;
   }
 }
 

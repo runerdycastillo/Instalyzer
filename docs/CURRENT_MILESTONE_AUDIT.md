@@ -25,6 +25,7 @@ Current milestone focus:
 - [x] Dataset workspace implemented
 - [x] Native `Not Following Back` route implemented
 - [x] Tablet/mobile workspace gate implemented below `1024px`
+- [x] Tablet gate and tablet marketing/support polish completed
 - [ ] Parser/domain logic extracted from static scripts
 
 ## Session Audit Template
@@ -39,30 +40,31 @@ Current milestone focus:
 Notes:
 
 - Summary:
-  - the session implemented the desktop-first workspace gate below `1024px`
-  - mobile/tablet visitors who enter `/app` now get a polished desktop-link handoff instead of the full workspace
-  - the desktop-link email sends through the existing Microsoft Graph mail path
-  - the `/help` guide was adjusted below `1024px` so it supports the gate instead of pushing directly into upload
+  - the session completed the tablet gate polish pass after the desktop-first gate was implemented
+  - desktop-link requests now send an internal capture notification through the support inbox for soft-launch follow-up
+  - Tier 2 / hard-launch scope is documented so billing, durable capture, auth, and paid tools do not creep into the soft launch
+  - the homepage, legal/support pages, contact page, and `/help` guide were cleaned up around the tablet range
+  - mobile/phone-width polish is now the next responsive focus
 - Files/routes touched:
   - `instalyzer-next/app/globals.css`
-  - `instalyzer-next/components/layout/workspace-shell.tsx`
-  - `instalyzer-next/components/layout/responsive-workspace-gate.tsx`
   - `instalyzer-next/components/marketing/help-route.tsx`
   - `instalyzer-next/app/api/desktop-link/route.ts`
   - `instalyzer-next/lib/contact/desktop-link.ts`
-  - `instalyzer-next/lib/contact/desktop-link-shared.ts`
-  - `instalyzer-next/lib/contact/support-mail.ts`
+  - `instalyzer-next/lib/instagram/tool-catalog.ts`
+  - `instalyzer-next/app/(marketing)/privacy/page.tsx`
+  - `instalyzer-next/app/(marketing)/data-deletion-request/page.tsx`
+  - `instalyzer-next/.env.example`
   - `docs/CURRENT_MILESTONE_AUDIT.md`
-  - `docs/responsive-audit.md`
-  - `docs/day-wraps/2026-04-30/end-of-day.md`
-  - `docs/day-wraps/2026-04-30/milestone-audit.md`
+  - `docs/tier-2-hard-launch-plan.md`
+  - `docs/day-wraps/2026-05-01/end-of-day.md`
+  - `docs/day-wraps/2026-05-01/milestone-audit.md`
 - Anything user-visible:
-  - `/app` and workspace/tool routes now gate at `1023px` and below
-  - the gate can send the exact current desktop link by email or copy it as a fallback
-  - the optional updates checkbox is present but unchecked by default
-  - the gate includes a contextual export guide panel and trust/legal links
-  - `/help` hides the quick-tips/upload CTA side rail below `1024px`
-  - `/help` adds a mobile/tablet `get started` handoff into the workspace gate from the quick guide and a small final-step visual-guide action
+  - desktop-link requests now generate an internal support notification with source/referrer/UTM and opt-in context
+  - the tablet workspace gate feels tighter and less empty
+  - tablet nav is logo-left with workspace/guide/account actions right
+  - home tablet sections were cleaned up, including tools grid, how-it-works, workspace preview, footer, and reveal behavior
+  - Privacy, Terms, Data Deletion, and Contact are less cluttered at tablet widths
+  - `/help` has guide modes under the heading divider and a cleaner tablet quick/visual guide treatment
 
 ### 2. What Is Stable Right Now
 
@@ -79,9 +81,12 @@ Notes:
   - the contact/support handoff remains live
   - the `1024px` workspace minimum is now implemented in code
   - the desktop-link API validates email and preserves the intended `/app` URL
+  - desktop-link requests are captured via an internal support notification email
+  - tablet gate/home/help/legal/contact presentation is now polished enough for soft-launch review
 - Confidence level:
   - high for the gate direction and transactional email handoff
-  - medium-high for final visual polish until one more manual sweep is completed
+  - high for tablet polish direction
+  - medium for phone-width polish until the next pass is completed
 
 ### 3. What Still Feels Incomplete
 
@@ -91,12 +96,13 @@ Notes:
 Notes:
 
 - Main gaps:
-  - the desktop-link request is not persisted to a database or lead store yet
-  - the optional marketing opt-in is sent to the API but not saved permanently yet
-  - the gate and guide should get one final visual QA pass across tablet/phone widths
+  - desktop-link capture is email-based for soft launch, not a durable database/contact-store integration
+  - the optional marketing opt-in is captured in the internal notification but not saved permanently yet
+  - phone-width mobile gate polish still needs a dedicated pass
   - parser/domain extraction from the static build still remains ahead
+  - tablet nav keyboard tab order should be checked later because the visual order changes at tablet widths
 - Anything intentionally deferred:
-  - auth/accounts until after gate polish and capture/storage are settled
+  - durable lead storage, auth/accounts, and marketing automation until after gate polish is settled
   - full mobile workspace design, because mobile/tablet now intentionally hand off to desktop
 
 ### 4. Quick Risk Check
@@ -109,9 +115,9 @@ Notes:
 Notes:
 
 - Biggest current risk:
-  - desktop-link requests can be sent but are not yet retained for follow-up or opt-in tracking
+  - mobile polish could still surface layout issues below `768px`
 - What could slow the next session down:
-  - jumping into auth or parser extraction before closing the gate QA and capture/storage loop
+  - jumping into auth, billing, or parser extraction before the mobile gate has the same polish level tablet now has
 
 ### 5. Quick Manual Checks
 
@@ -122,15 +128,18 @@ Notes:
 Notes:
 
 - What was tested:
-  - gate behavior at the tablet breakpoint
+  - tablet gate behavior
   - desktop-link email sending with a real inbox check
+  - desktop-link internal capture notification delivery was confirmed by the user
   - copy-link behavior and success-state polish
-  - `/help` guide adjustments around the `1023px` range
+  - `/help` quick/visual guide adjustments around the tablet range
+  - home tablet sections, including reveal behavior
+  - legal/contact tablet cleanup
   - `npm run lint`
   - `npm run build`
 - What was not tested:
-  - persistent lead storage, because it is not built yet
-  - a full phone-width visual QA sweep after the final polish changes
+  - durable lead/contact database storage, because it is intentionally deferred
+  - a full phone-width visual QA sweep after the tablet polish changes
 
 ### 6. Next Best Move
 
@@ -141,13 +150,11 @@ Notes:
 Notes:
 
 - Next recommended task:
-  - do a focused gate QA/polish pass, then implement lightweight desktop-link capture/storage:
-    - record email, intended URL, device range, marketing opt-in, source/referrer/UTM, timestamp
-    - keep marketing opt-in separate from the functional desktop-link request
+  - run the focused mobile gate polish pass below `768px`
 - Prerequisites for next session:
-  - test `/app`, dataset detail, `not-following-back`, and `/help` at `1023`, `768`, and phone widths
-  - decide whether first capture storage should be an internal notification email, a database table, or a marketing/contact integration
-  - keep auth/accounts deferred until capture/storage is clear
+  - test `/app`, dataset detail, `not-following-back`, `/help`, and legal/contact routes at common phone widths
+  - keep durable database/contact-list storage for Tier 2 unless soft-launch volume proves it is needed sooner
+  - keep auth/accounts deferred until responsive gate polish is clear
 
 ---
 
@@ -177,6 +184,7 @@ Use this section to track the current migration flow specifically.
 - [x] Tool 1 works natively in Next
 - [x] Workspace/tool routes gate below `1024px`
 - [x] Desktop-link email handoff is implemented
+- [x] Tablet gate polish is complete enough for soft-launch review
 
 ### Technical Foundation
 
@@ -187,7 +195,8 @@ Use this section to track the current migration flow specifically.
 - [x] Storage/data boundaries are intentionally designed
 - [x] Placeholder routes are being retired in order
 - [x] Microsoft Graph mail helper supports reusable transactional mail
-- [ ] Desktop-link requests are persisted for lead/opt-in tracking
+- [x] Desktop-link requests are captured through internal support notification email
+- [ ] Durable desktop-link lead/opt-in storage exists outside the inbox
 
 ---
 
@@ -195,14 +204,11 @@ Use this section to track the current migration flow specifically.
 
 ### Fix Next
 
-- [ ] Do a focused tablet/mobile gate QA pass
-- Why now: the gate is implemented and mail works, but the last visual pass should confirm `/app`, tool routes, and `/help` feel clean across `1023`, `768`, and phone widths
+- [ ] Do a focused mobile gate QA/polish pass
+- Why now: tablet polish is effectively wrapped, but the phone-width gate and help/legal/contact surfaces still need the same deliberate pass below `768px`
 
-- [ ] Implement desktop-link capture/storage
-- Why now: the gate now collects email for a real desktop-link action, but the request and optional marketing opt-in are not persisted yet
-
-- [ ] Decide the next parser-confidence pass or next native tool after gate capture settles
-- Why now: Tool 1, support, and the workspace gate are all stronger now, so the next product decision should happen after the desktop-link handoff can retain opt-ins
+- [ ] Decide the next parser-confidence pass or next native tool after gate QA settles
+- Why now: Tool 1, support, and the workspace gate are all stronger now, so the next product decision should happen after the tablet/mobile handoff is visually solid
 
 - [ ] Run a focused responsive pass on the current core flow before auth work begins
 - Why now: homepage, trust pages, dataset creation, overview, workspace, and Tool 1 are real enough that responsive cleanup now will be much cheaper than waiting until auth adds more route and layout complexity
@@ -216,6 +222,9 @@ Use this section to track the current migration flow specifically.
 - Why soon: the current route supports the launch flow, but real archive inspection is still lighter than the static prototype
 
 ### Leave For Later
+
+- [ ] Use `docs/tier-2-hard-launch-plan.md` when paid launch planning becomes active
+- Why later: the current soft launch should keep capture, support, and Tool 1 lean; Tier 2 is where billing, durable opt-in storage, account-owned datasets, and paid tool packaging belong
 
 - [ ] Revisit whether `/app` remains a true hub or redirects into datasets
 - Why later: `overview` now behaves much better, so the more urgent work is the live tool rather than app-home architecture debates
@@ -440,3 +449,22 @@ Add one short entry per work session.
   - collecting email for a useful desktop-link action without storing the request means opt-ins can be lost until capture/storage is implemented
 - Next step:
   - run final gate QA, then implement lightweight desktop-link capture/storage before auth or parser work
+
+### Session Entry - 2026-05-01
+
+- Date: 2026-05-01
+- Focus: add soft-launch desktop-link capture, document Tier 2 scope, and finish the tablet gate polish pass
+- What moved forward:
+  - desktop-link requests now send an internal support notification with email, intended URL, device range, source/referrer/UTM, marketing opt-in, timestamp, and consent context
+  - `docs/tier-2-hard-launch-plan.md` was added so paid-tier, billing, auth, durable capture, persistent datasets, and legal/support work stay out of the current soft-launch lane
+  - tablet gate and marketing surfaces were polished across the desktop workspace page, home page, legal/support pages, contact page, and guide
+  - the guide mode switcher moved under the guide heading divider, two-column guide dividers were cleaned up, and the visual guide carousel was reduced for tablet
+  - home tablet reveal behavior was adjusted so the lower viewport does not look blank while waiting for scroll
+- What remains rough:
+  - phone-width mobile gate polish still needs a dedicated pass
+  - durable lead/contact storage is still intentionally deferred
+  - parser/domain extraction remains ahead
+- Biggest risk:
+  - starting parser/auth/billing work before mobile receives the same focused polish tablet just received
+- Next step:
+  - polish the mobile gate below `768px`, then decide whether parser extraction or the next native tool should move next

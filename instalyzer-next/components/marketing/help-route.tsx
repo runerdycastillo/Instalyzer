@@ -231,73 +231,6 @@ export function HelpRoute() {
       <section className="guide-layout" aria-label="Instagram export guide">
         <div className="guide-main-column">
           <div className="guide-workbench">
-            <aside className="guide-tabs-rail" aria-label="Guide modes">
-              <p className="guide-tabs-rail-label">guide modes</p>
-
-              <div
-                className="guide-tab-list guide-tab-list-vertical"
-                role="tablist"
-                aria-label="Guide content tabs"
-              >
-                {guideTabs.map((tab, index) => {
-                  const active = activeTab === tab.key;
-
-                  return (
-                    <button
-                      key={tab.key}
-                      type="button"
-                      className={`guide-tab-button${active ? " is-active" : ""}`}
-                      role="tab"
-                      aria-selected={active}
-                      aria-controls={`guide-panel-${tab.key}`}
-                      id={`guide-tab-${tab.key}`}
-                      tabIndex={active ? 0 : -1}
-                      onClick={() => setActiveTab(tab.key)}
-                      onKeyDown={(event) => {
-                        if (
-                          ![
-                            "ArrowRight",
-                            "ArrowLeft",
-                            "ArrowDown",
-                            "ArrowUp",
-                            "Home",
-                            "End",
-                          ].includes(event.key)
-                        ) {
-                          return;
-                        }
-
-                        event.preventDefault();
-
-                        if (event.key === "Home") {
-                          setActiveTab(guideTabs[0].key);
-                          return;
-                        }
-
-                        if (event.key === "End") {
-                          setActiveTab(guideTabs[guideTabs.length - 1].key);
-                          return;
-                        }
-
-                        const direction =
-                          event.key === "ArrowRight" || event.key === "ArrowDown"
-                            ? 1
-                            : -1;
-                        const nextTab =
-                          guideTabs[
-                            (index + direction + guideTabs.length) % guideTabs.length
-                          ];
-                        setActiveTab(nextTab.key);
-                      }}
-                    >
-                      <span className="guide-tab-button-title">{tab.title}</span>
-                      <span className="guide-tab-button-copy">{tab.copy}</span>
-                    </button>
-                  );
-                })}
-              </div>
-            </aside>
-
             <section className="guide-tabs-shell" aria-labelledby="guide-help-title">
               <div className="guide-tabs-content">
                 <div className="guide-tabs-head">
@@ -319,6 +252,73 @@ export function HelpRoute() {
                     </p>
                   </div>
                 </div>
+
+                <aside className="guide-tabs-rail" aria-label="Guide modes">
+                  <p className="guide-tabs-rail-label">guide modes</p>
+
+                  <div
+                    className="guide-tab-list guide-tab-list-vertical"
+                    role="tablist"
+                    aria-label="Guide content tabs"
+                  >
+                    {guideTabs.map((tab, index) => {
+                      const active = activeTab === tab.key;
+
+                      return (
+                        <button
+                          key={tab.key}
+                          type="button"
+                          className={`guide-tab-button${active ? " is-active" : ""}`}
+                          role="tab"
+                          aria-selected={active}
+                          aria-controls={`guide-panel-${tab.key}`}
+                          id={`guide-tab-${tab.key}`}
+                          tabIndex={active ? 0 : -1}
+                          onClick={() => setActiveTab(tab.key)}
+                          onKeyDown={(event) => {
+                            if (
+                              ![
+                                "ArrowRight",
+                                "ArrowLeft",
+                                "ArrowDown",
+                                "ArrowUp",
+                                "Home",
+                                "End",
+                              ].includes(event.key)
+                            ) {
+                              return;
+                            }
+
+                            event.preventDefault();
+
+                            if (event.key === "Home") {
+                              setActiveTab(guideTabs[0].key);
+                              return;
+                            }
+
+                            if (event.key === "End") {
+                              setActiveTab(guideTabs[guideTabs.length - 1].key);
+                              return;
+                            }
+
+                            const direction =
+                              event.key === "ArrowRight" || event.key === "ArrowDown"
+                                ? 1
+                                : -1;
+                            const nextTab =
+                              guideTabs[
+                                (index + direction + guideTabs.length) % guideTabs.length
+                              ];
+                            setActiveTab(nextTab.key);
+                          }}
+                        >
+                          <span className="guide-tab-button-title">{tab.title}</span>
+                          <span className="guide-tab-button-copy">{tab.copy}</span>
+                        </button>
+                      );
+                    })}
+                  </div>
+                </aside>
 
                 <section
                   className={`guide-tab-panel${activeTab === "quick-steps" ? " is-active" : ""}`}

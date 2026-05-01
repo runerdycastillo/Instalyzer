@@ -7,7 +7,10 @@ import {
   normalizeDesktopLinkText,
   type DesktopLinkDeviceRange,
 } from "@/lib/contact/desktop-link-shared";
-import { sendDesktopLinkEmail } from "@/lib/contact/desktop-link";
+import {
+  sendDesktopLinkCaptureEmail,
+  sendDesktopLinkEmail,
+} from "@/lib/contact/desktop-link";
 import { SupportMailConfigError } from "@/lib/contact/support-mail";
 
 export const runtime = "nodejs";
@@ -132,19 +135,27 @@ export async function POST(request: Request) {
     );
   }
 
+  const desktopLinkRequest = {
+    email,
+    intendedUrl,
+    deviceRange,
+    marketingOptIn,
+    source: normalizeMetaValue(payload.source),
+    referrer: normalizeMetaValue(payload.referrer),
+    utmSource: normalizeMetaValue(payload.utmSource),
+    utmMedium: normalizeMetaValue(payload.utmMedium),
+    utmCampaign: normalizeMetaValue(payload.utmCampaign),
+    requestedAt: new Date().toISOString(),
+  };
+
   try {
-    await sendDesktopLinkEmail({
-      email,
-      intendedUrl,
-      deviceRange,
-      marketingOptIn,
-      source: normalizeMetaValue(payload.source),
-      referrer: normalizeMetaValue(payload.referrer),
-      utmSource: normalizeMetaValue(payload.utmSource),
-      utmMedium: normalizeMetaValue(payload.utmMedium),
-      utmCampaign: normalizeMetaValue(payload.utmCampaign),
-      requestedAt: new Date().toISOString(),
-    });
+    await sendDesktopLinkEmail(desktopLinkRequest);
+
+    try {
+      await sendDesktopLinkCaptureEmail(desktopLinkRequest);
+    } catch (captureError) {
+      console.error("Desktop link capture notification failed", captureError);
+    }
 
     return NextResponse.json({
       message: "desktop link sent.",

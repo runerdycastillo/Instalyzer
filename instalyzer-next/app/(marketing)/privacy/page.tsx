@@ -147,7 +147,7 @@ const privacySections = [
 
 export default function PrivacyPage() {
   return (
-    <main className="privacy-policy-page">
+    <main className="privacy-policy-page privacy-policy-page--privacy">
       <section className="privacy-policy-page__hero">
         <p className="section-kicker">privacy</p>
         <h1 className="privacy-policy-page__title">Privacy Policy</h1>
@@ -203,11 +203,6 @@ export default function PrivacyPage() {
             <p className="privacy-policy-page__aside-copy">April 2026</p>
           </div>
 
-          <div className="privacy-policy-page__trust">
-            <span className="privacy-policy-page__trust-badge">
-              No Instagram login required
-            </span>
-          </div>
         </aside>
       </div>
     </main>

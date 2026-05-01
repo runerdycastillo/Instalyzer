@@ -32,6 +32,66 @@ function buildDesktopLinkEmailBody(request: DesktopLinkRequest) {
   ].join("\n");
 }
 
+function getEnvValue(name: string) {
+  return String(process.env[name] || "").trim();
+}
+
+function getDesktopLinkCaptureRecipients() {
+  const rawRecipients =
+    getEnvValue("DESKTOP_LINK_CAPTURE_TO") ||
+    getEnvValue("CONTACT_SUPPORT_TO") ||
+    getEnvValue("MICROSOFT_GRAPH_SENDER_USER") ||
+    "support@instalyzer.app";
+
+  return rawRecipients
+    .split(",")
+    .map((value) => value.trim())
+    .filter(Boolean)
+    .map((email) => ({ email }));
+}
+
+function formatCaptureValue(value: string) {
+  return value || "not provided";
+}
+
+function buildDesktopLinkCaptureEmailBody(request: DesktopLinkRequest) {
+  return [
+    "new desktop-link request from instalyzer.app",
+    "",
+    "email:",
+    request.email,
+    "",
+    "desktop link:",
+    request.intendedUrl,
+    "",
+    "device range:",
+    request.deviceRange,
+    "",
+    "marketing updates opt-in:",
+    request.marketingOptIn ? "yes" : "no",
+    "",
+    "source:",
+    formatCaptureValue(request.source),
+    "",
+    "referrer:",
+    formatCaptureValue(request.referrer),
+    "",
+    "utm source:",
+    formatCaptureValue(request.utmSource),
+    "",
+    "utm medium:",
+    formatCaptureValue(request.utmMedium),
+    "",
+    "utm campaign:",
+    formatCaptureValue(request.utmCampaign),
+    "",
+    "---",
+    `requested: ${request.requestedAt}`,
+    "",
+    "Consent note: if marketing updates opt-in is no, treat this as a transactional desktop-link request only.",
+  ].join("\n");
+}
+
 export async function sendDesktopLinkEmail(request: DesktopLinkRequest) {
   await sendSupportMailboxMessage({
     toRecipients: [
@@ -47,5 +107,15 @@ export async function sendDesktopLinkEmail(request: DesktopLinkRequest) {
         name: "Instalyzer",
       },
     ],
+  });
+}
+
+export async function sendDesktopLinkCaptureEmail(request: DesktopLinkRequest) {
+  await sendSupportMailboxMessage({
+    toRecipients: getDesktopLinkCaptureRecipients(),
+    subject: request.marketingOptIn
+      ? "[Instalyzer Desktop Link] request with updates opt-in"
+      : "[Instalyzer Desktop Link] request",
+    body: buildDesktopLinkCaptureEmailBody(request),
   });
 }

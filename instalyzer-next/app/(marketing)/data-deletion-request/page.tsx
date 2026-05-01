@@ -166,11 +166,6 @@ export default function DataDeletionRequestPage() {
             <p className="privacy-policy-page__aside-copy">April 2026</p>
           </div>
 
-          <div className="privacy-policy-page__trust">
-            <span className="privacy-policy-page__trust-badge">
-              Local-first soft launch
-            </span>
-          </div>
         </aside>
       </div>
     </main>
