@@ -39,6 +39,12 @@ export default async function RootLayout({
     >
       <head>
         <meta name="color-scheme" content="dark" />
+        <link
+          rel="preload"
+          as="image"
+          href="/assets/hero/instalyzer-hero.jpg"
+          fetchPriority="high"
+        />
       </head>
       <body style={{ backgroundColor: initialBg, color: initialInk }}>
         <ThemeProvider>{children}</ThemeProvider>

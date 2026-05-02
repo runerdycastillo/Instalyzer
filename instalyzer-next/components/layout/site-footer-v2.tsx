@@ -18,6 +18,7 @@ type FooterLink = {
   label: string;
   href?: string;
   external?: boolean;
+  className?: string;
 };
 
 type FooterColumn = {
@@ -45,7 +46,8 @@ export function SiteFooterV2() {
       links: [
         { label: "workspace", href: workspaceHref },
         { label: "guide", href: "/help" },
-        { label: "faq", href: "/#faq-section" },
+        { label: "faq", href: "/#faq-section", className: "site-footer__item--faq" },
+        { label: "contact", href: "/contact", className: "site-footer__item--range-contact" },
       ],
     },
     {
@@ -109,7 +111,10 @@ export function SiteFooterV2() {
               {column.links ? (
                 <ul className="site-footer__list">
                   {column.links.map((link) => (
-                    <li key={link.label} className="site-footer__item">
+                    <li
+                      key={link.label}
+                      className={`site-footer__item${link.className ? ` ${link.className}` : ""}`}
+                    >
                       {link.external ? (
                         <a href={link.href} className="site-footer__link">
                           {link.label}

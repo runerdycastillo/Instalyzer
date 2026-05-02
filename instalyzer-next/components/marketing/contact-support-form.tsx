@@ -3,7 +3,6 @@
 import { LoaderCircle, SendHorizonal } from "lucide-react";
 import { useState, type FormEvent } from "react";
 import {
-  CONTACT_SUPPORT_CONTEXT_MAX_LENGTH,
   CONTACT_SUPPORT_EMAIL_MAX_LENGTH,
   CONTACT_SUPPORT_MESSAGE_MAX_LENGTH,
   CONTACT_SUPPORT_SUBJECT_MAX_LENGTH,
@@ -24,7 +23,7 @@ const initialFormState = {
   email: "",
   category: "other" as ContactSupportCategory,
   subject: "",
-  context: "",
+  context: "contact page",
   message: "",
   website: "",
 };
@@ -127,19 +126,6 @@ export function ContactSupportForm() {
           />
         </label>
 
-        <label className="contact-support-form__field contact-support-form__field--full">
-          <span className="contact-support-form__label">page or tool</span>
-          <input
-            type="text"
-            className="contact-support-form__input"
-            value={formState.context}
-            onChange={(event) => updateField("context", event.target.value)}
-            maxLength={CONTACT_SUPPORT_CONTEXT_MAX_LENGTH}
-            autoComplete="off"
-            placeholder="for example: contact page, export upload, not following back"
-          />
-        </label>
-
         <label
           className="contact-support-form__field contact-support-form__field--hidden"
           aria-hidden="true"
@@ -162,6 +148,7 @@ export function ContactSupportForm() {
             value={formState.message}
             onChange={(event) => updateField("message", event.target.value)}
             maxLength={CONTACT_SUPPORT_MESSAGE_MAX_LENGTH}
+            placeholder="Tell us what happened. Include the page, tool, browser, or screenshot link if useful."
             rows={8}
             required
           />

@@ -24,6 +24,7 @@ import {
   UserMinus,
   UserCheck,
   UserPlus,
+  UserRoundX,
   UsersRound,
   VenusAndMars,
   Wrench,
@@ -714,7 +715,7 @@ function WorkspaceLoadingState() {
           <div className="dataset-side-panel__body">
             <div className="workspace-tool-pill workspace-tool-pill--featured">
               <span className="workspace-tool-icon" aria-hidden="true">
-                <UserMinus size={16} strokeWidth={1.9} />
+                <UserRoundX size={16} strokeWidth={1.9} />
               </span>
               <span className="workspace-tool-copy">
                 <span className="dataset-skeleton-line dataset-skeleton-line--tool" aria-hidden="true" />
@@ -1982,7 +1983,7 @@ export function DatasetWorkspaceRoute({ datasetId, activeToolId }: DatasetWorksp
                   aria-label="Not following back tool is open"
                 >
                   <span className="workspace-tool-icon" aria-hidden="true">
-                    <UserMinus size={16} strokeWidth={1.9} />
+                    <UserRoundX size={16} strokeWidth={1.9} />
                   </span>
                   <span className="workspace-tool-copy">
                     <strong>not following back</strong>
@@ -1995,7 +1996,7 @@ export function DatasetWorkspaceRoute({ datasetId, activeToolId }: DatasetWorksp
                   aria-label="Open not following back tool"
                 >
                   <span className="workspace-tool-icon" aria-hidden="true">
-                    <UserMinus size={16} strokeWidth={1.9} />
+                    <UserRoundX size={16} strokeWidth={1.9} />
                   </span>
                   <span className="workspace-tool-copy">
                     <strong>not following back</strong>
@@ -2411,7 +2412,7 @@ export function DatasetWorkspaceRoute({ datasetId, activeToolId }: DatasetWorksp
                   all tools
                 </h2>
                 <p className="dataset-modal__copy">
-                  available now and coming soon in your workspace.
+                  available now and next pro tools.
                 </p>
               </div>
               <button
@@ -2439,37 +2440,29 @@ export function DatasetWorkspaceRoute({ datasetId, activeToolId }: DatasetWorksp
                     href={href}
                     className={`dataset-tool-card ${badgeClassName}`.trim()}
                     onClick={() => setIsToolsModalOpen(false)}
+                    aria-label={`Open ${tool.title}`}
                   >
-                    <div className="dataset-tool-card__head">
-                      <span className="dataset-tool-card__icon" aria-hidden="true">
-                        <Icon size={17} strokeWidth={1.9} />
-                      </span>
+                    <span className="dataset-tool-card__icon" aria-hidden="true">
+                      <Icon size={19} strokeWidth={1.9} />
+                    </span>
+                    <span className="dataset-tool-card__content">
+                      <strong className="dataset-tool-card__title">{tool.title}</strong>
                       <span className={`dataset-tool-card__badge ${badgeClassName}`.trim()}>
                         {tool.availability}
                       </span>
-                    </div>
-                    <strong className="dataset-tool-card__title">{tool.title}</strong>
-                    <p className="dataset-tool-card__note">{tool.workspaceDescription}</p>
-                    <div className="dataset-tool-card__footer">
-                      <span>{tool.workspaceHelper}</span>
-                      <span className="dataset-tool-card__action">{tool.workspaceAction}</span>
-                    </div>
+                    </span>
                   </Link>
                 ) : (
-                  <div key={tool.id} className={`dataset-tool-card ${badgeClassName}`.trim()}>
-                    <div className="dataset-tool-card__head">
-                      <span className="dataset-tool-card__icon" aria-hidden="true">
-                        <Icon size={17} strokeWidth={1.9} />
-                      </span>
+                  <div key={tool.id} className={`dataset-tool-card ${badgeClassName}`.trim()} aria-disabled="true">
+                    <span className="dataset-tool-card__icon" aria-hidden="true">
+                      <Icon size={19} strokeWidth={1.9} />
+                    </span>
+                    <span className="dataset-tool-card__content">
+                      <strong className="dataset-tool-card__title">{tool.title}</strong>
                       <span className={`dataset-tool-card__badge ${badgeClassName}`.trim()}>
                         {tool.availability}
                       </span>
-                    </div>
-                    <strong className="dataset-tool-card__title">{tool.title}</strong>
-                    <p className="dataset-tool-card__note">{tool.workspaceDescription}</p>
-                    <div className="dataset-tool-card__footer">
-                      <span>{tool.workspaceHelper}</span>
-                    </div>
+                    </span>
                   </div>
                 );
               })}

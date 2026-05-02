@@ -10,17 +10,6 @@ type LegalSection = {
 
 const legalSections: readonly LegalSection[] = [
   {
-    id: "eligibility",
-    title: "Eligibility",
-    body: (
-      <p>
-        You must be at least 18 years old to use Instalyzer. By using the
-        platform, you confirm that you are legally allowed to access and upload
-        the data you provide.
-      </p>
-    ),
-  },
-  {
     id: "using-the-product",
     title: "Using the product",
     body: (
@@ -58,6 +47,19 @@ const legalSections: readonly LegalSection[] = [
         credentials you create or use with Instalyzer. Instalyzer may suspend or
         terminate accounts that violate these terms, create security risks, or
         misuse the service.
+      </p>
+    ),
+  },
+  {
+    id: "eligibility",
+    title: "Eligibility",
+    body: (
+      <p>
+        You must be at least 13 years old, or the minimum legal age required
+        where you live, to use Instalyzer. If you are under the age of
+        majority where you live, you may use Instalyzer only with permission
+        from a parent or legal guardian. By using the platform, you confirm
+        that you are legally allowed to access and upload the data you provide.
       </p>
     ),
   },
@@ -225,7 +227,10 @@ export default function TermsPage() {
         <aside className="terms-page__aside">
           <div className="terms-page__aside-stack">
             {sideCards.map((card) => (
-              <article key={card.id} className="privacy-policy-page__card">
+              <article
+                key={card.id}
+                className={`privacy-policy-page__card${card.id === "support" ? " terms-page__aside-card--support" : ""}`}
+              >
                 <h2 className="privacy-policy-page__card-title">{card.title}</h2>
                 <div className="privacy-policy-page__card-copy">{card.body}</div>
               </article>

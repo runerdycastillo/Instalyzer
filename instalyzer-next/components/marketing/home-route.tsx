@@ -1,9 +1,11 @@
 import { Fragment } from "react";
 import {
-  ArrowUpRight,
-  ChartColumnBig,
+  LayoutDashboard,
+  Search,
+  Sparkle,
   Upload,
   UserRound,
+  type LucideProps,
 } from "lucide-react";
 import Link from "next/link";
 import { FaqAccordion } from "@/components/marketing/faq-accordion";
@@ -12,6 +14,15 @@ import { MarketingScrollReveal } from "@/components/marketing/marketing-scroll-r
 import { homeShowcaseTools, resultsPreviewPills } from "@/lib/instagram/tool-catalog";
 
 const SHOW_PRICING_SECTION = false;
+
+function AnalyzeSparkleIcon({ strokeWidth = 1.9, "aria-hidden": ariaHidden }: LucideProps) {
+  return (
+    <span className="how-it-works-analyze-icon" aria-hidden={ariaHidden}>
+      <Search className="how-it-works-analyze-icon__search" strokeWidth={strokeWidth} />
+      <Sparkle className="how-it-works-analyze-icon__sparkle" strokeWidth={strokeWidth} />
+    </span>
+  );
+}
 
 const howItWorksSteps = [
   {
@@ -22,15 +33,15 @@ const howItWorksSteps = [
   },
   {
     step: "step 2",
-    title: "create a reusable dataset",
-    copy: "we check the export and turn it into a dataset you can come back to inside the workspace.",
-    icon: ChartColumnBig,
+    title: "analyze your data",
+    copy: "instalyzer reads your export and turns followers, following, and account activity into useful signals.",
+    icon: AnalyzeSparkleIcon,
   },
   {
     step: "step 3",
-    title: "run the first live tool",
-    copy: "start with not following back now while the same dataset stays ready for the next tools.",
-    icon: ArrowUpRight,
+    title: "open your workspace",
+    copy: "review your results, use the live tools, and keep the same export ready for what comes next.",
+    icon: LayoutDashboard,
   },
 ] as const;
 

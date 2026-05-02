@@ -135,7 +135,7 @@ export default function DataDeletionRequestPage() {
             </p>
           </div>
 
-          <div className="privacy-policy-page__aside-block">
+          <div className="privacy-policy-page__aside-block privacy-policy-page__aside-block--quick-links">
             <span className="privacy-policy-page__aside-label">Quick links</span>
             <nav className="privacy-policy-page__nav" aria-label="Data deletion sections">
               {deletionSections.map((section) => (

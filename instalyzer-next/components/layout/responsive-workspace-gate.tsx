@@ -13,6 +13,7 @@ import {
   useState,
   type FormEvent,
 } from "react";
+import { SiteFooterV2 } from "@/components/layout/site-footer-v2";
 import {
   DESKTOP_LINK_EMAIL_MAX_LENGTH,
   isValidDesktopLinkEmail,
@@ -389,14 +390,17 @@ export function ResponsiveWorkspaceGate() {
         <div className="responsive-workspace-gate__trust">
           <p>
             <ShieldCheck size={16} aria-hidden="true" />
-            <span>No Instagram password required. You upload your own Instagram export.</span>
+            <span className="responsive-workspace-gate__trust-copy-full">
+              No Instagram password required. You upload your own Instagram export.
+            </span>
+            <span className="responsive-workspace-gate__trust-copy-short">
+              No Instagram password required.
+            </span>
           </p>
+        </div>
 
-          <nav aria-label="Workspace gate footer links">
-            <Link href="/privacy">Privacy</Link>
-            <Link href="/terms">Terms</Link>
-            <Link href="/contact">Contact</Link>
-          </nav>
+        <div className="responsive-workspace-gate__footer">
+          <SiteFooterV2 />
         </div>
       </div>
     </section>

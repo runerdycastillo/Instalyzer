@@ -1,6 +1,6 @@
 "use client";
 
-import { Check, Clock3, Download, ExternalLink, RotateCcw, Search, UserMinus, UserRoundX } from "lucide-react";
+import { Check, Clock3, Download, ExternalLink, RotateCcw, Search, SearchX, UserRoundX } from "lucide-react";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import type { LocalDatasetRecord } from "@/lib/instagram/local-datasets";
@@ -506,7 +506,7 @@ export function NotFollowingBackWorkspaceView({
       label: "pending",
       value: listEntries.pending.length,
       note: "accounts left to review",
-      Icon: UserMinus,
+      Icon: UserRoundX,
       accentClassName: "is-pending",
     },
     {
@@ -530,7 +530,7 @@ export function NotFollowingBackWorkspaceView({
       label: "not found",
       value: listEntries.notFound.length,
       note: "profiles not reached",
-      Icon: UserRoundX,
+      Icon: SearchX,
       accentClassName: "is-not-found",
     },
   ];
