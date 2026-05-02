@@ -7,7 +7,6 @@ instalyzer-next/*.tsbuildinfo
 instalyzer-next/next-env.d.ts
 instalyzer-next/.env*
 
-instalyzer-static/import/
 import/
 
 .DS_Store

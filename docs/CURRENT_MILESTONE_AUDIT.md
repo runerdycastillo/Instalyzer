@@ -218,8 +218,8 @@ Use this section to track the current migration flow specifically.
 - [ ] Do a deliberate interaction QA pass on overview + `not following back`
 - Why soon: recent polish added stronger visited, move-state, footer jump, legal-route, and animation behaviors, so a focused app-side QA pass is still valuable
 
-- [ ] Port deeper parser logic from the static flow into reusable modules
-- Why soon: the current route supports the launch flow, but real archive inspection is still lighter than the static prototype
+- [ ] Continue hardening parser coverage in reusable modules
+- Why soon: the current route supports the launch flow, but real archive inspection still needs deeper coverage before advanced tools ship
 
 ### Leave For Later
 

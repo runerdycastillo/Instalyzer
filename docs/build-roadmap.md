@@ -2,7 +2,7 @@
 
 ## Purpose
 
-This roadmap defines the path from the current static prototype to a production-ready Instagram dataset SaaS.
+This roadmap defines the path from the current Next.js prototype to a production-ready Instagram dataset SaaS.
 
 The sequencing goal is:
 

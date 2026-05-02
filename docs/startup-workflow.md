@@ -1,6 +1,6 @@
 # Startup Workflow
 
-Use this when you want both local app surfaces running together.
+Use this when you want the local Instalyzer app running.
 
 ## Command
 
@@ -13,12 +13,10 @@ powershell -ExecutionPolicy Bypass -File .\scripts\startup.ps1
 ## What It Starts
 
 - `instalyzer-next` on `http://localhost:3000`
-- `instalyzer-static` on `http://localhost:5500`
 
 ## Team Shortcut
 
 If you tell Codex `startup`, that means:
 
 - launch the Next dev server
-- launch the static local server
-- treat overview and workspace polish as the current focus unless you redirect
+- treat the current app polish or feature work as the focus unless you redirect

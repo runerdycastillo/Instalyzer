@@ -18,7 +18,7 @@ This is meant to be a product and implementation reference, not a marketing prom
 This reference is based on:
 
 - the real sample export already inspected in the project
-- the current parser and classification work in `instalyzer-static/script/home-datasets.js`
+- the current parser and classification work in `instalyzer-next/lib/instagram/export-parser.ts`
 - the existing schema notes in [dataset-schema-and-overview.md](/c:/Users/SYK/OneDrive/Desktop/Projects/2026/Mar/instalyzer-workspace/docs/dataset-schema-and-overview.md)
 
 ## Confidence Labels
