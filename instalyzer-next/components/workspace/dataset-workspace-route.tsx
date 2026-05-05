@@ -1035,6 +1035,19 @@ export function DatasetWorkspaceRoute({ datasetId, activeToolId }: DatasetWorksp
   }, [isDatasetsModalOpen, openDatasetMenuId, renamingDatasetId]);
 
   useEffect(() => {
+    const hasOpenModal = isDatasetsModalOpen || isToolsModalOpen || Boolean(deleteConfirmDatasetId);
+    if (!hasOpenModal) return undefined;
+
+    document.documentElement.classList.add("modal-open");
+    document.body.classList.add("modal-open");
+
+    return () => {
+      document.documentElement.classList.remove("modal-open");
+      document.body.classList.remove("modal-open");
+    };
+  }, [deleteConfirmDatasetId, isDatasetsModalOpen, isToolsModalOpen]);
+
+  useEffect(() => {
     if (!deleteConfirmDatasetId) return undefined;
 
     function handleKeyDown(event: KeyboardEvent) {
@@ -2053,27 +2066,28 @@ export function DatasetWorkspaceRoute({ datasetId, activeToolId }: DatasetWorksp
         </aside>
       </div>
 
-      {isDatasetsModalOpen ? (
-        <div
-          className="dataset-modal-backdrop dataset-modal-backdrop--datasets"
-          role="presentation"
-          onClick={closeDatasetsModal}
-        >
-          <div
-            className="dataset-modal dataset-modal--datasets"
-            role="dialog"
-            aria-modal="true"
-            aria-labelledby="all-datasets-title"
-            onClick={(event) => {
-              event.stopPropagation();
+      {isDatasetsModalOpen
+        ? createPortal(
+            <div
+              className="dataset-modal-backdrop dataset-modal-backdrop--datasets"
+              role="presentation"
+              onClick={closeDatasetsModal}
+            >
+              <div
+                className="dataset-modal dataset-modal--datasets"
+                role="dialog"
+                aria-modal="true"
+                aria-labelledby="all-datasets-title"
+                onClick={(event) => {
+                  event.stopPropagation();
 
-              if (event.target === event.currentTarget) {
-                setIsSortMenuOpen(false);
-                setOpenDatasetMenuId(null);
-                setRenamingDatasetId(null);
-              }
-            }}
-          >
+                  if (event.target === event.currentTarget) {
+                    setIsSortMenuOpen(false);
+                    setOpenDatasetMenuId(null);
+                    setRenamingDatasetId(null);
+                  }
+                }}
+              >
             <div className="dataset-modal__head">
               <div className="dataset-modal__head-copy">
                 <p className="section-kicker">exports</p>
@@ -2346,9 +2360,11 @@ export function DatasetWorkspaceRoute({ datasetId, activeToolId }: DatasetWorksp
                 </Link>
               )}
             </div>
-          </div>
-        </div>
-      ) : null}
+              </div>
+            </div>,
+            document.body,
+          )
+        : null}
 
       {deleteConfirmDataset
         ? createPortal(
@@ -2392,19 +2408,20 @@ export function DatasetWorkspaceRoute({ datasetId, activeToolId }: DatasetWorksp
           )
         : null}
 
-      {isToolsModalOpen ? (
-        <div
-          className="dataset-modal-backdrop dataset-modal-backdrop--tools"
-          role="presentation"
-          onClick={() => setIsToolsModalOpen(false)}
-        >
-          <div
-            className="dataset-modal dataset-modal--tools"
-            role="dialog"
-            aria-modal="true"
-            aria-labelledby="all-tools-title"
-            onClick={(event) => event.stopPropagation()}
-          >
+      {isToolsModalOpen
+        ? createPortal(
+            <div
+              className="dataset-modal-backdrop dataset-modal-backdrop--tools"
+              role="presentation"
+              onClick={() => setIsToolsModalOpen(false)}
+            >
+              <div
+                className="dataset-modal dataset-modal--tools"
+                role="dialog"
+                aria-modal="true"
+                aria-labelledby="all-tools-title"
+                onClick={(event) => event.stopPropagation()}
+              >
             <div className="dataset-modal__head">
               <div>
                 <p className="section-kicker">tools</p>
@@ -2467,10 +2484,11 @@ export function DatasetWorkspaceRoute({ datasetId, activeToolId }: DatasetWorksp
                 );
               })}
             </div>
-
-          </div>
-        </div>
-      ) : null}
+              </div>
+            </div>,
+            document.body,
+          )
+        : null}
     </section>
   );
 }

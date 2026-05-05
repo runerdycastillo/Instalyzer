@@ -26,6 +26,7 @@ Current milestone focus:
 - [x] Native `Not Following Back` route implemented
 - [x] Tablet/mobile workspace gate implemented below `1024px`
 - [x] Tablet gate and tablet marketing/support polish completed
+- [x] Short-height desktop polish pass completed for the core soft-launch surfaces
 - [ ] Parser/domain logic extracted from static scripts
 
 ## Session Audit Template
@@ -205,7 +206,10 @@ Use this section to track the current migration flow specifically.
 ### Fix Next
 
 - [ ] Do a focused mobile gate QA/polish pass
-- Why now: tablet polish is effectively wrapped, but the phone-width gate and help/legal/contact surfaces still need the same deliberate pass below `768px`
+- Why now: tablet polish is effectively wrapped and the short-height desktop pass is now much stronger, so phone-width polish is still the next broad responsive lane after the height matrix is checked.
+
+- [ ] Continue the short-height desktop audit at the remaining target heights
+- Why now: today fixed the real `1432 x 712` laptop pain points, but the next session should verify the full height matrix before leaving this pass.
 
 - [ ] Decide the next parser-confidence pass or next native tool after gate QA settles
 - Why now: Tool 1, support, and the workspace gate are all stronger now, so the next product decision should happen after the tablet/mobile handoff is visually solid
@@ -468,3 +472,22 @@ Add one short entry per work session.
   - starting parser/auth/billing work before mobile receives the same focused polish tablet just received
 - Next step:
   - polish the mobile gate below `768px`, then decide whether parser extraction or the next native tool should move next
+
+### Session Entry - 2026-05-04
+
+- Date: 2026-05-04
+- Focus: complete the first short-height desktop responsive polish pass around the real `1432 x 712` laptop viewport
+- What moved forward:
+  - homepage hero, scroll cue, tools, how-it-works, results preview, FAQ, final CTA, nav, and footer were tightened for short desktop heights
+  - guide quick tips, visual guide media, contact form, and dataset upload flow gained earlier height-specific compact behavior
+  - workspace overview, not-following-back, and manage exports/tools modals were tightened for laptop-height screens
+  - manage exports/tools modals now portal to `document.body` with scroll locking, preventing background/nav overlap while modals are open
+  - Terms and Data Deletion legal surfaces were cleaned up for the compact laptop viewport
+- What remains rough:
+  - the remaining short-height matrix still needs a deliberate follow-up pass across `1432`, `1440`, `1366`, `1280`, and `1024` widths
+  - phone-width gate polish below `768px` is still waiting behind this height pass
+  - parser/domain extraction remains ahead
+- Biggest risk:
+  - tying component-specific layout breakpoints to global title sizing could make the page feel inconsistent; title rhythm should stay shared unless a real component demands otherwise
+- Next step:
+  - continue the short-height desktop audit with the target matrix captured in `docs/day-wraps/2026-05-04/end-of-day.md`, then return to mobile gate polish

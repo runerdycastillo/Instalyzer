@@ -6,6 +6,7 @@ import Link from "next/link";
 export default function ContactPage() {
   return (
     <MarketingInfoPage
+      className="marketing-info-page--contact"
       eyebrow="contact"
       title="Contact Us"
       description="reach out for export help, workspace questions, or product feedback."

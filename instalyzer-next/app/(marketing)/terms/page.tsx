@@ -136,36 +136,21 @@ const legalSections: readonly LegalSection[] = [
     id: "changes-to-terms",
     title: "Changes to terms",
     body: (
-      <p>
-        These terms may be updated from time to time. Continued use of
-        Instalyzer after changes become effective means you agree to the updated
-        terms.
-      </p>
+      <>
+        <p>
+          These terms may be updated from time to time. Continued use of
+          Instalyzer after changes become effective means you agree to the updated
+          terms.
+        </p>
+        <p>
+          Questions about these terms? <Link href="/contact">Contact support</Link>.
+        </p>
+      </>
     ),
   },
 ] as const;
 
 const sideCards = [
-  {
-    id: "support",
-    title: "Support",
-    body: (
-      <>
-        <p>Questions about these terms can be sent to:</p>
-        <a
-          href="mailto:support@instalyzer.app"
-          className="privacy-policy-page__email"
-        >
-          support@instalyzer.app
-        </a>
-        <div className="terms-page__support-actions">
-          <Link href="/contact" className="hero-btn hero-btn-secondary">
-            Contact support
-          </Link>
-        </div>
-      </>
-    ),
-  },
   {
     id: "future-billing",
     title: "Future billing",
@@ -229,7 +214,7 @@ export default function TermsPage() {
             {sideCards.map((card) => (
               <article
                 key={card.id}
-                className={`privacy-policy-page__card${card.id === "support" ? " terms-page__aside-card--support" : ""}`}
+                className="privacy-policy-page__card"
               >
                 <h2 className="privacy-policy-page__card-title">{card.title}</h2>
                 <div className="privacy-policy-page__card-copy">{card.body}</div>

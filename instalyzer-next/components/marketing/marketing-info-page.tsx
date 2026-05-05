@@ -2,6 +2,7 @@ import Link from "next/link";
 import type { ReactNode } from "react";
 
 type MarketingInfoPageProps = {
+  className?: string;
   eyebrow: string;
   title: string;
   description: string;
@@ -23,6 +24,7 @@ type MarketingInfoPageProps = {
 };
 
 export function MarketingInfoPage({
+  className,
   eyebrow,
   title,
   description,
@@ -35,7 +37,7 @@ export function MarketingInfoPage({
   actions = [],
 }: MarketingInfoPageProps) {
   return (
-    <main className="marketing-info-page">
+    <main className={`marketing-info-page${className ? ` ${className}` : ""}`}>
       <section className="marketing-info-page__hero">
         <p className="section-kicker">{eyebrow}</p>
         <h1 className="marketing-info-page__title">{title}</h1>

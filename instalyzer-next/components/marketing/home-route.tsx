@@ -29,18 +29,21 @@ const howItWorksSteps = [
     step: "step 1",
     title: "upload your export",
     copy: "download the official instagram export zip and bring it into instalyzer.",
+    compactCopy: "upload your instagram export.",
     icon: Upload,
   },
   {
     step: "step 2",
     title: "analyze your data",
     copy: "instalyzer reads your export and turns followers, following, and account activity into useful signals.",
+    compactCopy: "we inspect your data.",
     icon: AnalyzeSparkleIcon,
   },
   {
     step: "step 3",
     title: "open your workspace",
     copy: "review your results, use the live tools, and keep the same export ready for what comes next.",
+    compactCopy: "access your tools and overview.",
     icon: LayoutDashboard,
   },
 ] as const;
@@ -181,9 +184,15 @@ export function MarketingHomeRoute() {
               get started
             </Link>
 
-            <a href="#how-it-works" className="hero-btn hero-btn-secondary">
+            <HeroScrollLink
+              targetId="how-it-works"
+              shortHeightBottomSelector=".how-it-works-help"
+              className="hero-btn hero-btn-secondary"
+              ariaLabel="Scroll to how it works section"
+              scrollBlock="start"
+            >
               how it works
-            </a>
+            </HeroScrollLink>
           </div>
         </div>
 
@@ -213,9 +222,7 @@ export function MarketingHomeRoute() {
               one export can unlock more than one workflow
             </h2>
             <p className="section-copy">
-              the soft launch starts with not following back live now. the same
-              dataset foundation is built to support audience, reach, and content
-              analysis next.
+              <em>not following back</em> is live now. more tools are coming soon.
             </p>
           </div>
 
@@ -282,7 +289,10 @@ export function MarketingHomeRoute() {
                   <step.icon aria-hidden="true" strokeWidth={1.9} />
                 </span>
                 <h3 className="how-it-works-card-title">{step.title}</h3>
-                <p className="how-it-works-card-copy">{step.copy}</p>
+                <p className="how-it-works-card-copy">
+                  <span className="how-it-works-card-copy-full">{step.copy}</span>
+                  <span className="how-it-works-card-copy-compact">{step.compactCopy}</span>
+                </p>
               </article>
 
               {index < howItWorksSteps.length - 1 ? (
@@ -482,8 +492,7 @@ export function MarketingHomeRoute() {
             ready to analyze your instagram data?
           </h2>
           <p className="section-copy">
-            upload your export and try the first live tool now. no instagram login
-            required and your data stays private.
+            upload your export and try the first live tool now.
           </p>
         </div>
 
