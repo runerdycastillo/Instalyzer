@@ -56,8 +56,11 @@ Verification:
 
 Next best move:
 
-- start Firebase authentication from the documented plan
+- start Firebase authentication from the `Next Session Start Here` checklist in `docs/firebase-auth-implementation-plan.md`
+- create or confirm the Firebase project, enable Email/password and Google sign-in, and add authorized domains
+- add env placeholders without committing secrets
 - implement auth in this order: Firebase client/Admin helpers, sign-in/sign-up UI, session cookie route handlers, current-user server helper, account state, sign-out, then Firestore dataset ownership
+- first success loop should be: sign up, sign in, refresh and stay signed in, sign out, cookie clears
 
 ## Session Audit Template
 

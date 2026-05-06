@@ -113,9 +113,12 @@ Notes:
 Notes:
 
 - Next recommended task:
-  - start Firebase authentication using `docs/firebase-auth-implementation-plan.md`
+  - start Firebase authentication using the `Next Session Start Here` checklist in `docs/firebase-auth-implementation-plan.md`
 - Prerequisites for next session:
   - create or confirm the Firebase project
-  - add package dependencies
+  - enable Email/password and Google sign-in
+  - add `localhost` and the future production domain as authorized domains
   - add env placeholders without committing secrets
+  - add package dependencies
   - build Firebase Auth first, then server session cookies, then Firestore ownership
+  - first success loop should be: sign up, sign in, refresh and stay signed in, sign out, cookie clears

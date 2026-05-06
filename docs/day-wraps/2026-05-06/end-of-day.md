@@ -67,17 +67,22 @@ Today is May 6, 2026.
 
 ## Priority For Next Session
 
-1. Start Firebase authentication from `docs/firebase-auth-implementation-plan.md`.
-2. Add Firebase packages and environment variable placeholders.
-3. Build Firebase client and Admin helper modules.
-4. Replace the `/account` placeholder with real signed-in/signed-out state.
-5. Add sign-in, sign-up, session cookie, and sign-out flows.
-6. Connect saved dataset ownership to authenticated user IDs after the auth shell is stable.
+1. Open `docs/firebase-auth-implementation-plan.md` and start with its `Next Session Start Here` checklist.
+2. Create or confirm the Firebase project and enable Email/password plus Google sign-in.
+3. Add Firebase env placeholders to `.env.example`; keep real values in `.env.local` or deployment secrets only.
+4. Install `firebase` and `firebase-admin`.
+5. Build Firebase client and Admin helper modules.
+6. Add server session cookie route handlers: `POST /api/auth/session` and `POST /api/auth/sign-out`.
+7. Replace the `/account` placeholder with real signed-in/signed-out state.
+8. Build `/sign-in` and `/sign-up`.
+9. Verify the first auth loop: sign up, sign in, refresh and stay signed in, sign out, cookie clears.
+10. After that works, connect saved dataset ownership to authenticated user IDs.
 
 ## Working Notes
 
 - Keep `.env.local` private and do not commit real Firebase credentials.
 - Prefer Firebase Auth plus Firebase Admin session cookies instead of client-only auth.
+- Do the auth shell before Firestore dataset persistence.
 - Do not store raw Instagram zip exports by default during the first auth pass.
 - Keep Firebase Storage and billing out of the first implementation unless a product decision changes.
 - If local dev shows stale chunk errors after a production build, restart the dev server and hard refresh the browser.

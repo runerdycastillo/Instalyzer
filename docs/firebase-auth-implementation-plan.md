@@ -10,6 +10,23 @@ The goal is to add real accounts without overbuilding the backend too early:
 
 `Firebase Auth first, secure session cookies second, Firestore ownership third`
 
+## Next Session Start Here
+
+When the next session starts, use this as the first checklist before touching code:
+
+1. Review this document and confirm the first auth slice is still Firebase Auth plus server session cookies.
+2. Create or confirm the Firebase project for Instalyzer.
+3. Enable Email/password sign-in and Google sign-in in Firebase Authentication.
+4. Add `localhost` and the future production domain to Firebase authorized domains.
+5. Add Firebase env placeholders to `.env.example`; put real values only in `.env.local` or the deployment environment.
+6. Install `firebase` and `firebase-admin`.
+7. Create the Firebase client initializer and Firebase Admin initializer.
+8. Add session cookie route handlers: `POST /api/auth/session` and `POST /api/auth/sign-out`.
+9. Build `/sign-in`, `/sign-up`, and real signed-in/signed-out `/account` states.
+10. Verify the first success loop: sign up, sign in, refresh and stay signed in, sign out, confirm the cookie clears.
+
+Do not start with Firestore dataset persistence. Get the auth shell and server-trusted session working first.
+
 ## Recommendation
 
 Use Firebase as the account foundation.
