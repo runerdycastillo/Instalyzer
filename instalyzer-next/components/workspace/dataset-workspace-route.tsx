@@ -1035,8 +1035,7 @@ export function DatasetWorkspaceRoute({ datasetId, activeToolId }: DatasetWorksp
   }, [isDatasetsModalOpen, openDatasetMenuId, renamingDatasetId]);
 
   useEffect(() => {
-    const hasOpenModal = isDatasetsModalOpen || isToolsModalOpen || Boolean(deleteConfirmDatasetId);
-    if (!hasOpenModal) return undefined;
+    if (!deleteConfirmDatasetId) return undefined;
 
     document.documentElement.classList.add("modal-open");
     document.body.classList.add("modal-open");
@@ -1045,7 +1044,7 @@ export function DatasetWorkspaceRoute({ datasetId, activeToolId }: DatasetWorksp
       document.documentElement.classList.remove("modal-open");
       document.body.classList.remove("modal-open");
     };
-  }, [deleteConfirmDatasetId, isDatasetsModalOpen, isToolsModalOpen]);
+  }, [deleteConfirmDatasetId]);
 
   useEffect(() => {
     if (!deleteConfirmDatasetId) return undefined;

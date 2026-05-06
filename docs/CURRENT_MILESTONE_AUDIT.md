@@ -8,6 +8,7 @@ Current milestone focus:
 - Replace placeholder routes with real product surfaces
 - Preserve the static product quality while simplifying toward a free launch
 - Keep momentum without losing track of polish, bugs, and gaps
+- Begin Firebase auth/account foundation after the accepted responsiveness wrap-up
 
 ## How To Use
 
@@ -27,7 +28,36 @@ Current milestone focus:
 - [x] Tablet/mobile workspace gate implemented below `1024px`
 - [x] Tablet gate and tablet marketing/support polish completed
 - [x] Short-height desktop polish pass completed for the core soft-launch surfaces
+- [x] Remaining responsiveness matrix accepted through the `1024px` boundary checks
+- [x] Firebase auth/account implementation plan documented
+- [ ] Firebase auth/account foundation implemented
 - [ ] Parser/domain logic extracted from static scripts
+
+## Latest Checkpoint - May 6, 2026
+
+Responsiveness is wrapped for the current pass.
+
+What changed:
+
+- fixed manage datasets/export and tools modal backdrop placement so the sticky nav remains visible
+- removed normal manage modal hard scroll-locking while keeping destructive confirm dialogs locked
+- tightened short-height modal behavior below the header
+- added compact quick-guide cards for the `921px-1023px` width band at short heights
+- added visual-guide carousel scaling for the same near-`1024px` band
+- added an extra visual-guide refinement under `750px` height for the `700px-750px` pocket
+- documented the Firebase recommendation in `docs/firebase-auth-implementation-plan.md`
+- added the May 6 day-wrap and milestone snapshot
+
+Verification:
+
+- `npm run lint` passed
+- `git diff --check` passed with only expected CRLF warnings
+- `npm run build` passed after allowing network access for Google Fonts
+
+Next best move:
+
+- start Firebase authentication from the documented plan
+- implement auth in this order: Firebase client/Admin helpers, sign-in/sign-up UI, session cookie route handlers, current-user server helper, account state, sign-out, then Firestore dataset ownership
 
 ## Session Audit Template
 

@@ -14,9 +14,13 @@ Use this doc to capture real layout and usability issues while stepping down thr
 - The gate sends the exact desktop link by email, includes a quieter copy-link fallback, and keeps marketing updates optional and unchecked by default.
 - `/help` remains responsive below `1024px`, but upload/workspace CTAs now route into the gate instead of implying the workspace is usable on tablet/mobile.
 
-## Next Pass - Short-Height Desktop Audit
+## Completed Pass - Short-Height Desktop Audit
 
-This is the active focused responsive pass.
+Status as of May 6, 2026:
+
+- accepted for the current soft-launch responsiveness pass
+- remaining fixes were concentrated around the near-`1024px` boundary at short heights
+- authentication is now the next major implementation phase
 
 The issue is not phone or tablet width. It is `desktop-width` with `short laptop height`: the app shows the desktop hero/layout, but the available browser height is compact enough that the hero panel, nav, and scroll cue can overlap or feel squeezed.
 
@@ -99,7 +103,7 @@ Completed/accepted directions:
   - Terms support card removed
   - legal titles and Data Deletion sidebar behavior tightened for short-height desktop
 
-Next height matrix:
+Checked height matrix:
 
 - `1432 x 900`
 - `1432 x 880`
@@ -142,6 +146,35 @@ Focus routes:
 - not following back
 - contact
 - terms
+
+## Short-Height Progress - May 6, 2026
+
+Current responsive pass outcome:
+
+- accepted the earlier `1432px` width sweep
+- completed the remaining common desktop and near-tablet boundary checks below that range
+- final active pocket was around `1020px-1023px` width and `700px-930px` height
+
+Additional fixes:
+
+- Workspace modals:
+  - sticky nav remains visible when manage datasets/export or tools modal opens
+  - normal manage modals no longer apply the global `modal-open` scroll lock
+  - destructive confirm dialogs still use the hard lock
+  - modal backdrops begin below `--marketing-header-height`
+  - short-height tools and datasets modals can scroll within the available area
+- Help quick guide:
+  - `921px-1023px` width and under `930px` height now uses compact two-column step cards
+  - this fixes the sparse/chopped single-column look around `1020 x 712`
+- Help visual guide:
+  - `921px-1023px` width and under `899px` height now scales the carousel, mockup, arrows, and overlay
+  - under `750px` height, the visual guide gets a second reduction so the mockup has better top/bottom breathing room
+
+Verification:
+
+- `npm run lint` passed
+- `git diff --check` passed with expected CRLF warnings only
+- `npm run build` passed after network access allowed Google Fonts to resolve
 
 ## 1440
 

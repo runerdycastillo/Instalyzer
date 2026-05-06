@@ -1416,7 +1416,7 @@ img {
 .marketing-header {
   position: sticky;
   top: 0;
-  z-index: 30;
+  z-index: 50;
   backdrop-filter: blur(18px);
   background: color-mix(in srgb, var(--bg-main) 94%, transparent);
   border-bottom: 1px solid color-mix(in srgb, var(--line) 62%, transparent);
@@ -10365,15 +10365,20 @@ a.workspace-tool-pill:focus-visible {
   display: grid;
   place-items: center;
   padding: 24px;
-  background: rgba(7, 10, 16, 0.22);
+  background: rgba(7, 10, 16, 0.12);
+  overscroll-behavior: contain;
 }
 
 .dataset-modal-backdrop--datasets {
+  inset: var(--marketing-header-height, 96px) 0 0;
   place-items: center;
 }
 
 .dataset-modal-backdrop--tools {
-  place-items: center;
+  inset: var(--marketing-header-height, 96px) 0 0;
+  place-items: start center;
+  padding-top: clamp(76px, 11dvh, 118px);
+  overflow-y: auto;
 }
 
 .dataset-modal-backdrop--confirm {
@@ -12701,14 +12706,22 @@ a.workspace-tool-pill:focus-visible {
     height: 34px;
   }
 
-  .dataset-modal-backdrop--datasets {
+  .dataset-modal-backdrop--datasets,
+  .dataset-modal-backdrop--tools {
     place-items: start center;
-    padding: calc(var(--marketing-header-height) + 14px) 20px 18px;
+    padding: 14px 20px 18px;
     overflow-y: auto;
   }
 
   .dataset-modal--datasets {
     width: min(624px, calc(var(--safe-vw) - 48px));
+    max-height: calc(100dvh - var(--marketing-header-height) - 32px);
+    gap: 12px;
+    padding: 16px 18px 18px;
+    border-radius: 22px;
+  }
+
+  .dataset-modal--tools {
     max-height: calc(100dvh - var(--marketing-header-height) - 32px);
     gap: 12px;
     padding: 16px 18px 18px;
@@ -13637,6 +13650,72 @@ a.workspace-tool-pill:focus-visible {
   }
 }
 
+@media (min-width: 1024px) and (max-width: 1080px) {
+  .guide-tab-panel {
+    gap: 12px;
+  }
+
+  .guide-step-surface {
+    padding-top: 4px;
+  }
+
+  .guide-step-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 10px;
+  }
+
+  .guide-step-card-v2 {
+    grid-template-columns: auto minmax(0, 1fr);
+    grid-template-rows: auto auto;
+    align-content: start;
+    column-gap: 10px;
+    row-gap: 8px;
+    min-height: 112px;
+    padding: 12px;
+    border: 1px solid color-mix(in srgb, var(--line) 58%, transparent);
+    border-radius: 16px;
+    background:
+      linear-gradient(
+        180deg,
+        color-mix(in srgb, var(--bg-panel) 66%, transparent) 0%,
+        color-mix(in srgb, var(--bg-panel) 36%, transparent) 100%
+      );
+  }
+
+  .guide-step-card-v2:first-child,
+  .guide-step-card-v2:nth-child(n + 4) {
+    border-top: 1px solid color-mix(in srgb, var(--line) 58%, transparent);
+  }
+
+  .guide-step-card-v2.is-accented {
+    border-color: color-mix(in srgb, var(--accent) 28%, var(--line));
+  }
+
+  .guide-step-number-v2 {
+    grid-column: 1;
+    grid-row: 1;
+    justify-self: start;
+    font-size: 1.24rem;
+  }
+
+  .guide-step-title-v2 {
+    grid-column: 2;
+    grid-row: 1;
+    align-self: center;
+    min-height: 0;
+    font-size: 0.84rem;
+    line-height: 1.18;
+  }
+
+  .guide-step-copy-v2 {
+    grid-column: 1 / -1;
+    grid-row: 2;
+    max-width: none;
+    font-size: 0.8rem;
+    line-height: 1.4;
+  }
+}
+
 @media (max-width: 1240px) {
   .dataset-overview-support-card--reach .dataset-overview-ring-row {
     grid-template-columns: 144px minmax(0, 1fr);
@@ -14482,6 +14561,261 @@ a.workspace-tool-pill:focus-visible {
     position: static;
     top: auto;
     max-width: none;
+  }
+}
+
+@media (min-width: 921px) and (max-width: 1023px) and (max-height: 930px) {
+  .guide-shell-v2 {
+    width: min(100%, calc(var(--safe-vw) - 44px));
+    padding-top: 10px;
+  }
+
+  .guide-tabs-content {
+    grid-template-columns: 132px minmax(0, 1fr);
+    column-gap: 18px;
+  }
+
+  .guide-tabs-rail {
+    top: 12px;
+    gap: 8px;
+    padding-top: 72px;
+  }
+
+  .guide-tabs-rail-label {
+    font-size: 0.66rem;
+  }
+
+  .guide-tab-list-vertical {
+    gap: 8px;
+  }
+
+  .guide-tab-list-vertical .guide-tab-button {
+    min-height: 62px;
+    padding: 10px 12px;
+    border-radius: 16px;
+  }
+
+  .guide-tab-button-title {
+    font-size: 0.86rem;
+  }
+
+  .guide-tab-button-copy {
+    font-size: 0.68rem;
+  }
+
+  .guide-tabs-head {
+    gap: 8px;
+    padding-bottom: 10px;
+  }
+
+  .guide-tabs-header-main {
+    gap: 6px;
+  }
+
+  .guide-panel-title-page {
+    margin-bottom: 2px;
+    font-size: clamp(1.72rem, 3.1vw, 2.05rem);
+    line-height: 1;
+  }
+
+  .guide-panel-copy {
+    font-size: 0.86rem;
+    line-height: 1.35;
+  }
+
+  .guide-tab-panel {
+    gap: 8px;
+    margin-top: 10px;
+  }
+
+  .guide-panel-mode-title {
+    font-size: 0.94rem;
+  }
+
+  .guide-step-surface {
+    padding-top: 0;
+  }
+
+  .guide-step-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 8px;
+  }
+
+  .guide-step-card-v2 {
+    grid-template-columns: auto minmax(0, 1fr);
+    grid-template-rows: auto auto;
+    align-content: start;
+    column-gap: 9px;
+    row-gap: 6px;
+    min-height: 92px;
+    padding: 10px 11px;
+    border: 1px solid color-mix(in srgb, var(--line) 52%, transparent);
+    border-radius: 14px;
+    background:
+      linear-gradient(
+        180deg,
+        color-mix(in srgb, var(--bg-panel) 64%, transparent) 0%,
+        color-mix(in srgb, var(--bg-panel) 34%, transparent) 100%
+      );
+  }
+
+  .guide-step-card-v2::before,
+  .guide-step-card-v2::after {
+    display: none;
+  }
+
+  .guide-step-card-v2:first-child,
+  .guide-step-card-v2:nth-child(n + 4) {
+    border-top: 1px solid color-mix(in srgb, var(--line) 52%, transparent);
+  }
+
+  .guide-step-card-v2.is-accented {
+    border-color: color-mix(in srgb, var(--accent) 28%, var(--line));
+  }
+
+  .guide-step-number-v2 {
+    grid-column: 1;
+    grid-row: 1;
+    justify-self: start;
+    font-size: 1.16rem;
+  }
+
+  .guide-step-title-v2 {
+    grid-column: 2;
+    grid-row: 1;
+    align-self: center;
+    min-height: 0;
+    font-size: 0.82rem;
+    line-height: 1.15;
+  }
+
+  .guide-step-copy-v2 {
+    grid-column: 1 / -1;
+    grid-row: 2;
+    max-width: none;
+    font-size: 0.76rem;
+    line-height: 1.34;
+  }
+
+  .guide-mobile-workspace-cta {
+    margin-top: 16px;
+    padding-top: 16px;
+    gap: 10px;
+  }
+}
+
+@media (min-width: 921px) and (max-width: 1023px) and (max-height: 899px) {
+  .guide-visual-stage {
+    gap: 8px;
+  }
+
+  .guide-visual-display {
+    width: min(100%, 660px);
+    height: clamp(336px, calc(100dvh - var(--marketing-header-height) - 260px), 420px);
+    aspect-ratio: auto;
+    border-radius: 18px;
+  }
+
+  .guide-visual-figure {
+    width: min(430px, calc(100% - 118px));
+  }
+
+  .guide-visual-image {
+    border-radius: 14px;
+  }
+
+  .guide-visual-overlay {
+    width: min(226px, calc(100% - 88px));
+    gap: 4px;
+    padding: 10px 12px;
+    border-radius: 15px;
+  }
+
+  .guide-visual-overlay-top-right {
+    top: 10px;
+    right: 10px;
+  }
+
+  .guide-visual-overlay-top-left {
+    top: 10px;
+    left: 10px;
+  }
+
+  .guide-visual-overlay-bottom-right {
+    right: 10px;
+    bottom: 14px;
+  }
+
+  .guide-visual-overlay-bottom-left {
+    left: 10px;
+    bottom: 14px;
+  }
+
+  .guide-visual-overlay-kicker,
+  .guide-visual-stepline {
+    font-size: 0.68rem;
+    letter-spacing: 0.08em;
+  }
+
+  .guide-visual-title {
+    font-size: 0.96rem;
+    line-height: 1.12;
+  }
+
+  .guide-visual-copy {
+    display: block;
+    font-size: 0.76rem;
+    line-height: 1.34;
+  }
+
+  .guide-visual-arrow {
+    width: 38px;
+    height: 38px;
+  }
+
+  .guide-visual-arrow svg {
+    width: 17px;
+    height: 17px;
+  }
+
+  .guide-visual-arrow-prev {
+    left: 12px;
+  }
+
+  .guide-visual-arrow-next {
+    right: 12px;
+  }
+
+  .guide-visual-meta {
+    padding-top: 0;
+  }
+}
+
+@media (min-width: 921px) and (max-width: 1023px) and (max-height: 750px) {
+  .guide-visual-display {
+    height: clamp(326px, calc(100dvh - var(--marketing-header-height) - 272px), 356px);
+  }
+
+  .guide-visual-card {
+    inset: 10px 0;
+  }
+
+  .guide-visual-figure {
+    width: min(402px, calc(100% - 136px));
+  }
+
+  .guide-visual-overlay {
+    width: min(216px, calc(100% - 96px));
+    padding: 9px 11px;
+  }
+
+  .guide-visual-title {
+    font-size: 0.94rem;
+  }
+
+  .guide-visual-copy {
+    font-size: 0.74rem;
+    line-height: 1.32;
   }
 }
 
