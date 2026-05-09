@@ -11,7 +11,8 @@ export function DatasetWorkspaceEmptyState({
   createEntryPoint,
 }: DatasetWorkspaceEmptyStateProps) {
   const createHref = `/app/datasets/new?entry=${createEntryPoint}`;
-  const previewTags = ["not following back", "audience insights", "content interactions"];
+  const previewTags = ["not following back", "overview metrics", "workspace tools"];
+  const trustNotes = ["official export", "no instagram login", "delete anytime"];
 
   return (
     <section
@@ -31,10 +32,10 @@ export function DatasetWorkspaceEmptyState({
 
         <div className="dataset-empty-state__copy">
           <h1 id="dataset-workspace-title" className="dataset-empty-state__title">
-            no dataset yet
+            workspace ready for your first dataset
           </h1>
           <p className="dataset-empty-state__description">
-            upload your instagram export to unlock your relationship signals, overview metrics, and workspace tools.
+            upload your official instagram export to create a private workspace with overview metrics, relationship signals, and tools.
           </p>
         </div>
 
@@ -50,17 +51,21 @@ export function DatasetWorkspaceEmptyState({
           <Link href={createHref} className="hero-btn hero-btn-primary dataset-empty-state__cta">
             create dataset
           </Link>
-          <Link href="/help" className="dataset-empty-state__help">
-            need help exporting your instagram data?
-          </Link>
-          <Link href="/contact" className="dataset-empty-state__support">
-            questions about imports or parsing? contact support
-          </Link>
+          <div className="dataset-empty-state__secondary-actions">
+            <Link href="/help" className="dataset-empty-state__help">
+              view export guide
+            </Link>
+            <Link href="/contact" className="dataset-empty-state__support">
+              contact support
+            </Link>
+          </div>
         </div>
 
-        <p className="dataset-empty-state__note">
-          your workspace will automatically populate after import.
-        </p>
+        <ul className="dataset-empty-state__trust" aria-label="Dataset privacy notes">
+          {trustNotes.map((note) => (
+            <li key={note}>{note}</li>
+          ))}
+        </ul>
       </article>
     </section>
   );
