@@ -6728,6 +6728,203 @@ img {
   gap: 12px;
 }
 
+.auth-route,
+.account-route {
+  display: grid;
+  gap: 24px;
+}
+
+.auth-route {
+  width: min(920px, 100%);
+  margin-inline: auto;
+}
+
+.auth-route__intro,
+.account-route__hero,
+.auth-panel,
+.auth-summary,
+.account-card {
+  border: 1px solid var(--line);
+  border-radius: var(--radius-xl);
+  background:
+    radial-gradient(circle at top right, color-mix(in srgb, var(--accent) 8%, transparent) 0%, transparent 34%),
+    var(--bg-panel);
+  box-shadow: var(--shadow-md);
+  backdrop-filter: blur(18px);
+}
+
+.auth-route__intro,
+.account-route__hero {
+  padding: 30px;
+}
+
+.auth-route__intro h1,
+.account-route__hero h1 {
+  margin-top: 14px;
+  color: var(--ink-strong);
+  font-size: clamp(2rem, 4vw, 3.35rem);
+  line-height: 1;
+  letter-spacing: 0;
+  text-transform: lowercase;
+}
+
+.auth-route__intro p,
+.account-route__hero p,
+.auth-panel__head p,
+.auth-summary li,
+.account-card p {
+  color: var(--ink-body);
+  line-height: 1.65;
+  text-transform: lowercase;
+}
+
+.auth-route__intro p,
+.account-route__hero > p {
+  max-width: 58ch;
+}
+
+.auth-route__shell {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(240px, 0.62fr);
+  gap: 20px;
+  align-items: start;
+}
+
+.auth-panel {
+  display: grid;
+  gap: 18px;
+  padding: 26px;
+}
+
+.auth-panel__head {
+  display: grid;
+  gap: 8px;
+}
+
+.auth-panel__head h2,
+.auth-summary h2,
+.account-card h2 {
+  margin: 0;
+  color: var(--ink-strong);
+  font-size: 1.12rem;
+  line-height: 1.1;
+  text-transform: lowercase;
+}
+
+.auth-panel__head p {
+  margin: 0;
+}
+
+.auth-panel__actions {
+  display: grid;
+  gap: 12px;
+}
+
+.auth-panel__actions .hero-btn {
+  width: 100%;
+  justify-content: center;
+}
+
+.auth-panel__google {
+  text-transform: lowercase;
+}
+
+.auth-panel__switch {
+  margin: 0;
+  color: var(--ink-soft);
+  font-size: 0.9rem;
+  line-height: 1.5;
+  text-align: center;
+  text-transform: lowercase;
+}
+
+.auth-panel__switch a {
+  color: color-mix(in srgb, white 82%, var(--accent-strong));
+  font-weight: 750;
+  text-decoration: none;
+}
+
+.auth-panel__switch a:hover,
+.auth-panel__switch a:focus-visible {
+  color: color-mix(in srgb, white 92%, var(--accent-strong));
+}
+
+.auth-summary,
+.account-card {
+  display: grid;
+  gap: 14px;
+  padding: 24px;
+}
+
+.auth-summary ul {
+  display: grid;
+  gap: 12px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.auth-summary li {
+  position: relative;
+  padding-left: 17px;
+}
+
+.auth-summary li::before {
+  content: "";
+  position: absolute;
+  top: 0.72em;
+  left: 0;
+  width: 7px;
+  height: 7px;
+  border-radius: 999px;
+  background: var(--accent);
+}
+
+.account-route__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin-top: 22px;
+}
+
+.account-route__grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 20px;
+}
+
+.account-route__details {
+  display: grid;
+  gap: 14px;
+  margin: 0;
+}
+
+.account-route__details div {
+  display: grid;
+  gap: 5px;
+}
+
+.account-route__details dt {
+  color: var(--ink-soft);
+  font-size: 0.82rem;
+  font-weight: 750;
+  text-transform: lowercase;
+}
+
+.account-route__details dd {
+  min-width: 0;
+  margin: 0;
+  color: var(--ink-strong);
+  font-family: var(--font-mono), monospace;
+  font-size: 0.82rem;
+  line-height: 1.5;
+  overflow-wrap: anywhere;
+}
+
+.account-route__sign-out {
+  justify-content: center;
+}
+
 .dataset-flow,
 .dataset-index,
 .dataset-workspace {
@@ -14282,6 +14479,8 @@ a.workspace-tool-pill:focus-visible {
   }
 
   .route-grid,
+  .auth-route__shell,
+  .account-route__grid,
   .dataset-flow__grid,
   .dataset-index__grid,
   .dataset-workspace__grid,
@@ -15352,6 +15551,11 @@ a.workspace-tool-pill:focus-visible {
 
   .route-placeholder__hero,
   .route-card,
+  .auth-route__intro,
+  .account-route__hero,
+  .auth-panel,
+  .auth-summary,
+  .account-card,
   .dataset-flow__hero,
   .dataset-index__hero,
   .dataset-workspace__hero,
