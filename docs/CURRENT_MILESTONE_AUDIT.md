@@ -30,8 +30,40 @@ Current milestone focus:
 - [x] Short-height desktop polish pass completed for the core soft-launch surfaces
 - [x] Remaining responsiveness matrix accepted through the `1024px` boundary checks
 - [x] Firebase auth/account implementation plan documented
-- [ ] Firebase auth/account foundation implemented
+- [x] Firebase auth/account foundation implemented
+- [ ] Auth UI/access polish completed
 - [ ] Parser/domain logic extracted from static scripts
+
+## Latest Checkpoint - May 8, 2026
+
+Firebase auth foundation is implemented and pushed.
+
+What changed:
+
+- created the Firebase project and enabled Email/password plus Google sign-in
+- added `localhost` and `127.0.0.1` to Firebase authorized domains for local auth testing
+- added Firebase client/Admin helpers
+- added secure session cookie routes for sign-in and sign-out
+- replaced the `/account` placeholder with real signed-in/signed-out states
+- added `/sign-in` and `/sign-up`
+- confirmed email/password sign-up, Google sign-in, refresh persistence, and sign-out manually
+- pushed commit `03456ce` (`Add Firebase auth foundation`)
+
+Verification:
+
+- `npm run lint` passed
+- `npm run build` passed after allowing network access for Google Fonts
+- `npm audit --omit=dev` found `0 vulnerabilities`
+
+Next best move:
+
+- polish the auth UI before Firestore
+- make `/sign-up` feel like creating a private Instalyzer workspace, not just an account form
+- keep auth as dedicated pages for the primary flow and defer auth modal work until contextual save moments exist
+- route primary CTAs to `/sign-up?next=/app/datasets/new`
+- require sign-in before `/app`, `/app/datasets`, `/app/datasets/new`, dataset detail routes, and tool routes
+- keep home, guide, pricing, contact, privacy, terms, and data deletion pages public
+- after auth UI/access gating is clean, enable Firestore and add `users/{uid}` profile documents
 
 ## Latest Checkpoint - May 6, 2026
 

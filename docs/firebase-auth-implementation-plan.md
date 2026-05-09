@@ -1,6 +1,6 @@
 # Firebase Auth Implementation Plan
 
-Last updated: May 6, 2026
+Last updated: May 8, 2026
 
 ## Purpose
 
@@ -14,18 +14,23 @@ The goal is to add real accounts without overbuilding the backend too early:
 
 When the next session starts, use this as the first checklist before touching code:
 
-1. Review this document and confirm the first auth slice is still Firebase Auth plus server session cookies.
-2. Create or confirm the Firebase project for Instalyzer.
-3. Enable Email/password sign-in and Google sign-in in Firebase Authentication.
-4. Add `localhost` and the future production domain to Firebase authorized domains.
-5. Add Firebase env placeholders to `.env.example`; put real values only in `.env.local` or the deployment environment.
-6. Install `firebase` and `firebase-admin`.
-7. Create the Firebase client initializer and Firebase Admin initializer.
-8. Add session cookie route handlers: `POST /api/auth/session` and `POST /api/auth/sign-out`.
-9. Build `/sign-in`, `/sign-up`, and real signed-in/signed-out `/account` states.
-10. Verify the first success loop: sign up, sign in, refresh and stay signed in, sign out, confirm the cookie clears.
+1. Review the May 8 auth foundation commit and confirm the Firebase loop still works locally.
+2. Polish the dedicated auth pages before adding Firestore:
+   - `/sign-up`
+   - `/sign-in`
+   - `/account`
+3. Reframe sign-up as creating a private Instalyzer workspace, not just creating an account.
+4. Update app CTAs so primary workspace/upload starts route to auth first:
+   - home get-started CTAs -> `/sign-up?next=/app/datasets/new`
+   - help guide CTA -> `/sign-up?next=/app/datasets/new`
+   - pricing free plan CTA -> `/sign-up?plan=free&next=/app/datasets/new`
+   - signed-out workspace/account entry -> `/sign-in?next=/app`
+5. Keep marketing, guide, pricing, contact, privacy, terms, and data deletion pages public.
+6. Require sign-in before upload/workspace routes such as `/app`, `/app/datasets`, and `/app/datasets/new`.
+7. Keep auth as full pages for the primary flow; defer an auth modal until contextual save moments exist.
+8. After the auth UI and route gating feel right, enable Firestore and add `users/{uid}` profiles.
 
-Do not start with Firestore dataset persistence. Get the auth shell and server-trusted session working first.
+The already completed first auth loop is: sign up, sign in, refresh and stay signed in, sign out, confirm the cookie clears, and Google sign-in works after authorizing `127.0.0.1`.
 
 ## Recommendation
 
@@ -164,6 +169,69 @@ Success criteria:
 - User can refresh the page and remain signed in.
 - Server can identify the signed-in user from the session cookie.
 - Sign out clears both Firebase client state and the server cookie.
+
+Status:
+
+- Completed and pushed on May 8, 2026 in commit `03456ce` (`Add Firebase auth foundation`).
+- Manual QA confirmed email/password sign-up, sign-out, signed-out account state, refresh persistence, and Google sign-in.
+
+## Phase 1B: Auth UI And Access Polish
+
+Goal:
+
+Make authentication feel like the front door to a private Instalyzer workspace before introducing Firestore.
+
+Product direction:
+
+- Use dedicated pages as the primary auth surface:
+  - `/sign-up`
+  - `/sign-in`
+  - `/account`
+- Use a modal later only for contextual moments, such as saving a dataset from an in-progress flow.
+- Require sign-in before upload and workspace access.
+- Treat account creation as automatic access to the first free tier.
+- Do not block public education and sales pages.
+
+Recommended signed-out route behavior:
+
+```text
+home / guide / pricing
+        ↓
+get started
+        ↓
+/sign-up?next=/app/datasets/new
+        ↓
+create free account
+        ↓
+/app/datasets/new
+```
+
+Recommended protected route behavior:
+
+```text
+/app/*
+  signed in -> requested route
+  signed out -> /sign-in?next=current-path
+```
+
+Free tier draft:
+
+- One active saved dataset to start.
+- Official Instagram export upload.
+- Dataset overview.
+- Not Following Back tool.
+- Delete dataset anytime.
+- No raw Instagram zip storage by default.
+
+Auth UI polish checklist:
+
+- Make `/sign-up` headline about creating a private workspace.
+- Make `/sign-in` focus on returning to an existing workspace.
+- Make `/account` show useful signed-in state without exposing too much internal Firebase detail.
+- Keep all user-facing auth copy lowercase to match the current product voice.
+- Add clear redirect/next-route handling after sign-in and sign-up.
+- Make Google and email options feel equal, with Google likely first visually if testing supports it.
+- Add signed-out redirects for `/app`, `/app/datasets`, `/app/datasets/new`, dataset detail routes, and tool routes.
 
 ## Phase 2: Workspace Ownership
 
