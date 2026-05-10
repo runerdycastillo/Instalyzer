@@ -19,7 +19,7 @@ export async function POST(request: Request) {
   } catch {
     return NextResponse.json(
       {
-        message: "The sign-in request could not be read.",
+        message: "we could not finish sign-in. please try again.",
       },
       { status: 400 },
     );
@@ -30,7 +30,7 @@ export async function POST(request: Request) {
   if (!idToken) {
     return NextResponse.json(
       {
-        message: "The sign-in request is missing a Firebase ID token.",
+        message: "we could not finish sign-in. please try again.",
       },
       { status: 400 },
     );
@@ -60,7 +60,7 @@ export async function POST(request: Request) {
 
     return NextResponse.json(
       {
-        message: "We could not finish sign-in. Please try again.",
+        message: "we could not finish sign-in. please try again.",
       },
       { status: 401 },
     );

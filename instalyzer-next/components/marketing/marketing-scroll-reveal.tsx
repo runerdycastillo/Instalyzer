@@ -9,6 +9,8 @@ export function MarketingScrollReveal() {
       return;
     }
 
+    document.documentElement.dataset.revealReady = "true";
+
     const prefersReducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
     const navigationEntry = performance.getEntriesByType("navigation")[0];
     const navigationType =
@@ -40,13 +42,54 @@ export function MarketingScrollReveal() {
 
       revealItems.forEach((item) => observer.observe(item));
 
+      let revealFrameId = 0;
+      const revealVisibleItems = () => {
+        const viewportHeight = window.innerHeight || document.documentElement.clientHeight;
+
+        revealItems.forEach((item) => {
+          if (item.classList.contains("is-visible")) {
+            return;
+          }
+
+          const rect = item.getBoundingClientRect();
+          const isInRevealRange = rect.top <= viewportHeight * 0.92 && rect.bottom >= viewportHeight * 0.08;
+
+          if (isInRevealRange) {
+            item.classList.add("is-visible");
+            observer.unobserve(item);
+          }
+        });
+      };
+      const scheduleRevealVisibleItems = () => {
+        if (revealFrameId) {
+          return;
+        }
+
+        revealFrameId = window.requestAnimationFrame(() => {
+          revealFrameId = 0;
+          revealVisibleItems();
+        });
+      };
+
+      scheduleRevealVisibleItems();
+      window.addEventListener("scroll", scheduleRevealVisibleItems, { passive: true });
+      window.addEventListener("resize", scheduleRevealVisibleItems);
+
       const resultsSection = document.querySelector<HTMLElement>(".results-preview-section");
       const valueNodes = Array.from(
         document.querySelectorAll<HTMLElement>(".results-preview-section [data-countup-target]")
       );
 
       if (!resultsSection || !valueNodes.length) {
-        return () => observer.disconnect();
+        return () => {
+          observer.disconnect();
+          delete document.documentElement.dataset.revealReady;
+          window.removeEventListener("scroll", scheduleRevealVisibleItems);
+          window.removeEventListener("resize", scheduleRevealVisibleItems);
+          if (revealFrameId) {
+            window.cancelAnimationFrame(revealFrameId);
+          }
+        };
       }
 
       const animateValue = (node: HTMLElement, target: number, duration = 800) => {
@@ -100,6 +143,12 @@ export function MarketingScrollReveal() {
       return () => {
         observer.disconnect();
         resultsObserver.disconnect();
+        delete document.documentElement.dataset.revealReady;
+        window.removeEventListener("scroll", scheduleRevealVisibleItems);
+        window.removeEventListener("resize", scheduleRevealVisibleItems);
+        if (revealFrameId) {
+          window.cancelAnimationFrame(revealFrameId);
+        }
       };
     }
 
@@ -114,6 +163,10 @@ export function MarketingScrollReveal() {
         node.textContent = Number.isFinite(target) ? target.toLocaleString() : "0";
       });
     }
+
+    return () => {
+      delete document.documentElement.dataset.revealReady;
+    };
   }, []);
 
   return null;

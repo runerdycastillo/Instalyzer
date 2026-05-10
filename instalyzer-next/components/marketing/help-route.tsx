@@ -14,6 +14,8 @@ const guideTabs = [
   { key: "visual-guide", title: "visual guide", copy: "image flow" },
 ] as const;
 
+type GuideTabKey = (typeof guideTabs)[number]["key"];
+
 const quickSteps: ReadonlyArray<{
   title: string;
   copy: ReactNode;
@@ -212,10 +214,12 @@ const visualSteps = [
   },
 ] as const;
 
-export function HelpRoute() {
-  const [activeTab, setActiveTab] = useState<(typeof guideTabs)[number]["key"]>(
-    "quick-steps",
-  );
+type HelpRouteProps = {
+  initialTab?: GuideTabKey;
+};
+
+export function HelpRoute({ initialTab = "quick-steps" }: HelpRouteProps) {
+  const [activeTab, setActiveTab] = useState<GuideTabKey>(initialTab);
   const [activeVisualIndex, setActiveVisualIndex] = useState(0);
 
   const activeVisualStep = visualSteps[activeVisualIndex];
@@ -224,6 +228,25 @@ export function HelpRoute() {
 
   const activateVisualStep = (nextIndex: number) => {
     setActiveVisualIndex(Math.max(0, Math.min(nextIndex, visualSteps.length - 1)));
+  };
+
+  const activateGuideTab = (
+    tabKey: GuideTabKey,
+    options: { resetScroll?: boolean } = {},
+  ) => {
+    setActiveTab(tabKey);
+
+    if (!options.resetScroll) {
+      return;
+    }
+
+    window.requestAnimationFrame(() => {
+      window.scrollTo({
+        top: 0,
+        left: 0,
+        behavior: "instant",
+      });
+    });
   };
 
   return (
@@ -263,18 +286,23 @@ export function HelpRoute() {
                   >
                     {guideTabs.map((tab, index) => {
                       const active = activeTab === tab.key;
+                      const tabHref = `/help?mode=${tab.key}`;
 
                       return (
-                        <button
+                        <a
                           key={tab.key}
-                          type="button"
+                          href={tabHref}
                           className={`guide-tab-button${active ? " is-active" : ""}`}
                           role="tab"
                           aria-selected={active}
                           aria-controls={`guide-panel-${tab.key}`}
                           id={`guide-tab-${tab.key}`}
-                          tabIndex={active ? 0 : -1}
-                          onClick={() => setActiveTab(tab.key)}
+                          tabIndex={0}
+                          onClick={(event) => {
+                            event.preventDefault();
+                            window.history.replaceState(null, "", tabHref);
+                            activateGuideTab(tab.key, { resetScroll: true });
+                          }}
                           onKeyDown={(event) => {
                             if (
                               ![
@@ -292,12 +320,12 @@ export function HelpRoute() {
                             event.preventDefault();
 
                             if (event.key === "Home") {
-                              setActiveTab(guideTabs[0].key);
+                              activateGuideTab(guideTabs[0].key);
                               return;
                             }
 
                             if (event.key === "End") {
-                              setActiveTab(guideTabs[guideTabs.length - 1].key);
+                              activateGuideTab(guideTabs[guideTabs.length - 1].key);
                               return;
                             }
 
@@ -309,12 +337,12 @@ export function HelpRoute() {
                               guideTabs[
                                 (index + direction + guideTabs.length) % guideTabs.length
                               ];
-                            setActiveTab(nextTab.key);
+                            activateGuideTab(nextTab.key);
                           }}
                         >
                           <span className="guide-tab-button-title">{tab.title}</span>
                           <span className="guide-tab-button-copy">{tab.copy}</span>
-                        </button>
+                        </a>
                       );
                     })}
                   </div>
@@ -553,7 +581,7 @@ export function HelpRoute() {
               instalyze your data
             </Link>
             <p className="guide-primary-cta-note guide-side-cta-note">
-              your data stays private and secure.
+              data stays private.
             </p>
           </div>
         </aside>

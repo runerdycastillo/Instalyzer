@@ -32,6 +32,7 @@ export function MarketingNav() {
     { href: overviewHref, label: "workspace" },
     { href: "/help", label: "guide" },
   ];
+  const isAccountCurrent = pathname.startsWith("/account");
 
   const handleHomeClick = (event: MouseEvent<HTMLAnchorElement>) => {
     if (pathname !== "/") {
@@ -47,30 +48,20 @@ export function MarketingNav() {
     <nav className="top-nav" aria-label="Primary">
       <div className="top-nav-brand">
         <Link
-          href="/account"
-          className={`top-nav-icon top-nav-profile${pathname.startsWith("/account") ? " is-current" : ""}`}
-          aria-label="Open account"
-          aria-current={pathname.startsWith("/account") ? "page" : undefined}
-        >
-          <CircleUserRound aria-hidden="true" strokeWidth={1.9} />
-        </Link>
-      </div>
-
-      <div className="top-nav-center">
-        <Link
           href="/"
           className={`top-nav-logo-link${pathname === "/" ? " is-current" : ""}`}
-          aria-label="Show home panel"
+          aria-label="Show Instalyzer home"
           onClick={handleHomeClick}
         >
           <Image
             src="/assets/logo/instaylzer-logo.png"
             alt="Instalyzer logo"
             className="top-nav-logo"
-            width={96}
-            height={96}
+            width={88}
+            height={88}
             priority
           />
+          <span className="top-nav-wordmark">Instalyzer</span>
         </Link>
       </div>
 
@@ -90,6 +81,14 @@ export function MarketingNav() {
             </Link>
           );
         })}
+        <Link
+          href="/account"
+          className={`top-nav-link top-nav-link--account${isAccountCurrent ? " is-current" : ""}`}
+          aria-label="account"
+          aria-current={isAccountCurrent ? "page" : undefined}
+        >
+          <CircleUserRound aria-hidden="true" strokeWidth={1.9} />
+        </Link>
       </div>
     </nav>
   );
