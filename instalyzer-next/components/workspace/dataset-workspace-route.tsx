@@ -1085,20 +1085,37 @@ export function DatasetWorkspaceRoute({ datasetId, activeToolId }: DatasetWorksp
 
   if (!dataset && datasetId) {
     return (
-      <section className="dataset-workspace">
-        <article className="dataset-card dataset-card--empty">
-          <h1>dataset not found</h1>
-          <p>
-            This workspace route is wired, but there is no saved local dataset for
-            <code> {datasetId}</code> right now.
-          </p>
-          <div className="route-links">
-            <Link href="/app/datasets" className="route-link">
-              back to datasets
+      <section className="dataset-workspace dataset-workspace--empty">
+        <article className="dataset-empty-state dataset-empty-state--missing">
+          <p className="section-kicker">workspace issue</p>
+
+          <div className="dataset-empty-state__visual" aria-hidden="true">
+            <div className="dataset-empty-state__visual-ring dataset-empty-state__visual-ring--outer" />
+            <div className="dataset-empty-state__visual-ring dataset-empty-state__visual-ring--inner" />
+            <div className="dataset-empty-state__visual-core">
+              <FolderKanban strokeWidth={1.85} />
+            </div>
+          </div>
+
+          <div className="dataset-empty-state__copy">
+            <h1 className="dataset-empty-state__title">dataset not found</h1>
+            <p className="dataset-empty-state__description">
+              this saved export is not available in this browser anymore. choose another dataset or create a new one.
+            </p>
+          </div>
+
+          <div className="dataset-empty-state__actions">
+            <Link href="/app/datasets" className="hero-btn hero-btn-primary dataset-empty-state__cta">
+              view datasets
             </Link>
-            <Link href="/app/datasets/new?entry=workspace-shell" className="route-link">
-              create dataset
-            </Link>
+            <div className="dataset-empty-state__secondary-actions">
+              <Link href="/app/datasets/new?entry=workspace-shell" className="dataset-empty-state__help">
+                create dataset
+              </Link>
+              <Link href="/contact" className="dataset-empty-state__support">
+                contact support
+              </Link>
+            </div>
           </div>
         </article>
       </section>

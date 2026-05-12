@@ -6,9 +6,10 @@ import {
   signInWithEmailAndPassword,
   signInWithPopup,
 } from "firebase/auth";
+import { Eye, EyeOff } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { type FormEvent, useRef, useState } from "react";
+import { type FormEvent, useEffect, useId, useRef, useState } from "react";
 import {
   getFirebaseClientAuth,
   getGoogleAuthProvider,
@@ -24,28 +25,34 @@ type AuthFormProps = {
 
 function getFirebaseAuthMessage(error: unknown, mode: AuthFormMode) {
   if (!(error instanceof FirebaseError)) {
-    return "we could not finish that request. please try again.";
+    return "we could not finish that request, please try again";
   }
 
   switch (error.code) {
     case "auth/email-already-in-use":
-      return "that email already has an account. sign in instead.";
+      return "that email already has an account, sign in instead";
     case "auth/invalid-credential":
     case "auth/user-not-found":
     case "auth/wrong-password":
-      return "that email or password did not match an account.";
+      return "incorrect email or password";
     case "auth/invalid-email":
-      return "enter a valid email address.";
+      return "enter a valid email address";
+    case "auth/network-request-failed":
+      return "check your connection and try again";
+    case "auth/popup-blocked":
+      return "allow the google sign-in popup and try again";
+    case "auth/too-many-requests":
+      return "too many attempts, try later";
     case "auth/unauthorized-domain":
-      return "google sign-in is not ready for this address yet.";
+      return "google sign-in is not ready for this address yet";
     case "auth/weak-password":
-      return "use a stronger password with at least 6 characters.";
+      return "use a stronger password with at least 6 characters";
     case "auth/operation-not-allowed":
       return mode === "sign-in"
-        ? "this sign-in option is not available yet."
-        : "this workspace setup option is not available yet.";
+        ? "this sign-in option is not available yet"
+        : "this workspace setup option is not available yet";
     default:
-      return "we could not finish that request. please try again.";
+      return "we could not finish that request, please try again";
   }
 }
 
@@ -134,7 +141,7 @@ async function createServerSession(idToken: string) {
   });
 
   if (!response.ok) {
-    let message = "we could not prepare your workspace. please try again.";
+    let message = "we could not prepare your workspace, please try again";
 
     try {
       const payload = (await response.json()) as { message?: string };
@@ -149,11 +156,17 @@ async function createServerSession(idToken: string) {
 
 export function AuthForm({ mode, variant = "route", showSwitch = true }: AuthFormProps) {
   const router = useRouter();
+  const errorMessageId = useId();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
+  const [isPasswordVisible, setIsPasswordVisible] = useState(false);
+  const [isConfirmPasswordVisible, setIsConfirmPasswordVisible] = useState(false);
   const [errorMessage, setErrorMessage] = useState("");
   const [pendingAction, setPendingAction] = useState<"email" | "google" | null>(null);
+  const [isGoogleShimmering, setIsGoogleShimmering] = useState(false);
   const googleAttemptRef = useRef(0);
+  const googleShimmerTimeoutRef = useRef<ReturnType<typeof window.setTimeout> | null>(null);
   const compact = variant === "compact";
 
   const isSignUp = mode === "sign-up";
@@ -162,16 +175,21 @@ export function AuthForm({ mode, variant = "route", showSwitch = true }: AuthFor
     ? "set up a secure workspace for your official instagram export and start turning it into a reusable private dataset."
     : "sign in to continue working with your private instagram export dataset.";
   const badgeLabel = isSignUp ? "private workspace" : "workspace access";
-  const submitLabel = isSignUp ? "create workspace" : "sign in";
+  const submitLabel = isSignUp ? "create account" : "sign in";
   const switchHref = isSignUp ? "/sign-in" : "/sign-up";
-  const switchLabel = isSignUp ? "already have a workspace?" : "new to Instalyzer?";
+  const switchLabel = isSignUp ? "have an account?" : "new to Instalyzer?";
   const switchAction = isSignUp ? "sign in" : "create a workspace";
   const formTitle = isSignUp ? "start with email" : "sign in with email";
   const formDescription = isSignUp
     ? "choose email or google to create your workspace."
     : "choose email or google to reopen your workspace.";
   const summaryTitle = isSignUp ? "what you get" : "pick up where you left off";
-  const googleLabel = compact ? "sign in with google" : "continue with google";
+  const googleLabel = compact
+    ? isSignUp
+      ? "sign up with google"
+      : "sign in with google"
+    : "continue with google";
+  const normalizedEmail = email.trim();
   const summaryItems = isSignUp
     ? [
         {
@@ -203,6 +221,14 @@ export function AuthForm({ mode, variant = "route", showSwitch = true }: AuthFor
       ];
   const isPending = pendingAction !== null;
 
+  useEffect(() => {
+    return () => {
+      if (googleShimmerTimeoutRef.current !== null) {
+        window.clearTimeout(googleShimmerTimeoutRef.current);
+      }
+    };
+  }, []);
+
   const finishSignIn = async (idToken: string) => {
     await createServerSession(idToken);
     router.refresh();
@@ -211,35 +237,67 @@ export function AuthForm({ mode, variant = "route", showSwitch = true }: AuthFor
 
   const handleEmailSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
+
+    if (isPending) {
+      return;
+    }
+
     setErrorMessage("");
+
+    if (isSignUp && password !== confirmPassword) {
+      setErrorMessage("passwords do not match");
+      return;
+    }
+
     setPendingAction("email");
 
     try {
       const auth = getFirebaseClientAuth();
       const credential = isSignUp
-        ? await createUserWithEmailAndPassword(auth, email.trim(), password)
-        : await signInWithEmailAndPassword(auth, email.trim(), password);
+        ? await createUserWithEmailAndPassword(auth, normalizedEmail, password)
+        : await signInWithEmailAndPassword(auth, normalizedEmail, password);
       const idToken = await credential.user.getIdToken();
 
       await finishSignIn(idToken);
     } catch (error) {
       setErrorMessage(
         error instanceof FirebaseError
-          ? getFirebaseAuthMessage(error, mode)
-          : error instanceof Error
-            ? error.message
-            : "we could not finish that request. please try again.",
+            ? getFirebaseAuthMessage(error, mode)
+            : error instanceof Error
+              ? error.message
+            : "we could not finish that request, please try again",
       );
       setPendingAction(null);
     }
   };
 
   const handleGoogleSignIn = async () => {
+    if (isPending) {
+      return;
+    }
+
+    const clearGoogleShimmer = () => {
+      if (googleShimmerTimeoutRef.current !== null) {
+        window.clearTimeout(googleShimmerTimeoutRef.current);
+        googleShimmerTimeoutRef.current = null;
+      }
+
+      setIsGoogleShimmering(false);
+    };
+
+    clearGoogleShimmer();
+    setIsGoogleShimmering(true);
+    googleShimmerTimeoutRef.current = window.setTimeout(() => {
+      setIsGoogleShimmering(false);
+      googleShimmerTimeoutRef.current = null;
+    }, 520);
+
     const attemptId = googleAttemptRef.current + 1;
     googleAttemptRef.current = attemptId;
 
     const releaseCurrentGoogleAttempt = () => {
       if (googleAttemptRef.current === attemptId) {
+        clearGoogleShimmer();
         setPendingAction(null);
       }
     };
@@ -269,7 +327,7 @@ export function AuthForm({ mode, variant = "route", showSwitch = true }: AuthFor
 
             releaseCurrentGoogleAttempt();
           }
-        }, 250);
+        }, 120);
       }, 0);
 
       const credential = await credentialPromise;
@@ -293,8 +351,11 @@ export function AuthForm({ mode, variant = "route", showSwitch = true }: AuthFor
 
   const form = (
     <form
-      className={compact ? "auth-panel auth-panel--compact" : "auth-panel"}
+      className={`${compact ? "auth-panel auth-panel--compact" : "auth-panel"}${
+        isPending ? " is-pending" : ""
+      }`}
       onSubmit={handleEmailSubmit}
+      aria-busy={isPending}
     >
       {!compact ? (
         <div className="auth-panel__head">
@@ -308,63 +369,122 @@ export function AuthForm({ mode, variant = "route", showSwitch = true }: AuthFor
         <input
           type="email"
           autoComplete="email"
-          placeholder="you@example.com"
+          placeholder="email@example.com"
           value={email}
           onChange={(event) => setEmail(event.target.value)}
+          aria-describedby={errorMessage ? errorMessageId : undefined}
           required
         />
       </label>
 
       <label className="dataset-field">
         <span>password</span>
-        <input
-          type="password"
-          autoComplete={isSignUp ? "new-password" : "current-password"}
-          placeholder="password"
-          minLength={6}
-          value={password}
-          onChange={(event) => setPassword(event.target.value)}
-          required
-        />
+        <div className="dataset-field__input-wrap">
+          <input
+            type={isPasswordVisible ? "text" : "password"}
+            autoComplete={isSignUp ? "new-password" : "current-password"}
+            placeholder="************"
+            minLength={6}
+            value={password}
+            onChange={(event) => setPassword(event.target.value)}
+            aria-describedby={errorMessage ? errorMessageId : undefined}
+            required
+          />
+          <button
+            type="button"
+            className="dataset-field__password-toggle"
+            aria-label={isPasswordVisible ? "hide password" : "show password"}
+            aria-pressed={isPasswordVisible}
+            title={isPasswordVisible ? "Hide password" : "Show password"}
+            onClick={() => setIsPasswordVisible((value) => !value)}
+          >
+            {isPasswordVisible ? <EyeOff size={16} aria-hidden="true" /> : <Eye size={16} aria-hidden="true" />}
+          </button>
+        </div>
       </label>
 
+      {isSignUp ? (
+        <label className="dataset-field">
+          <span>confirm password</span>
+          <div className="dataset-field__input-wrap">
+            <input
+              type={isConfirmPasswordVisible ? "text" : "password"}
+              autoComplete="new-password"
+              placeholder="************"
+              minLength={6}
+              value={confirmPassword}
+              onChange={(event) => setConfirmPassword(event.target.value)}
+              aria-describedby={errorMessage ? errorMessageId : undefined}
+              required
+            />
+            <button
+              type="button"
+              className="dataset-field__password-toggle"
+              aria-label={isConfirmPasswordVisible ? "hide password" : "show password"}
+              aria-pressed={isConfirmPasswordVisible}
+              title={isConfirmPasswordVisible ? "Hide password" : "Show password"}
+              onClick={() => setIsConfirmPasswordVisible((value) => !value)}
+            >
+              {isConfirmPasswordVisible ? (
+                <EyeOff size={16} aria-hidden="true" />
+              ) : (
+                <Eye size={16} aria-hidden="true" />
+              )}
+            </button>
+          </div>
+        </label>
+      ) : null}
+
       {errorMessage ? (
-        <p className="dataset-field__error" role="alert">
-          {errorMessage}
-        </p>
+        <div className="auth-panel__feedback" aria-live="polite">
+          <p id={errorMessageId} className="auth-panel__error" role="alert">
+            {errorMessage}
+          </p>
+        </div>
       ) : null}
 
       <div className="auth-panel__actions">
-        <button type="submit" className="hero-btn hero-btn-primary" disabled={isPending}>
-          {pendingAction === "email" ? "working..." : submitLabel}
+        <button
+          type="submit"
+          className={`hero-btn hero-btn-primary${pendingAction === "email" ? " is-loading" : ""}`}
+          disabled={isPending}
+        >
+          <span className="auth-panel__button-content">
+            <span>{submitLabel}</span>
+          </span>
         </button>
         <button
           type="button"
-          className="hero-btn hero-btn-secondary auth-panel__google"
+          className={`hero-btn hero-btn-secondary auth-panel__google${
+            pendingAction === "google" ? " is-google-pending" : ""
+          }${isGoogleShimmering ? " is-shimmering" : ""
+          }`}
           onClick={handleGoogleSignIn}
           disabled={isPending}
         >
-          <span className="auth-panel__google-icon" aria-hidden="true">
-            <svg viewBox="0 0 18 18" focusable="false">
-              <path
-                fill="#4285f4"
-                d="M17.64 9.2c0-.64-.06-1.25-.16-1.84H9v3.48h4.84a4.14 4.14 0 0 1-1.8 2.72v2.26h2.91c1.7-1.57 2.69-3.88 2.69-6.62Z"
-              />
-              <path
-                fill="#34a853"
-                d="M9 18c2.43 0 4.47-.8 5.96-2.18l-2.91-2.26c-.8.54-1.84.86-3.05.86-2.35 0-4.34-1.58-5.05-3.72H.94v2.33A9 9 0 0 0 9 18Z"
-              />
-              <path
-                fill="#fbbc05"
-                d="M3.95 10.7A5.41 5.41 0 0 1 3.67 9c0-.59.1-1.16.28-1.7V4.97H.94A9 9 0 0 0 0 9c0 1.45.34 2.82.94 4.03l3.01-2.33Z"
-              />
-              <path
-                fill="#ea4335"
-                d="M9 3.58c1.32 0 2.51.46 3.44 1.35l2.58-2.58C13.46.9 11.43 0 9 0A9 9 0 0 0 .94 4.97L3.95 7.3C4.66 5.16 6.65 3.58 9 3.58Z"
-              />
-            </svg>
+          <span className="auth-panel__button-content">
+            <span className="auth-panel__google-icon" aria-hidden="true">
+              <svg viewBox="0 0 18 18" focusable="false">
+                <path
+                  fill="#4285f4"
+                  d="M17.64 9.2c0-.64-.06-1.25-.16-1.84H9v3.48h4.84a4.14 4.14 0 0 1-1.8 2.72v2.26h2.91c1.7-1.57 2.69-3.88 2.69-6.62Z"
+                />
+                <path
+                  fill="#34a853"
+                  d="M9 18c2.43 0 4.47-.8 5.96-2.18l-2.91-2.26c-.8.54-1.84.86-3.05.86-2.35 0-4.34-1.58-5.05-3.72H.94v2.33A9 9 0 0 0 9 18Z"
+                />
+                <path
+                  fill="#fbbc05"
+                  d="M3.95 10.7A5.41 5.41 0 0 1 3.67 9c0-.59.1-1.16.28-1.7V4.97H.94A9 9 0 0 0 0 9c0 1.45.34 2.82.94 4.03l3.01-2.33Z"
+                />
+                <path
+                  fill="#ea4335"
+                  d="M9 3.58c1.32 0 2.51.46 3.44 1.35l2.58-2.58C13.46.9 11.43 0 9 0A9 9 0 0 0 .94 4.97L3.95 7.3C4.66 5.16 6.65 3.58 9 3.58Z"
+                />
+              </svg>
+            </span>
+            <span>{googleLabel}</span>
           </span>
-          <span>{googleLabel}</span>
         </button>
       </div>
 

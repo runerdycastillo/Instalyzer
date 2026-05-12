@@ -46,9 +46,12 @@ export default async function AccountPage() {
           </div>
 
           <aside className="account-route__summary account-route__returning" aria-label="returning users">
-            <p className="account-route__eyebrow">already have one?</p>
+            <p className="account-route__eyebrow">have an account?</p>
             <h2>welcome back</h2>
             <AuthForm mode="sign-in" variant="compact" showSwitch={false} />
+            <p className="auth-panel__switch account-route__switch">
+              don&apos;t have an account? <Link href="/sign-up">sign up</Link>
+            </p>
           </aside>
         </div>
 
