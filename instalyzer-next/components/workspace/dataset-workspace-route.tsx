@@ -613,7 +613,7 @@ function AnimatedValue({
   return <>{formatAnimatedValue(displayValue, variant, precision)}</>;
 }
 
-function WorkspaceLoadingState() {
+export function WorkspaceLoadingState() {
   return (
     <section className="dataset-workspace" aria-busy="true" aria-label="Loading workspace">
       <div className="dataset-workspace__grid dataset-workspace__grid--static">
@@ -1085,7 +1085,10 @@ export function DatasetWorkspaceRoute({ datasetId, activeToolId }: DatasetWorksp
 
   if (!dataset && datasetId) {
     return (
-      <section className="dataset-workspace dataset-workspace--empty">
+      <section
+        className="dataset-workspace dataset-workspace--empty dataset-workspace--missing"
+        aria-labelledby="dataset-missing-title"
+      >
         <article className="dataset-empty-state dataset-empty-state--missing">
           <p className="section-kicker">workspace issue</p>
 
@@ -1098,7 +1101,9 @@ export function DatasetWorkspaceRoute({ datasetId, activeToolId }: DatasetWorksp
           </div>
 
           <div className="dataset-empty-state__copy">
-            <h1 className="dataset-empty-state__title">dataset not found</h1>
+            <h1 id="dataset-missing-title" className="dataset-empty-state__title">
+              dataset not found
+            </h1>
             <p className="dataset-empty-state__description">
               this saved export is not available in this browser anymore. choose another dataset or create a new one.
             </p>

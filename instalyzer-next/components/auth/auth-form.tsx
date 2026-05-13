@@ -30,7 +30,7 @@ function getFirebaseAuthMessage(error: unknown, mode: AuthFormMode) {
 
   switch (error.code) {
     case "auth/email-already-in-use":
-      return "that email already has an account, sign in instead";
+      return "email already used";
     case "auth/invalid-credential":
     case "auth/user-not-found":
     case "auth/wrong-password":
@@ -38,7 +38,7 @@ function getFirebaseAuthMessage(error: unknown, mode: AuthFormMode) {
     case "auth/invalid-email":
       return "enter a valid email address";
     case "auth/network-request-failed":
-      return "check your connection and try again";
+      return "connection failed";
     case "auth/popup-blocked":
       return "allow the google sign-in popup and try again";
     case "auth/too-many-requests":
