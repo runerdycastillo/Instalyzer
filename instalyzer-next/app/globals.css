@@ -1399,6 +1399,51 @@ img {
   background: rgba(78, 161, 255, 0.22);
 }
 
+button,
+[role="button"],
+.top-nav,
+.hero-btn,
+.hero-eyebrow,
+.hero-title,
+.hero-scroll-cue,
+.auth-route__intro,
+.account-route__hero-copy,
+.account-card__head,
+.account-card__eyebrow,
+.auth-panel__head,
+.auth-panel__divider,
+.auth-panel__switch,
+.dataset-field > span,
+.contact-support-form__label,
+.marketing-info-page__hero-meta,
+.marketing-info-page__aside-label,
+.marketing-info-page__aside-email-button,
+.tools-showcase-card__head,
+.tools-showcase-badge,
+.tier-columns-note,
+.guide-tabs-rail-label,
+.guide-side-stack-label,
+.guide-tab-button,
+.guide-step-number-v2,
+.workspace-tool-pill,
+.dataset-modal__head,
+.dataset-flow__steps,
+.route-state__actions {
+  -webkit-user-select: none;
+  user-select: none;
+}
+
+input,
+textarea,
+select,
+.contact-support-form__status,
+.dataset-field__error,
+.marketing-info-page__card-copy,
+.marketing-info-page__aside-copy {
+  -webkit-user-select: text;
+  user-select: text;
+}
+
 .page-frame {
   width: min(var(--page-max), calc(100% - 32px));
   margin: 0 auto;
@@ -7090,7 +7135,7 @@ html[data-reveal-ready="true"] [data-reveal].is-visible {
   animation: authButtonMorphPulsePrimary 1.4s ease-in-out infinite;
 }
 
-.auth-panel__actions .auth-panel__google.is-google-pending:disabled {
+.auth-panel__actions .auth-panel__google.is-google-pending {
   color: var(--ink-strong);
   border-color: color-mix(in srgb, var(--line) 85%, transparent);
   background: color-mix(in srgb, var(--ink-soft) 8%, var(--bg-panel));
@@ -8383,6 +8428,12 @@ html[data-reveal-ready="true"] [data-reveal].is-visible {
 
 .dataset-field__input-wrap input {
   padding-right: 58px;
+}
+
+.auth-panel .dataset-field input[type="password"] {
+  font-size: 1.12rem;
+  letter-spacing: 0.16em;
+  line-height: 1;
 }
 
 .dataset-field__password-toggle {

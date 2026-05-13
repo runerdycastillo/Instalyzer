@@ -13,6 +13,8 @@ do not get mixed together.
 
 ## Sign-In
 
+Applies to both `/sign-in` and the signed-out auth form on `/account`.
+
 | State | Status | Notes |
 | --- | --- | --- |
 | Incorrect email or password | Implemented, Reviewed | Compact red inline message is in place |
@@ -20,15 +22,18 @@ do not get mixed together.
 | Invalid email format | Implemented, Needs live test | Error copy exists but should still be manually triggered |
 | Network failure | Implemented, Needs live test | Error copy exists but should still be manually triggered |
 | Google popup blocked | Implemented, Needs live test | Error copy exists but should still be manually triggered |
-| Google popup closed by user | Implemented, Recheck | Silent cancel by design; latest shimmer reset should be confirmed |
-| Google popup pending state | Implemented, Reviewed | Reduced to a quick shimmer with calmer pending behavior |
+| Google popup closed by user | Implemented, Recheck | Silent cancel by design; latest calmer popup behavior should be confirmed |
+| Google popup pending state | Implemented, Reviewed | Reduced to a quick shimmer; clicking Google again should refocus the existing popup |
 | Email submit pending state | Implemented, Reviewed | Static label with button morph only |
 | Successful email sign-in | Implemented, Needs live test | Confirm route transition and session handoff |
 | Successful Google sign-in | Implemented, Needs live test | Confirm route transition and session handoff |
 | Session creation failure after auth | Implemented, Needs live test | Fallback message exists for `/api/auth/session` failure |
 | Password reveal toggle | Implemented, Reviewed | Eye toggle added to password field |
+| Google OAuth support identity | Implemented, Reviewed | Popup now shows the `support@instalyzer.app` support identity after Google Workspace/domain/IAM setup |
 
 ## Sign-Up
+
+Sign-up is email/password only by design. Google is kept as a sign-in option, not an account creation path.
 
 | State | Status | Notes |
 | --- | --- | --- |
@@ -37,11 +42,8 @@ do not get mixed together.
 | Weak password | Implemented, Needs live test | Firebase copy is in place |
 | Invalid email format | Implemented, Needs live test | Firebase copy is in place |
 | Network failure | Implemented, Needs live test | Firebase copy is in place |
-| Google popup blocked | Implemented, Needs live test | Shares Google auth messaging path |
-| Google popup closed by user | Implemented, Recheck | Silent cancel should reset cleanly here too |
 | Create account pending state | Implemented, Reviewed | Static label with button morph only |
 | Successful email sign-up | Implemented, Needs live test | Confirm account creation and redirect |
-| Successful Google sign-up | Implemented, Needs live test | Confirm account creation and redirect |
 | Password reveal toggles | Implemented, Reviewed | Added to password and confirm password |
 
 ## Account / Signed-Out Auth Shell
@@ -64,9 +66,8 @@ do not get mixed together.
 
 ## Next Checks
 
-1. Trigger one real successful email sign-in.
-2. Trigger one real successful Google sign-in.
-3. Trigger Google popup close/cancel after the latest shimmer reset change.
+1. Run the dedicated sign-up failure-state pass: password mismatch, email already in use, weak password, invalid email, and network failure.
+2. Trigger one real successful email sign-up and confirm redirect/session handoff.
+3. Recheck Google popup close/cancel and second-click refocus on `/sign-in` and signed-out `/account`.
 4. Force one blocked-popup case.
-5. Force one invalid-email case.
-6. Force one sign-out failure case.
+5. Force one sign-out failure case.
