@@ -72,7 +72,7 @@ export async function POST(request: Request) {
   } catch {
     return NextResponse.json(
       {
-        message: "The contact form request could not be read.",
+        message: "the contact form request could not be read.",
       },
       { status: 400 },
     );
@@ -81,7 +81,7 @@ export async function POST(request: Request) {
   if (String(payload.website || "").trim()) {
     return NextResponse.json(
       {
-        message: "Your message was received.",
+        message: "your message was received.",
       },
       { status: 200 },
     );
@@ -105,7 +105,7 @@ export async function POST(request: Request) {
   if (!email || !subject || !message) {
     return NextResponse.json(
       {
-        message: "Please complete the required contact fields before sending your message.",
+        message: "please complete the required contact fields before sending your message.",
       },
       { status: 400 },
     );
@@ -114,7 +114,7 @@ export async function POST(request: Request) {
   if (!contactSupportCategoryValues.has(category)) {
     return NextResponse.json(
       {
-        message: "Please choose a valid support category.",
+        message: "please choose a valid support category.",
       },
       { status: 400 },
     );
@@ -123,7 +123,7 @@ export async function POST(request: Request) {
   if (!isValidContactSupportEmail(email)) {
     return NextResponse.json(
       {
-        message: "Please enter a valid reply email address.",
+        message: "please enter a valid reply email address.",
       },
       { status: 400 },
     );
@@ -149,8 +149,7 @@ export async function POST(request: Request) {
     if (error instanceof SupportMailConfigError) {
       return NextResponse.json(
         {
-          message:
-            "The contact form is not fully configured yet. Please use the direct support inbox listed on this page for now.",
+          message: "unavailable right now. email us directly.",
         },
         { status: 503 },
       );
@@ -160,8 +159,7 @@ export async function POST(request: Request) {
 
     return NextResponse.json(
       {
-        message:
-          "We could not deliver your message just now. Please try again or use the direct support inbox below.",
+        message: "unavailable right now. email us directly.",
       },
       { status: 500 },
     );

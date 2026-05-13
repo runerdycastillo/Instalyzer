@@ -166,7 +166,8 @@ export function AuthForm({ mode, variant = "route", showSwitch = true }: AuthFor
   const [pendingAction, setPendingAction] = useState<"email" | "google" | null>(null);
   const [isGoogleShimmering, setIsGoogleShimmering] = useState(false);
   const googleAttemptRef = useRef(0);
-  const googleShimmerTimeoutRef = useRef<ReturnType<typeof window.setTimeout> | null>(null);
+  const googlePopupRef = useRef<Window | null>(null);
+  const googleShimmerTimeoutRef = useRef<number | null>(null);
   const compact = variant === "compact";
 
   const isSignUp = mode === "sign-up";
@@ -272,6 +273,13 @@ export function AuthForm({ mode, variant = "route", showSwitch = true }: AuthFor
   };
 
   const handleGoogleSignIn = async () => {
+    const existingPopup = googlePopupRef.current;
+
+    if (existingPopup && !existingPopup.closed) {
+      existingPopup.focus();
+      return;
+    }
+
     if (isPending) {
       return;
     }
@@ -306,7 +314,7 @@ export function AuthForm({ mode, variant = "route", showSwitch = true }: AuthFor
     setPendingAction("google");
 
     const centeredPopup = centerNextPopupOverCurrentWindow();
-    let popupCloseTimer: ReturnType<typeof window.setInterval> | null = null;
+    let popupCloseTimer: number | null = null;
 
     try {
       const credentialPromise = signInWithPopup(getFirebaseClientAuth(), getGoogleAuthProvider());
@@ -318,6 +326,7 @@ export function AuthForm({ mode, variant = "route", showSwitch = true }: AuthFor
           return;
         }
 
+        googlePopupRef.current = popup;
         popupCloseTimer = window.setInterval(() => {
           if (popup.closed) {
             if (popupCloseTimer !== null) {
@@ -325,6 +334,7 @@ export function AuthForm({ mode, variant = "route", showSwitch = true }: AuthFor
               popupCloseTimer = null;
             }
 
+            googlePopupRef.current = null;
             releaseCurrentGoogleAttempt();
           }
         }, 120);
@@ -340,6 +350,7 @@ export function AuthForm({ mode, variant = "route", showSwitch = true }: AuthFor
       }
     } finally {
       centeredPopup.restore();
+      googlePopupRef.current = null;
 
       if (popupCloseTimer !== null) {
         window.clearInterval(popupCloseTimer);

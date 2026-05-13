@@ -68,7 +68,7 @@ export function ContactSupportForm() {
           status: "error",
           message:
             payload?.message ||
-            "We could not send your message just now. Please try again or use the support inbox below.",
+            "unavailable right now. email us directly.",
         });
         return;
       }
@@ -84,7 +84,7 @@ export function ContactSupportForm() {
       setSubmissionState({
         status: "error",
         message:
-          "We could not reach the support route just now. Please try again or use the support inbox below.",
+          "unavailable right now. email us directly.",
       });
     } finally {
       setIsSubmitting(false);
@@ -95,7 +95,7 @@ export function ContactSupportForm() {
     <form className="contact-support-form" onSubmit={handleSubmit}>
       <div className="contact-support-form__intro">
         <p>
-          Send your question here and we&apos;ll reply to the email you include below.
+          send your question here and we&apos;ll reply to the email you include below.
         </p>
       </div>
 
@@ -148,7 +148,7 @@ export function ContactSupportForm() {
             value={formState.message}
             onChange={(event) => updateField("message", event.target.value)}
             maxLength={CONTACT_SUPPORT_MESSAGE_MAX_LENGTH}
-            placeholder="Tell us what happened. Include the page, tool, browser, or screenshot link if useful."
+            placeholder="tell us what happened. include the page, tool, browser, or screenshot link if useful."
             rows={8}
             required
           />

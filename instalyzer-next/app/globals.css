@@ -3568,6 +3568,7 @@ img {
   font-size: 0.79rem;
   line-height: 1.42;
   display: -webkit-box;
+  line-clamp: 2;
   -webkit-line-clamp: 2;
   -webkit-box-orient: vertical;
   overflow: hidden;
@@ -11190,12 +11191,6 @@ a.workspace-tool-pill:focus-visible {
   background: rgba(7, 10, 16, 0.34);
 }
 
-.dataset-modal-backdrop--datasets .dataset-modal {
-}
-
-.dataset-modal-backdrop--tools .dataset-modal {
-}
-
 .dataset-modal {
   width: min(720px, 100%);
   max-height: min(78vh, 920px);
@@ -18719,7 +18714,20 @@ a.workspace-tool-pill:focus-visible {
 }
 
 .sign-in-route {
-  width: min(var(--page-max), 100%);
+  width: min(1040px, 100%);
+}
+
+.marketing-main:has(.sign-up-route),
+.marketing-main:has(.sign-in-route) {
+  display: grid;
+  min-height: calc(100dvh - var(--marketing-header-height));
+  padding-top: clamp(20px, 3dvh, 36px);
+  padding-bottom: clamp(20px, 3dvh, 36px);
+}
+
+.sign-up-route,
+.sign-in-route {
+  align-self: center;
 }
 
 .sign-up-route__hero {
@@ -18730,6 +18738,11 @@ a.workspace-tool-pill:focus-visible {
 .sign-in-route__hero {
   grid-template-columns: minmax(0, 1.18fr) minmax(320px, 0.78fr);
   gap: clamp(22px, 3vw, 32px);
+}
+
+.sign-up-route__hero,
+.sign-in-route__hero {
+  align-items: center;
 }
 
 .sign-up-route__copy,
@@ -18757,8 +18770,22 @@ a.workspace-tool-pill:focus-visible {
 
 .sign-up-route__form,
 .sign-in-route__form {
+  display: grid;
   align-content: start;
+  align-self: center;
   min-width: 0;
+}
+
+@media (min-width: 961px) {
+  .sign-up-route__copy,
+  .sign-up-route__form {
+    padding-top: 8px;
+  }
+
+  .sign-in-route__copy,
+  .sign-in-route__form {
+    padding-top: 30px;
+  }
 }
 
 .sign-up-route__form .auth-panel--compact,
@@ -18802,6 +18829,11 @@ a.workspace-tool-pill:focus-visible {
 
 .sign-in-route__grid .account-card {
   min-height: 176px;
+}
+
+.sign-up-route__grid,
+.sign-in-route__grid {
+  display: none;
 }
 
 @media (min-width: 921px) and (max-width: 1100px) {
@@ -18865,6 +18897,62 @@ a.workspace-tool-pill:focus-visible {
     font-size: 0.9rem;
     line-height: 1.46;
   }
+}
+
+@media (min-width: 961px) and (max-height: 900px) {
+  .marketing-main:has(.sign-up-route) {
+    align-items: center;
+    padding-bottom: 24px;
+  }
+
+  .sign-up-route {
+    gap: 14px;
+    padding-top: 16px;
+  }
+
+  .sign-up-route__hero {
+    min-height: min(640px, calc(100dvh - var(--marketing-header-height) - 120px));
+    gap: 20px;
+    padding: 24px 28px;
+    align-items: center;
+  }
+
+  .sign-up-route__copy h1 {
+    font-size: clamp(2.1rem, 3vw, 3rem);
+  }
+
+  .sign-up-route__copy > p:not(.account-route__eyebrow) {
+    max-width: 38ch;
+    font-size: 0.94rem;
+    line-height: 1.46;
+  }
+
+  .sign-up-route__form {
+    padding: 20px 22px;
+  }
+
+  .sign-up-route__form .auth-panel--compact {
+    gap: 9px;
+  }
+
+  .sign-up-route__form .dataset-field {
+    gap: 5px;
+  }
+
+  .sign-up-route__form .dataset-field input {
+    min-height: 42px;
+    padding: 10px 14px;
+  }
+
+  .sign-up-route__form .auth-panel__actions {
+    gap: 8px;
+  }
+
+  .sign-up-route__form .hero-btn {
+    height: 42px;
+    min-height: 42px;
+  }
+
 }
 
 @media (min-width: 921px) and (max-height: 820px) {
@@ -19449,6 +19537,13 @@ a.workspace-tool-pill:focus-visible {
   .marketing-main:has(.auth-route) {
     padding-top: clamp(56px, 7dvh, 104px);
     padding-bottom: 44px;
+  }
+
+  .marketing-main:has(.sign-up-route),
+  .marketing-main:has(.sign-in-route) {
+    align-items: center;
+    padding-top: clamp(18px, 2.4dvh, 28px);
+    padding-bottom: clamp(18px, 2.6dvh, 32px);
   }
 
   .account-route,
