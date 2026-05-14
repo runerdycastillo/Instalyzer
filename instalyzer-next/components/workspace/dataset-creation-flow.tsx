@@ -53,6 +53,7 @@ const entryPointValues = new Set<DatasetEntryPoint>([
   "home-pricing-premium",
   "home-final-cta",
   "help-cta",
+  "guide-visual-finish",
   "workspace-shell",
   "datasets-index",
   "app-home",

@@ -31,6 +31,7 @@ Today is May 14, 2026.
   - workspace nav returns users to the workspace path
   - dataset list/storage is now treated as its own future surface
   - storage access was moved into the datasets modal as a simple `storage` action
+- updated the final visual-guide CTA so finishing the guide sends users to the export upload flow instead of the empty workspace
 - polished the not-following-back tool states:
   - unavailable state for missing follower/following records
   - empty results/search states

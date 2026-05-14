@@ -476,10 +476,10 @@ export function HelpRoute({ initialTab = "quick-steps" }: HelpRouteProps) {
                                     <RotateCcw aria-hidden="true" strokeWidth={2} />
                                   </button>
                                   <Link
-                                    href="/app?entry=guide-visual-finish"
+                                    href="/app/datasets/new?entry=guide-visual-finish"
                                     className="guide-visual-start-fab"
-                                    aria-label="Continue to Instalyzer workspace"
-                                    title="Continue to workspace"
+                                    aria-label="Upload your Instagram export"
+                                    title="Upload export"
                                     hidden={!active}
                                   >
                                     <ArrowRight aria-hidden="true" strokeWidth={2} />

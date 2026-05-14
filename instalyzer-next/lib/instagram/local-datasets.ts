@@ -47,6 +47,7 @@ const entryPointLabels: Record<DatasetEntryPoint, string> = {
   "home-pricing-premium": "Pricing premium",
   "home-final-cta": "Final CTA",
   "help-cta": "Help page",
+  "guide-visual-finish": "Visual guide",
   "workspace-shell": "Workspace shell",
   "datasets-index": "Datasets index",
   "app-home": "App home",
