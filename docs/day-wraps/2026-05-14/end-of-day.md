@@ -109,6 +109,10 @@ Today is May 14, 2026.
 - Future analytics:
   - keep GA4 deferred until privacy/consent and tracked events are intentionally scoped
   - revisit `docs/google-analytics-future-integration.md` when launch reporting becomes a real priority
+- Workflow helper extensions:
+  - research current screenshot-sharing helpers that make it easier to send UI captures into the chat while we QA
+  - research current speech-to-text/dictation options for faster hands-free notes and prompts during review sessions
+  - verify privacy, reliability, and Mac/browser compatibility before choosing anything
 
 ## Priority For Next Session
 
@@ -116,7 +120,8 @@ Today is May 14, 2026.
 2. Build out the dataset list/storage page enough that the `storage` CTA has a real destination.
 3. Add the forgot-password flow after auth loading/error states are stable.
 4. Begin shaping the signed-in account page so authenticated users have a real home base.
-5. Re-run responsive checks after each major surface instead of saving the matrix for the end.
+5. Note useful workflow extensions for screenshots and speech-to-text after checking current options.
+6. Re-run responsive checks after each major surface instead of saving the matrix for the end.
 
 ## Working Notes
 
