@@ -1,6 +1,7 @@
 "use client";
 
 import {
+  CircleAlert,
   CheckCircle2,
   Clipboard,
   LoaderCircle,
@@ -129,7 +130,7 @@ export function ResponsiveWorkspaceGate() {
     const normalizedEmail = email.trim();
 
     if (!isValidDesktopLinkEmail(normalizedEmail)) {
-      setFieldError("Enter a valid email address.");
+      setFieldError("enter a valid email");
       setSubmissionState(initialSubmissionState);
       return;
     }
@@ -161,8 +162,8 @@ export function ResponsiveWorkspaceGate() {
       if (!response.ok) {
         setSubmissionState({
           status: "error",
-          heading: "Something went wrong",
-          body: "Please try again, or copy the link instead.",
+          heading: "something went wrong",
+          body: "",
         });
         return;
       }
@@ -175,8 +176,8 @@ export function ResponsiveWorkspaceGate() {
     } catch {
       setSubmissionState({
         status: "error",
-        heading: "Something went wrong",
-        body: "Please try again, or copy the link instead.",
+        heading: "something went wrong",
+        body: "",
       });
     } finally {
       setIsSubmitting(false);
@@ -236,32 +237,14 @@ export function ResponsiveWorkspaceGate() {
             </div>
           ) : null}
 
-          {submissionState.status === "error" ? (
-            <div
-              className="responsive-workspace-gate__state responsive-workspace-gate__state--error"
-              role="alert"
-            >
-              <div>
-                <h2>{submissionState.heading}</h2>
-                <p>{submissionState.body}</p>
-              </div>
-              <button
-                type="button"
-                className="responsive-workspace-gate__state-copy"
-                onClick={handleCopyLink}
-              >
-                Copy link
-              </button>
-            </div>
-          ) : null}
-
           {submissionState.status !== "success" ? (
-            <form className="responsive-workspace-gate__form" onSubmit={handleSubmit}>
+            <form className="responsive-workspace-gate__form" onSubmit={handleSubmit} noValidate>
               <label className="responsive-workspace-gate__field" htmlFor={emailInputId}>
                 <span>Email address</span>
                 <input
                   id={emailInputId}
-                  type="email"
+                  type="text"
+                  inputMode="email"
                   value={email}
                   onChange={(event) => {
                     setEmail(event.target.value);
@@ -285,6 +268,12 @@ export function ResponsiveWorkspaceGate() {
                   role="alert"
                 >
                   {fieldError}
+                </p>
+              ) : null}
+
+              {submissionState.status === "error" ? (
+                <p className="responsive-workspace-gate__field-error" role="alert">
+                  {submissionState.heading}
                 </p>
               ) : null}
 
@@ -323,8 +312,13 @@ export function ResponsiveWorkspaceGate() {
                   copy desktop link
                 </button>
                 {copyState === "error" ? (
-                  <span className="responsive-workspace-gate__copy-error" role="status">
-                    copy failed
+                  <span
+                    className="responsive-workspace-gate__copy-error"
+                    role="status"
+                    title="copy failed"
+                    aria-label="copy failed"
+                  >
+                    <CircleAlert size={15} aria-hidden="true" />
                   </span>
                 ) : null}
               </div>

@@ -1,5 +1,6 @@
 "use client";
 
+import { Wrench } from "lucide-react";
 import Link from "next/link";
 import { useEffect } from "react";
 
@@ -17,6 +18,14 @@ export default function WorkspaceError({ error, reset }: WorkspaceErrorProps) {
     <section className="dataset-workspace dataset-workspace--empty" aria-labelledby="workspace-error-title">
       <article className="dataset-empty-state dataset-empty-state--error">
         <p className="section-kicker">workspace issue</p>
+
+        <div className="dataset-empty-state__visual" aria-hidden="true">
+          <div className="dataset-empty-state__visual-ring dataset-empty-state__visual-ring--outer" />
+          <div className="dataset-empty-state__visual-ring dataset-empty-state__visual-ring--inner" />
+          <div className="dataset-empty-state__visual-core">
+            <Wrench strokeWidth={1.85} />
+          </div>
+        </div>
 
         <div className="dataset-empty-state__copy">
           <h1 id="workspace-error-title" className="dataset-empty-state__title">
@@ -44,4 +53,3 @@ export default function WorkspaceError({ error, reset }: WorkspaceErrorProps) {
     </section>
   );
 }
-

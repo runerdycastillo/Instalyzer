@@ -1,8 +1,8 @@
 "use client";
 
+import { FolderKanban } from "lucide-react";
 import Link from "next/link";
 import { useEffect, useState, useSyncExternalStore } from "react";
-import { DatasetWorkspaceEmptyState } from "@/components/workspace/dataset-workspace-empty-state";
 import {
   getLocalDatasetsServerSnapshot,
   getEntryPointLabel,
@@ -51,6 +51,55 @@ function DatasetsIndexLoadingState() {
   );
 }
 
+function DatasetsIndexEmptyState() {
+  return (
+    <section className="dataset-index dataset-index--empty" aria-labelledby="dataset-index-title">
+      <div className="dataset-index__hero">
+        <span className="route-badge route-badge--workspace">workspace route</span>
+        <p className="route-path">/app/datasets</p>
+        <h1 id="dataset-index-title">datasets</h1>
+        <p className="dataset-index__description">
+          Saved Instagram exports will appear here after you create your first dataset.
+        </p>
+      </div>
+
+      <article className="dataset-card dataset-card--empty dataset-index-empty-card">
+        <div className="dataset-card__head">
+          <div>
+            <p className="dataset-card__eyebrow">no saved datasets</p>
+            <h2>create your first dataset</h2>
+          </div>
+          <span className="dataset-index-empty-card__icon" aria-hidden="true">
+            <FolderKanban size={20} strokeWidth={1.85} />
+          </span>
+        </div>
+
+        <p className="dataset-card__copy">
+          Upload an official Instagram export once, then return here to reopen the dataset,
+          manage it, and use workspace tools.
+        </p>
+
+        <div className="dataset-index-empty-card__preview" aria-label="Dataset list preview">
+          {["dataset cards", "saved exports", "workspace tools"].map((item) => (
+            <span key={item} className="dataset-chip">
+              {item}
+            </span>
+          ))}
+        </div>
+
+        <div className="route-links dataset-index-empty-card__actions">
+          <Link href="/app/datasets/new?entry=datasets-index" className="hero-btn hero-btn-primary">
+            create dataset
+          </Link>
+          <Link href="/help" className="hero-btn hero-btn-secondary">
+            view export guide
+          </Link>
+        </div>
+      </article>
+    </section>
+  );
+}
+
 export function DatasetsIndexRoute() {
   const hasMounted = useSyncExternalStore(
     () => () => {},
@@ -82,7 +131,7 @@ export function DatasetsIndexRoute() {
   }
 
   if (!datasets.length) {
-    return <DatasetWorkspaceEmptyState createEntryPoint="datasets-index" />;
+    return <DatasetsIndexEmptyState />;
   }
 
   return (

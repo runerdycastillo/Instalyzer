@@ -1,6 +1,17 @@
 "use client";
 
-import { Check, Clock3, Download, ExternalLink, RotateCcw, Search, SearchX, UserRoundX } from "lucide-react";
+import {
+  Check,
+  CircleAlert,
+  Clock3,
+  Download,
+  ExternalLink,
+  RotateCcw,
+  Search,
+  SearchX,
+  UserRoundX,
+} from "lucide-react";
+import Link from "next/link";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import type { LocalDatasetRecord } from "@/lib/instagram/local-datasets";
@@ -21,6 +32,13 @@ import {
 
 type NotFollowingBackWorkspaceViewProps = {
   dataset: LocalDatasetRecord;
+  onStorageStatusChange?: (message: string) => void;
+};
+
+type NotFollowingBackUnavailableState = {
+  title: string;
+  copy: string;
+  checks: string[];
 };
 
 const ROW_EXIT_DURATION_MS = 220;
@@ -67,6 +85,22 @@ function usePrefersReducedMotion() {
   }, []);
 
   return prefersReducedMotion;
+}
+
+function useDebouncedValue<T>(value: T, delayMs: number) {
+  const [debouncedValue, setDebouncedValue] = useState(value);
+
+  useEffect(() => {
+    const timeout = window.setTimeout(() => {
+      setDebouncedValue(value);
+    }, delayMs);
+
+    return () => {
+      window.clearTimeout(timeout);
+    };
+  }, [delayMs, value]);
+
+  return debouncedValue;
 }
 
 function AnimatedMetric({
@@ -208,14 +242,83 @@ function getToneClassName(listKey: NotFollowingBackListKey) {
   return "is-pending";
 }
 
+function getNotFollowingBackUnavailableState(dataset: LocalDatasetRecord): NotFollowingBackUnavailableState | null {
+  const hasFollowerRecords = Array.isArray(dataset.records?.followers);
+  const hasFollowingRecords = Array.isArray(dataset.records?.following);
+  const exportRange = dataset.scope?.exportRequestRange || dataset.scope?.relationshipExportRange;
+
+  if (!hasFollowerRecords || !hasFollowingRecords) {
+    return {
+      title: "relationship records missing",
+      copy: "this saved dataset does not include the followers and following records needed for this tool.",
+      checks: ["followers data", "following data"],
+    };
+  }
+
+  if (dataset.scope?.notFollowingBackEligible === false || exportRange === "limited") {
+    return {
+      title: "all-time export needed",
+      copy: "this tool needs an all-time instagram export before it can compare followers and following.",
+      checks: ["all-time export", "json format"],
+    };
+  }
+
+  return null;
+}
+
+function NotFollowingBackUnavailableStateView({
+  dataset,
+  state,
+}: {
+  dataset: LocalDatasetRecord;
+  state: NotFollowingBackUnavailableState;
+}) {
+  return (
+    <div className="relationship-tool relationship-tool--unavailable">
+      <article className="relationship-tool__unavailable" aria-labelledby="not-following-back-unavailable-title">
+        <span className="relationship-tool__unavailable-icon" aria-hidden="true">
+          <UserRoundX size={22} strokeWidth={1.8} />
+        </span>
+
+        <div className="relationship-tool__unavailable-copy">
+          <p className="section-kicker">tool unavailable</p>
+          <h2 id="not-following-back-unavailable-title">{state.title}</h2>
+          <p>{state.copy}</p>
+        </div>
+
+        <div className="relationship-tool__unavailable-checks" aria-label="Required data">
+          {state.checks.map((check) => (
+            <span key={check}>
+              <CircleAlert size={13} strokeWidth={2} aria-hidden="true" />
+              {check}
+            </span>
+          ))}
+        </div>
+
+        <div className="route-links relationship-tool__unavailable-actions">
+          <Link href={`/app/datasets/${dataset.id}`} className="hero-btn hero-btn-secondary">
+            overview
+          </Link>
+          <Link href="/app/datasets/new?entry=tool-unavailable" className="hero-btn hero-btn-primary">
+            create dataset
+          </Link>
+        </div>
+      </article>
+    </div>
+  );
+}
+
 export function NotFollowingBackWorkspaceView({
   dataset,
+  onStorageStatusChange,
 }: NotFollowingBackWorkspaceViewProps) {
   const prefersReducedMotion = usePrefersReducedMotion();
   const [visitClock, setVisitClock] = useState(() => getCurrentTimestamp());
   const [query, setQuery] = useState("");
+  const debouncedQuery = useDebouncedValue(query, 160);
   const [sortOrder, setSortOrder] = useState<NotFollowingBackSortOrder>("latest");
   const [copiedUsername, setCopiedUsername] = useState("");
+  const [downloadError, setDownloadError] = useState("");
   const [exitingRows, setExitingRows] = useState<Record<string, NotFollowingBackListKey>>({});
   const [highlightedCardKey, setHighlightedCardKey] = useState<NotFollowingBackListKey | null>(null);
   const [toolState, setToolState] = useState<NotFollowingBackToolState>(() =>
@@ -224,6 +327,7 @@ export function NotFollowingBackWorkspaceView({
   const highlightTimeoutRef = useRef<number | null>(null);
   const rowExitTimeoutsRef = useRef<Record<string, number>>({});
   const tooltipRef = useRef<HTMLDivElement | null>(null);
+  const unavailableState = useMemo(() => getNotFollowingBackUnavailableState(dataset), [dataset]);
   const allEntries = useMemo(() => deriveNotFollowingBackEntries(dataset), [dataset]);
   const allUsernames = useMemo(() => allEntries.map((entry) => entry.username), [allEntries]);
   const prunedToolState = useMemo(
@@ -233,8 +337,25 @@ export function NotFollowingBackWorkspaceView({
   const activeList = prunedToolState.activeList;
 
   useEffect(() => {
-    writeNotFollowingBackToolState(dataset.id, prunedToolState);
-  }, [dataset.id, prunedToolState]);
+    if (unavailableState) {
+      const timeout = window.setTimeout(() => {
+        onStorageStatusChange?.("");
+      }, 0);
+
+      return () => {
+        window.clearTimeout(timeout);
+      };
+    }
+
+    const didSave = writeNotFollowingBackToolState(dataset.id, prunedToolState);
+    const timeout = window.setTimeout(() => {
+      onStorageStatusChange?.(didSave ? "" : "changes are not saving");
+    }, 0);
+
+    return () => {
+      window.clearTimeout(timeout);
+    };
+  }, [dataset.id, onStorageStatusChange, prunedToolState, unavailableState]);
 
   useEffect(() => {
     const rowExitTimeouts = rowExitTimeoutsRef.current;
@@ -321,7 +442,7 @@ export function NotFollowingBackWorkspaceView({
   const listMeta = getListMeta(activeList);
   const activeToneClassName = getToneClassName(activeList);
   const visibleEntries = useMemo(() => {
-    const normalizedQuery = query.trim().toLowerCase();
+    const normalizedQuery = debouncedQuery.trim().toLowerCase();
     const queryFilteredEntries = normalizedQuery
       ? listEntries[activeList].filter((entry) => entry.username.includes(normalizedQuery))
       : listEntries[activeList];
@@ -334,7 +455,21 @@ export function NotFollowingBackWorkspaceView({
     const pinnedEntries = sortedEntries.filter((entry) => pinnedSet.has(entry.username));
     const unpinnedEntries = sortedEntries.filter((entry) => !pinnedSet.has(entry.username));
     return [...pinnedEntries, ...unpinnedEntries];
-  }, [activeList, listEntries, pinnedSet, query, sortOrder]);
+  }, [activeList, debouncedQuery, listEntries, pinnedSet, sortOrder]);
+  const hasActiveSearch = debouncedQuery.trim().length > 0;
+  const hasFlaggedAccounts = allEntries.length > 0;
+  const emptyTitle = hasActiveSearch
+    ? `no ${listMeta.label} matches for that search`
+    : hasFlaggedAccounts
+      ? `nothing in ${listMeta.label}`
+      : "no accounts need review";
+  const emptyDescription = hasActiveSearch
+    ? "try a different username search or sort order."
+    : hasFlaggedAccounts
+      ? activeList === "pending"
+        ? "this dataset does not currently show any flagged accounts waiting for review."
+        : `move accounts into ${listMeta.label} to keep the cleanup flow organized.`
+      : "";
 
   function setActiveList(nextList: NotFollowingBackListKey) {
     setToolState((current) => ({
@@ -457,16 +592,21 @@ export function NotFollowingBackWorkspaceView({
   }
 
   function downloadCsv() {
-    const csv = buildNotFollowingBackCsv(visibleEntries);
-    const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
-    const url = URL.createObjectURL(blob);
-    const anchor = document.createElement("a");
-    anchor.href = url;
-    anchor.download = buildExportFileName(dataset.name, activeList);
-    document.body.appendChild(anchor);
-    anchor.click();
-    anchor.remove();
-    window.setTimeout(() => URL.revokeObjectURL(url), 1000);
+    try {
+      setDownloadError("");
+      const csv = buildNotFollowingBackCsv(visibleEntries);
+      const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
+      const url = URL.createObjectURL(blob);
+      const anchor = document.createElement("a");
+      anchor.href = url;
+      anchor.download = buildExportFileName(dataset.name, activeList);
+      document.body.appendChild(anchor);
+      anchor.click();
+      anchor.remove();
+      window.setTimeout(() => URL.revokeObjectURL(url), 1000);
+    } catch {
+      setDownloadError("download failed");
+    }
   }
 
   async function copyHandle(username: string) {
@@ -535,6 +675,10 @@ export function NotFollowingBackWorkspaceView({
     },
   ];
 
+  if (unavailableState) {
+    return <NotFollowingBackUnavailableStateView dataset={dataset} state={unavailableState} />;
+  }
+
   return (
     <div className="relationship-tool">
       <div className="relationship-tool__summary-grid">
@@ -598,23 +742,37 @@ export function NotFollowingBackWorkspaceView({
             </select>
           </label>
 
-          <button
-            type="button"
-            className="hero-btn hero-btn-secondary relationship-tool__button relationship-tool__button--icon"
-            onClick={downloadCsv}
-            disabled={!visibleEntries.length}
-            aria-label="download csv"
-            title="download csv"
-          >
-            <Download size={18} aria-hidden="true" />
-          </button>
+          <span className="relationship-tool__download-wrap">
+            <button
+              type="button"
+              className="hero-btn hero-btn-secondary relationship-tool__button relationship-tool__button--icon"
+              onClick={downloadCsv}
+              disabled={!visibleEntries.length}
+              aria-label="download csv"
+              title="download csv"
+            >
+              <Download size={18} aria-hidden="true" />
+            </button>
+            {downloadError ? (
+              <span
+                className="relationship-tool__toolbar-error"
+                role="alert"
+                aria-label={downloadError}
+                title={downloadError}
+              >
+                <CircleAlert size={14} strokeWidth={2.1} aria-hidden="true" />
+              </span>
+            ) : null}
+          </span>
         </div>
       </div>
 
       <div className="relationship-tool__note-row">
         <p>
-          <strong className={`relationship-tool__note-tone ${activeToneClassName}`}>{listMeta.label}</strong>:{" "}
-          {listMeta.description}. Showing{" "}
+          <strong className={`relationship-tool__note-tone ${activeToneClassName}`}>
+            {hasFlaggedAccounts ? listMeta.label : "all clear"}
+          </strong>:{" "}
+          {hasFlaggedAccounts ? listMeta.description : "no accounts need review in this export"}. Showing{" "}
           <strong>{visibleEntries.length.toLocaleString()}</strong> result{visibleEntries.length === 1 ? "" : "s"}.
         </p>
       </div>
@@ -776,14 +934,22 @@ export function NotFollowingBackWorkspaceView({
           </ul>
         ) : (
           <div className="relationship-tool__empty">
-            <strong>{query.trim() ? `no ${listMeta.label} matches for that search` : `nothing in ${listMeta.label}`}</strong>
-            <p>
-              {query.trim()
-                ? "try a different username search or sort order."
-                : activeList === "pending"
-                  ? "this dataset does not currently show any flagged accounts waiting for review."
-                  : `move accounts into ${listMeta.label} to keep the cleanup flow organized.`}
-            </p>
+            <strong>{emptyTitle}</strong>
+            {emptyDescription ? <p>{emptyDescription}</p> : null}
+            {hasActiveSearch ? (
+              <button
+                type="button"
+                className="relationship-tool__empty-action"
+                onClick={() => setQuery("")}
+              >
+                clear search
+              </button>
+            ) : null}
+            {!hasActiveSearch && !hasFlaggedAccounts ? (
+              <Link href={`/app/datasets/${dataset.id}`} className="relationship-tool__empty-action">
+                overview
+              </Link>
+            ) : null}
           </div>
         )}
       </div>

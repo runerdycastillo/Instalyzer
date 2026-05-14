@@ -1,6 +1,15 @@
 "use client";
 
-import { AlertTriangle, ArrowLeft, Check, CheckCircle2, ExternalLink, FileArchive, LoaderCircle, X } from "lucide-react";
+import {
+  AlertTriangle,
+  ArrowLeft,
+  Check,
+  CheckCircle2,
+  ChevronRight,
+  ExternalLink,
+  FileArchive,
+  LoaderCircle,
+} from "lucide-react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import {
@@ -462,18 +471,45 @@ export function DatasetCreationFlow() {
                     <div className="dataset-invalid-export-state__actions">
                       <button
                         type="button"
-                        className="hero-btn hero-btn-primary dataset-invalid-export-state__primary-action"
+                        className="dataset-dropzone__error-button dataset-dropzone__error-button--primary"
                         onClick={resetInvalidExportState}
                       >
                         try again
                       </button>
-                    </div>
-                    <div className="dataset-invalid-export-state__links">
-                      <Link href="/help" className="dataset-invalid-export-state__guide-link">
-                        view export setup guide
+                      <Link
+                        href="/help"
+                        className="dataset-dropzone__error-button dataset-dropzone__error-button--secondary"
+                      >
+                        open guide
                       </Link>
-                      <Link href="/contact" className="dataset-invalid-export-state__guide-link">
+                      <Link
+                        href="/contact"
+                        className="dataset-dropzone__error-button dataset-dropzone__error-button--secondary"
+                      >
                         contact support
+                      </Link>
+                    </div>
+                  </div>
+                ) : uploadError && !uploadErrorIsSettingsIssue ? (
+                  <div className="dataset-dropzone dataset-dropzone--error" role="alert" aria-live="polite">
+                    <div className="dataset-dropzone__icon dataset-dropzone__icon--error" aria-hidden="true">
+                      <AlertTriangle size={28} strokeWidth={1.9} />
+                    </div>
+                    <div className="dataset-dropzone__error-copy">
+                      <strong>upload issue</strong>
+                      <p>{uploadError}</p>
+                    </div>
+
+                    <div className="dataset-dropzone__error-links">
+                      <button
+                        type="button"
+                        className="dataset-dropzone__error-button dataset-dropzone__error-button--primary"
+                        onClick={uploadDifferentExport}
+                      >
+                        try again
+                      </button>
+                      <Link href="/help" className="dataset-dropzone__error-button dataset-dropzone__error-button--secondary">
+                        open guide
                       </Link>
                     </div>
                   </div>
@@ -532,72 +568,6 @@ export function DatasetCreationFlow() {
                     </p>
                   </div>
                 )}
-
-                {!hasPreparedDraft && uploadError && !uploadErrorIsSettingsIssue ? (
-                  <div
-                    className={`dataset-upload-alert${
-                      uploadErrorIsSettingsIssue ? " dataset-upload-alert--settings" : ""
-                    }`}
-                    role="alert"
-                    aria-live="polite"
-                  >
-                    <div className="dataset-upload-alert__head">
-                      <div className="dataset-upload-alert__heading-group">
-                        <span className="dataset-upload-alert__icon" aria-hidden="true">
-                          <AlertTriangle size={16} strokeWidth={1.9} />
-                        </span>
-                        <div className="dataset-upload-alert__copy">
-                          <strong>
-                            {uploadErrorIsSettingsIssue ? "wrong export settings" : "upload issue"}
-                          </strong>
-                          <p>
-                            {uploadErrorIsSettingsIssue
-                              ? "your export does not include the required data needed for analysis."
-                              : uploadError}
-                          </p>
-                        </div>
-                      </div>
-                      <button
-                        type="button"
-                        className="dataset-upload-alert__dismiss"
-                        onClick={() => setUploadError("")}
-                        aria-label="Dismiss upload error"
-                      >
-                        <X size={14} strokeWidth={1.9} />
-                      </button>
-                    </div>
-
-                    {uploadErrorIsSettingsIssue ? (
-                      <>
-                        <div className="dataset-upload-alert__requirements">
-                          <span>required settings</span>
-                          <ul>
-                            <li>customize information → all available information</li>
-                            <li>date range → all time</li>
-                            <li>format → JSON</li>
-                          </ul>
-                        </div>
-                        <div className="dataset-upload-alert__links">
-                          <Link href="/help" className="hero-btn hero-btn-secondary dataset-upload-alert__action">
-                            view export setup guide
-                          </Link>
-                          <Link href="/contact" className="dataset-dropzone__help-link">
-                            contact support
-                          </Link>
-                        </div>
-                      </>
-                    ) : (
-                      <div className="dataset-upload-alert__links">
-                        <Link href="/help" className="dataset-dropzone__help-link">
-                          view export setup guide
-                        </Link>
-                        <Link href="/contact" className="dataset-dropzone__help-link">
-                          contact support
-                        </Link>
-                      </div>
-                    )}
-                  </div>
-                ) : null}
               </div>
             </article>
 
@@ -635,7 +605,7 @@ export function DatasetCreationFlow() {
                         placeholder="march instagram export"
                       />
                       {nameTouched && !hasDatasetName ? (
-                        <small className="dataset-field__error">
+                        <small className="dataset-field__error dataset-field__error--centered">
                           enter a dataset name to continue
                         </small>
                       ) : null}
@@ -651,9 +621,12 @@ export function DatasetCreationFlow() {
                     </label>
                     {creationError ? (
                       <div className="dataset-field__error-group">
-                        <small className="dataset-field__error">{creationError}</small>
-                        <Link href="/contact" className="dataset-field__support-link">
-                          need help? contact support
+                        <small className="dataset-field__error">
+                          {creationError}
+                        </small>
+                        <Link href="/app/datasets" className="dataset-field__support-link">
+                          <span>storage</span>
+                          <ChevronRight size={14} strokeWidth={2.2} aria-hidden="true" />
                         </Link>
                       </div>
                     ) : null}

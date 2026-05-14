@@ -17,6 +17,7 @@ export const dynamic = "force-dynamic";
 
 const RATE_LIMIT_WINDOW_MS = 10 * 60 * 1000;
 const RATE_LIMIT_MAX_REQUESTS = 3;
+const CONTACT_FALLBACK_MESSAGE = "unavailable right now. email support@instalyzer.app directly.";
 const requestLog = new Map<string, number[]>();
 
 function getClientIpAddress(request: Request) {
@@ -149,7 +150,7 @@ export async function POST(request: Request) {
     if (error instanceof SupportMailConfigError) {
       return NextResponse.json(
         {
-          message: "unavailable right now. email us directly.",
+          message: CONTACT_FALLBACK_MESSAGE,
         },
         { status: 503 },
       );
@@ -159,7 +160,7 @@ export async function POST(request: Request) {
 
     return NextResponse.json(
       {
-        message: "unavailable right now. email us directly.",
+        message: CONTACT_FALLBACK_MESSAGE,
       },
       { status: 500 },
     );

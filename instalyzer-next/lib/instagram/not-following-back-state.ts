@@ -59,8 +59,14 @@ export function readNotFollowingBackToolState(datasetId: string): NotFollowingBa
 }
 
 export function writeNotFollowingBackToolState(datasetId: string, state: NotFollowingBackToolState) {
-  if (typeof window === "undefined") return;
-  window.localStorage.setItem(getStorageKey(datasetId), JSON.stringify(state));
+  if (typeof window === "undefined") return true;
+
+  try {
+    window.localStorage.setItem(getStorageKey(datasetId), JSON.stringify(state));
+    return true;
+  } catch {
+    return false;
+  }
 }
 
 export function pruneNotFollowingBackToolState(

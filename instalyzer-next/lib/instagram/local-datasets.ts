@@ -16,7 +16,7 @@ export const RECENT_DATASET_HISTORY_STORAGE_KEY = "instalyzer_next_recent_datase
 export const EMPTY_LOCAL_DATASETS: LocalDatasetRecord[] = [];
 export const DATASET_NAME_MAX_LENGTH = 16;
 export const MAX_LOCAL_DATASETS = 6;
-export const LOCAL_DATASET_LIMIT_MESSAGE = `You can save up to ${MAX_LOCAL_DATASETS} exports. Delete one to import a new export.`;
+export const LOCAL_DATASET_LIMIT_MESSAGE = `you are at the ${MAX_LOCAL_DATASETS} export limit.`;
 
 let cachedDatasetsRaw: string | null = null;
 let cachedDatasetsParsed: LocalDatasetRecord[] = EMPTY_LOCAL_DATASETS;
@@ -53,6 +53,41 @@ const entryPointLabels: Record<DatasetEntryPoint, string> = {
   unknown: "Direct route",
 };
 
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === "object" && value !== null && !Array.isArray(value);
+}
+
+function hasFiniteNumber(value: unknown) {
+  return typeof value === "number" && Number.isFinite(value);
+}
+
+function isCompleteLocalDatasetRecord(value: unknown): value is LocalDatasetRecord {
+  if (!isRecord(value)) return false;
+
+  const importReview = value.importReview;
+  const metrics = value.metrics;
+
+  return (
+    typeof value.id === "string" &&
+    value.id.trim().length > 0 &&
+    typeof value.name === "string" &&
+    value.name.trim().length > 0 &&
+    typeof value.createdAt === "string" &&
+    hasFiniteNumber(value.createdAtMs) &&
+    isRecord(importReview) &&
+    typeof importReview.sourceLabel === "string" &&
+    typeof importReview.uploadSummary === "string" &&
+    hasFiniteNumber(importReview.fileCount) &&
+    hasFiniteNumber(importReview.categoryCount) &&
+    Array.isArray(importReview.categoryLabels) &&
+    isRecord(metrics) &&
+    hasFiniteNumber(metrics.followerCount) &&
+    hasFiniteNumber(metrics.followingCount) &&
+    hasFiniteNumber(metrics.mutualCount) &&
+    hasFiniteNumber(metrics.notFollowingBackCount)
+  );
+}
+
 export function makeDatasetId() {
   return `dataset_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
 }
@@ -70,7 +105,7 @@ export function getPreferredWorkspaceHref(
       ? activeDatasetId
       : datasets[0]?.id || null;
 
-  return preferredDatasetId ? `/app/datasets/${preferredDatasetId}` : "/app/datasets";
+  return preferredDatasetId ? `/app/datasets/${preferredDatasetId}` : "/app";
 }
 
 export function getNextDefaultDatasetName(datasets: LocalDatasetRecord[] = readLocalDatasets()) {
@@ -109,7 +144,7 @@ export function readLocalDatasets(): LocalDatasetRecord[] {
     const parsed = raw ? (JSON.parse(raw) as unknown) : EMPTY_LOCAL_DATASETS;
     cachedDatasetsRaw = raw;
     cachedDatasetsParsed = Array.isArray(parsed)
-      ? (parsed as LocalDatasetRecord[])
+      ? parsed.filter(isCompleteLocalDatasetRecord)
       : EMPTY_LOCAL_DATASETS;
     return cachedDatasetsParsed;
   } catch {

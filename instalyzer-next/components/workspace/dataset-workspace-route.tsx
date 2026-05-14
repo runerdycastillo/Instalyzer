@@ -6,6 +6,7 @@ import {
   Bookmark,
   CalendarDays,
   Check,
+  CircleAlert,
   ChevronLeft,
   ChevronDown,
   ExternalLink,
@@ -45,7 +46,6 @@ import {
   getLocalDatasetsServerSnapshot,
   findLocalDataset,
   hasReachedLocalDatasetLimit,
-  LOCAL_DATASET_LIMIT_MESSAGE,
   MAX_LOCAL_DATASETS,
   readLocalDatasets,
   subscribeToLocalDatasets,
@@ -758,6 +758,7 @@ export function DatasetWorkspaceRoute({ datasetId, activeToolId }: DatasetWorksp
   const [datasetSortOrder, setDatasetSortOrder] = useState<DatasetSortOrder>("latest");
   const [isSortMenuOpen, setIsSortMenuOpen] = useState(false);
   const [isHydrationSettled, setIsHydrationSettled] = useState(false);
+  const [notFollowingBackStorageError, setNotFollowingBackStorageError] = useState("");
   const [floatingPanelStyle, setFloatingPanelStyle] = useState<{
     position: "fixed";
     left: number;
@@ -1105,7 +1106,7 @@ export function DatasetWorkspaceRoute({ datasetId, activeToolId }: DatasetWorksp
               dataset not found
             </h1>
             <p className="dataset-empty-state__description">
-              this saved export is not available in this browser anymore. choose another dataset or create a new one.
+              this saved export is missing or unreadable in this browser. choose another dataset or create a new one.
             </p>
           </div>
 
@@ -1205,65 +1206,77 @@ export function DatasetWorkspaceRoute({ datasetId, activeToolId }: DatasetWorksp
   return (
     <section className="dataset-workspace dataset-workspace--hydrated" aria-labelledby="dataset-workspace-title">
       <div className="dataset-workspace__grid dataset-workspace__grid--static">
-        <aside className="dataset-side-panel dataset-side-panel--left dataset-dashboard-section dataset-dashboard-section--sidebar-left">
-          <div className="dataset-side-panel__head">
-            <p className="section-kicker">{isWorkspaceHome ? "workspace overview" : "current dataset"}</p>
-            <div className="dataset-side-panel__dataset-block">
-              <h2 className="tools-sidebar-title dataset-side-panel__title">{dataset.name}</h2>
-            </div>
-          </div>
-
-          <div className="dataset-side-panel__body">
-            <div className="dataset-side-panel__count-block">
-              <span>saved datasets</span>
-              <strong>{datasets.length}</strong>
-            </div>
-
-            <div className="dataset-side-panel__recent">
-              <p className="dataset-side-panel__recent-label">recent datasets</p>
-              <div className="dataset-side-panel__recent-list">
-                {recentDatasets.map((item) => {
-                  const isActiveDataset = item.id === dataset.id;
-
-                  return (
-                    <Link
-                      key={item.id}
-                      href={`/app/datasets/${item.id}`}
-                      className={`dataset-side-panel__recent-chip${isActiveDataset ? " is-active" : ""}`}
-                    >
-                      <span className="dataset-side-panel__recent-name-row">
-                        <span className="dataset-side-panel__recent-name">{item.name}</span>
-                        {isActiveDataset ? (
-                          <span
-                            className="dataset-side-panel__active-indicator"
-                            aria-label="Active dataset"
-                            title="Active dataset"
-                          >
-                            <span className="dataset-side-panel__active-dot" aria-hidden="true" />
-                          </span>
-                        ) : null}
-                      </span>
-                      <span className="dataset-side-panel__recent-meta">
-                        {isActiveDataset ? "selected" : formatDate(item.createdAt)}
-                      </span>
-                    </Link>
-                  );
-                })}
+        <div className="dataset-workspace__left-stack">
+          <aside className="dataset-side-panel dataset-side-panel--left dataset-dashboard-section dataset-dashboard-section--sidebar-left">
+            <div className="dataset-side-panel__head">
+              <p className="section-kicker">{isWorkspaceHome ? "workspace overview" : "current dataset"}</p>
+              <div className="dataset-side-panel__dataset-block">
+                <h2 className="tools-sidebar-title dataset-side-panel__title">{dataset.name}</h2>
               </div>
             </div>
 
-            <div className="dataset-side-panel__divider" aria-hidden="true" />
+            <div className="dataset-side-panel__body">
+              <div className="dataset-side-panel__count-block">
+                <span>saved datasets</span>
+                <strong>{datasets.length}</strong>
+              </div>
 
-            <button
-              type="button"
-              className="hero-btn hero-btn-secondary dataset-side-panel__action"
-              onClick={() => setIsDatasetsModalOpen(true)}
-            >
-              <FolderKanban size={16} aria-hidden="true" />
-              manage datasets
-            </button>
-          </div>
-        </aside>
+              <div className="dataset-side-panel__recent">
+                <p className="dataset-side-panel__recent-label">recent datasets</p>
+                <div className="dataset-side-panel__recent-list">
+                  {recentDatasets.map((item) => {
+                    const isActiveDataset = item.id === dataset.id;
+
+                    return (
+                      <Link
+                        key={item.id}
+                        href={`/app/datasets/${item.id}`}
+                        className={`dataset-side-panel__recent-chip${isActiveDataset ? " is-active" : ""}`}
+                      >
+                        <span className="dataset-side-panel__recent-name-row">
+                          <span className="dataset-side-panel__recent-name">{item.name}</span>
+                          {isActiveDataset ? (
+                            <span
+                              className="dataset-side-panel__active-indicator"
+                              aria-label="Active dataset"
+                              title="Active dataset"
+                            >
+                              <span className="dataset-side-panel__active-dot" aria-hidden="true" />
+                            </span>
+                          ) : null}
+                        </span>
+                        <span className="dataset-side-panel__recent-meta">
+                          {isActiveDataset ? "selected" : formatDate(item.createdAt)}
+                        </span>
+                      </Link>
+                    );
+                  })}
+                </div>
+              </div>
+
+              <div className="dataset-side-panel__divider" aria-hidden="true" />
+
+              <button
+                type="button"
+                className="hero-btn hero-btn-secondary dataset-side-panel__action"
+                onClick={() => setIsDatasetsModalOpen(true)}
+              >
+                <FolderKanban size={16} aria-hidden="true" />
+                manage datasets
+              </button>
+            </div>
+          </aside>
+
+          {isNotFollowingBackView && notFollowingBackStorageError ? (
+            <article className="dataset-tool-storage-alert" role="alert">
+              <CircleAlert size={15} strokeWidth={2.1} aria-hidden="true" />
+              <div>
+                <span>storage issue</span>
+                <strong>{notFollowingBackStorageError}</strong>
+              </div>
+            </article>
+          ) : null}
+        </div>
 
         <article className="dataset-workspace__surface">
           <div className="dataset-overview-head">
@@ -1306,7 +1319,11 @@ export function DatasetWorkspaceRoute({ datasetId, activeToolId }: DatasetWorksp
           </div>
 
           {isNotFollowingBackView ? (
-            <NotFollowingBackWorkspaceView key={dataset.id} dataset={dataset} />
+            <NotFollowingBackWorkspaceView
+              key={dataset.id}
+              dataset={dataset}
+              onStorageStatusChange={setNotFollowingBackStorageError}
+            />
           ) : (
           <div className="dataset-overview-body">
             <div className="dataset-profile-band dataset-dashboard-section dataset-dashboard-section--profile">
@@ -2003,88 +2020,91 @@ export function DatasetWorkspaceRoute({ datasetId, activeToolId }: DatasetWorksp
           )}
         </article>
 
-        <aside className="dataset-side-panel dataset-side-panel--right dataset-dashboard-section dataset-dashboard-section--sidebar">
-          <div className="dataset-side-panel__head">
-            <p className="section-kicker">workspace</p>
-          </div>
-
-          <div className="dataset-side-panel__body">
-            <div className="workspace-tool-launch">
-              <p className="workspace-tool-launch__label">available now</p>
-              {isNotFollowingBackView ? (
-                <div
-                  className="workspace-tool-pill workspace-tool-pill--featured workspace-tool-pill--current is-live"
-                  aria-label="Not following back tool is open"
-                >
-                  <span className="workspace-tool-icon" aria-hidden="true">
-                    <UserRoundX size={16} strokeWidth={1.9} />
-                  </span>
-                  <span className="workspace-tool-copy">
-                    <strong>not following back</strong>
-                  </span>
-                </div>
-              ) : (
-                <Link
-                  href={notFollowingBackHref}
-                  className="workspace-tool-pill workspace-tool-pill--featured is-live"
-                  aria-label="Open not following back tool"
-                >
-                  <span className="workspace-tool-icon" aria-hidden="true">
-                    <UserRoundX size={16} strokeWidth={1.9} />
-                  </span>
-                  <span className="workspace-tool-copy">
-                    <strong>not following back</strong>
-                  </span>
-                </Link>
-              )}
+        <div className="dataset-workspace__right-stack">
+          <aside className="dataset-side-panel dataset-side-panel--right dataset-dashboard-section dataset-dashboard-section--sidebar">
+            <div className="dataset-side-panel__head">
+              <p className="section-kicker">workspace</p>
             </div>
 
-            <button
-              type="button"
-              className="hero-btn hero-btn-secondary dataset-side-panel__action"
-              onClick={() => setIsToolsModalOpen(true)}
-            >
-              <Wrench size={16} aria-hidden="true" />
-              tools
-            </button>
+            <div className="dataset-side-panel__body">
+              <div className="workspace-tool-launch">
+                <p className="workspace-tool-launch__label">available now</p>
+                {isNotFollowingBackView ? (
+                  <div
+                    className="workspace-tool-pill workspace-tool-pill--featured workspace-tool-pill--current is-live"
+                    aria-label="Not following back tool is open"
+                  >
+                    <span className="workspace-tool-icon" aria-hidden="true">
+                      <UserRoundX size={16} strokeWidth={1.9} />
+                    </span>
+                    <span className="workspace-tool-copy">
+                      <strong>not following back</strong>
+                    </span>
+                  </div>
+                ) : (
+                  <Link
+                    href={notFollowingBackHref}
+                    className="workspace-tool-pill workspace-tool-pill--featured is-live"
+                    aria-label="Open not following back tool"
+                  >
+                    <span className="workspace-tool-icon" aria-hidden="true">
+                      <UserRoundX size={16} strokeWidth={1.9} />
+                    </span>
+                    <span className="workspace-tool-copy">
+                      <strong>not following back</strong>
+                    </span>
+                  </Link>
+                )}
+              </div>
 
-            <article className="dataset-workspace__support-card">
-              <p className="dataset-meta-label">relationship signals</p>
-              <div className="dataset-relationship-signals">
-                {relationshipSignalRows.map((row) => {
-                  const Icon = row.Icon;
+              <button
+                type="button"
+                className="hero-btn hero-btn-secondary dataset-side-panel__action"
+                onClick={() => setIsToolsModalOpen(true)}
+              >
+                <Wrench size={16} aria-hidden="true" />
+                tools
+              </button>
 
-                  return (
-                    <div key={row.key} className={`dataset-relationship-signal ${row.accentClassName}`}>
-                      <div className="dataset-relationship-signal__head">
-                        <div className="dataset-relationship-signal__copy">
-                          <span className="dataset-relationship-signal__label">
-                            <i className="dataset-relationship-signal__icon" aria-hidden="true">
-                              <Icon size={14} strokeWidth={1.9} />
-                            </i>
-                            {row.label}
-                          </span>
-                        </div>
-                        <div className="dataset-relationship-signal__value">
-                          <strong>
-                            <AnimatedValue
-                              value={row.value}
-                              variant="metric"
-                              fallback="0"
-                              animateKey={`${motionKey}-relationship-${row.key}`}
-                              reducedMotion={prefersReducedMotion}
-                            />
-                          </strong>
-                          <span className="dataset-relationship-signal__support">{row.badge}</span>
+              <article className="dataset-workspace__support-card">
+                <p className="dataset-meta-label">relationship signals</p>
+                <div className="dataset-relationship-signals">
+                  {relationshipSignalRows.map((row) => {
+                    const Icon = row.Icon;
+
+                    return (
+                      <div key={row.key} className={`dataset-relationship-signal ${row.accentClassName}`}>
+                        <div className="dataset-relationship-signal__head">
+                          <div className="dataset-relationship-signal__copy">
+                            <span className="dataset-relationship-signal__label">
+                              <i className="dataset-relationship-signal__icon" aria-hidden="true">
+                                <Icon size={14} strokeWidth={1.9} />
+                              </i>
+                              {row.label}
+                            </span>
+                          </div>
+                          <div className="dataset-relationship-signal__value">
+                            <strong>
+                              <AnimatedValue
+                                value={row.value}
+                                variant="metric"
+                                fallback="0"
+                                animateKey={`${motionKey}-relationship-${row.key}`}
+                                reducedMotion={prefersReducedMotion}
+                              />
+                            </strong>
+                            <span className="dataset-relationship-signal__support">{row.badge}</span>
+                          </div>
                         </div>
                       </div>
-                    </div>
-                  );
-                })}
-              </div>
-            </article>
-          </div>
-        </aside>
+                    );
+                  })}
+                </div>
+              </article>
+            </div>
+          </aside>
+
+        </div>
       </div>
 
       {isDatasetsModalOpen
@@ -2360,26 +2380,16 @@ export function DatasetWorkspaceRoute({ datasetId, activeToolId }: DatasetWorksp
             <div className="dataset-modal__footer">
               <p className="dataset-modal__footer-note">
                 {hasReachedDatasetLimit
-                  ? `saved export limit reached (${MAX_LOCAL_DATASETS}/${MAX_LOCAL_DATASETS}). delete one to add a new export.`
+                  ? `saved export limit reached (${MAX_LOCAL_DATASETS}/${MAX_LOCAL_DATASETS}). open storage to review or delete saved datasets.`
                   : "saved exports stay tied to the instagram archives already imported into your workspace."}
               </p>
-              {hasReachedDatasetLimit ? (
-                <span
-                  className="dataset-modal__footer-cta is-disabled"
-                  aria-disabled="true"
-                  title={LOCAL_DATASET_LIMIT_MESSAGE}
-                >
-                  limit reached
-                </span>
-              ) : (
-                <Link
-                  href="/app/datasets/new?entry=workspace-shell"
-                  className="dataset-modal__footer-cta"
-                  onClick={closeDatasetsModal}
-                >
-                  new export
-                </Link>
-              )}
+              <Link
+                href="/app/datasets"
+                className="dataset-modal__footer-cta"
+                onClick={closeDatasetsModal}
+              >
+                storage
+              </Link>
             </div>
               </div>
             </div>,

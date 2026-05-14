@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useEffect } from "react";
 
 type AppErrorProps = {
@@ -15,16 +16,16 @@ export default function AppError({ error, reset }: AppErrorProps) {
   return (
     <main className="route-state route-state--error" aria-labelledby="route-error-title">
       <section className="route-state__panel">
-        <p className="section-kicker">something went wrong</p>
-        <h1 id="route-error-title">we hit a snag</h1>
-        <p>try again, or return to your workspace if this keeps happening.</p>
+        <p className="section-kicker">app issue</p>
+        <h1 id="route-error-title">something went wrong</h1>
+        <p>try again, or head home if this keeps happening.</p>
         <div className="route-state__actions">
           <button type="button" className="hero-btn hero-btn-primary" onClick={reset}>
             try again
           </button>
-          <a href="/account" className="hero-btn hero-btn-secondary">
-            account
-          </a>
+          <Link href="/" className="hero-btn hero-btn-secondary">
+            home
+          </Link>
         </div>
       </section>
     </main>

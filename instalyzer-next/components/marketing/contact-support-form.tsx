@@ -19,6 +19,8 @@ const initialSubmissionState: SubmissionState = {
   message: "",
 };
 
+const contactFallbackMessage = "unavailable right now. email support@instalyzer.app directly.";
+
 const initialFormState = {
   email: "",
   category: "other" as ContactSupportCategory,
@@ -68,7 +70,7 @@ export function ContactSupportForm() {
           status: "error",
           message:
             payload?.message ||
-            "unavailable right now. email us directly.",
+            contactFallbackMessage,
         });
         return;
       }
@@ -83,8 +85,7 @@ export function ContactSupportForm() {
     } catch {
       setSubmissionState({
         status: "error",
-        message:
-          "unavailable right now. email us directly.",
+        message: contactFallbackMessage,
       });
     } finally {
       setIsSubmitting(false);

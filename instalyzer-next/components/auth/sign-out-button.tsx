@@ -1,6 +1,7 @@
 "use client";
 
 import { signOut } from "firebase/auth";
+import { CircleAlert } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useId, useState } from "react";
 import { getFirebaseClientAuth } from "@/lib/firebase/client";
@@ -32,7 +33,7 @@ export function SignOutButton() {
       router.refresh();
       router.push("/sign-in");
     } catch {
-      setErrorMessage("we couldn't sign out just now, try again");
+      setErrorMessage("sign out failed, try again");
       setIsPending(false);
     }
   };
@@ -50,7 +51,8 @@ export function SignOutButton() {
       </button>
       {errorMessage ? (
         <span id={errorMessageId} className="account-route__sign-out-error" role="alert">
-          {errorMessage}
+          <CircleAlert size={14} strokeWidth={2.1} aria-hidden="true" />
+          <span>{errorMessage}</span>
         </span>
       ) : null}
     </>
