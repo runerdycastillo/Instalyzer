@@ -8,7 +8,7 @@ Current milestone focus:
 - Replace placeholder routes with real product surfaces
 - Preserve the static product quality while simplifying toward a free launch
 - Keep momentum without losing track of polish, bugs, and gaps
-- Begin Firebase auth/account foundation after the accepted responsiveness wrap-up
+- Move from Firebase auth foundation into access gating and persistent account-owned storage
 
 ## How To Use
 
@@ -33,6 +33,138 @@ Current milestone focus:
 - [x] Firebase auth/account foundation implemented
 - [ ] Auth UI/access polish completed
 - [ ] Parser/domain logic extracted from static scripts
+
+## Current Roadmap - May 14, 2026
+
+This is the working roadmap for the next stretch. It condenses the latest end-of-day notes, Firebase plan, pre-launch audit, and Tier 2 plan into the practical build sequence.
+
+### Phase 1: Current Surface Polish
+
+Goal:
+
+- make the existing local-storage product feel polished and complete before wiring it deeper into persistence
+
+Build next:
+
+- polish loading states across route-level loading, auth, upload/import, workspace panels, tools, and contact/support
+- turn `/app/datasets` into a real storage/list page with open, rename, delete, active dataset, imported date, and storage-count behavior
+- add forgot-password/reset-password support
+- expand the signed-in `/account` route into a useful account/workspace home base
+- complete the remaining live auth QA in `docs/auth-state-qa.md`
+
+### Phase 2: Access Gating
+
+Goal:
+
+- decide and enforce where authentication is required
+
+Build next:
+
+- protect `/app`, `/app/datasets`, `/app/datasets/new`, dataset detail routes, and tool routes
+- keep home, help, contact, privacy, terms, and data deletion pages public
+- make `next=` redirects work cleanly after sign-in and sign-up
+- keep auth as full pages for the primary flow until contextual auth modals are actually needed
+- decide whether unauthenticated users can inspect an upload locally before sign-in, or whether upload starts behind account creation
+
+### Phase 3: Firestore Foundation
+
+Goal:
+
+- move from browser-local saved datasets toward signed-in, account-owned workspace data
+
+Build next:
+
+- create Firestore `users/{uid}` profile documents
+- save dataset metadata under `users/{uid}/datasets/{datasetId}`
+- load only the current user's datasets in storage and workspace routes
+- add Firestore server helpers and ownership checks
+- add Firestore security rules for `users/{uid}` ownership
+- wrap or replace the current localStorage dataset boundary so UI surfaces can move to persistent data without a broad rewrite
+
+### Phase 4: Data Persistence Upgrade
+
+Goal:
+
+- decide how much parsed Instagram data belongs in Firestore for the first persistent workspace version
+
+Build next:
+
+- decide how much parsed relationship/tool data should persist in Firestore
+- store the minimum derived data needed to reopen the dataset workspace and Tool 1 without re-uploading
+- decide whether to store tool outputs, parsed relationship records, import diagnostics, or only metadata at first
+- avoid Firebase Storage/raw Instagram ZIP storage until retention and deletion rules are settled
+- keep raw Instagram ZIP storage out of scope unless reprocessing, support diagnostics, or future tools truly require it
+
+### Phase 5: Privacy, Retention, And Deletion
+
+Goal:
+
+- make persistent storage safe, explainable, and consistent with the public legal/support pages
+
+Build next:
+
+- update privacy, terms, and data deletion copy to match Firestore-backed account storage
+- add reliable dataset deletion and define the account deletion path
+- define the retention policy for parsed dataset data and tool outputs
+- review Firestore security rules against user ownership
+- add clear expired-session and permission-denied states
+
+### Phase 6: Parser And Tool Confidence
+
+Goal:
+
+- make the data layer strong enough to support persistent datasets and future tools honestly
+
+Build next:
+
+- strengthen parser/domain extraction and realistic export fixture coverage
+- verify Tool 1 against multiple realistic export shapes
+- add data confidence handling for partial, missing, or unsupported export data
+- improve corrupted ZIP, wrong-format, missing-data, and limited-date-range handling where needed
+- choose Tool 2 only after export data support and product wording are defensible
+
+### Phase 7: Soft-Launch QA
+
+Goal:
+
+- test the product like a real first user before inviting broader usage
+
+Build next:
+
+- run the full new-user QA path from homepage to account, upload, saved dataset, workspace, Tool 1, deletion, support, and sign-out/sign-in
+- recheck responsive behavior after Firestore and auth gating are wired
+- verify support/contact, privacy/deletion, and account flows against the actual stored-data behavior
+- update `docs/PRE_LAUNCH_SAAS_AUDIT.md` with findings, must-fix items, and launch confidence
+
+### Phase 8: Tier 2 / Hard Launch
+
+Goal:
+
+- turn the soft-launch product into a paid SaaS only after the core free workflow is stable
+
+Build later:
+
+- billing and paid-plan access control
+- durable lead and marketing opt-in storage
+- paid tool packaging and server-side entitlement checks
+- optional Firebase Storage if raw archive retention becomes necessary
+- legal/support updates for paid usage, refunds, billing help, and account deletion
+- broader tool expansion after parser confidence improves
+
+Recommended next implementation sequence:
+
+1. loading-state polish
+2. real `/app/datasets` storage page
+3. forgot-password flow
+4. signed-in account page polish
+5. auth route gating
+6. Firestore user profiles
+7. Firestore dataset metadata
+8. Firestore parsed dataset/tool data decision and implementation
+9. privacy/deletion update
+10. parser/data-confidence hardening
+11. soft-launch QA pass
+12. Tier 2 / paid SaaS planning
 
 ## Latest Checkpoint - May 8, 2026
 
