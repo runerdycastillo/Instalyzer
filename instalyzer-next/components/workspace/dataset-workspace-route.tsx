@@ -722,11 +722,6 @@ export function WorkspaceLoadingState() {
               </span>
             </div>
 
-            <div className="hero-btn hero-btn-secondary dataset-side-panel__action dataset-side-panel__action--loading">
-              <Wrench size={16} aria-hidden="true" />
-              <span>tools</span>
-            </div>
-
             <article className="dataset-workspace__support-card">
               <p className="dataset-meta-label">relationship signals</p>
               <div className="dataset-card__metrics dataset-card__metrics--compact">
@@ -738,6 +733,11 @@ export function WorkspaceLoadingState() {
                 ))}
               </div>
             </article>
+
+            <div className="hero-btn hero-btn-secondary dataset-side-panel__action dataset-side-panel__action--loading">
+              <Wrench size={16} aria-hidden="true" />
+              <span>tools</span>
+            </div>
           </div>
         </aside>
       </div>
@@ -756,7 +756,6 @@ export function DatasetWorkspaceRoute({ datasetId, activeToolId }: DatasetWorksp
   const [deleteConfirmDatasetId, setDeleteConfirmDatasetId] = useState<string | null>(null);
   const [datasetNameDraft, setDatasetNameDraft] = useState("");
   const [datasetSortOrder, setDatasetSortOrder] = useState<DatasetSortOrder>("latest");
-  const [isSortMenuOpen, setIsSortMenuOpen] = useState(false);
   const [isHydrationSettled, setIsHydrationSettled] = useState(false);
   const [notFollowingBackStorageError, setNotFollowingBackStorageError] = useState("");
   const [floatingPanelStyle, setFloatingPanelStyle] = useState<{
@@ -766,7 +765,6 @@ export function DatasetWorkspaceRoute({ datasetId, activeToolId }: DatasetWorksp
     width: number;
     zIndex: number;
   } | null>(null);
-  const sortMenuRef = useRef<HTMLDivElement | null>(null);
   const listRef = useRef<HTMLDivElement | null>(null);
   const rowActionsRef = useRef<HTMLDivElement | null>(null);
   const floatingMenuRef = useRef<HTMLDivElement | null>(null);
@@ -998,22 +996,6 @@ export function DatasetWorkspaceRoute({ datasetId, activeToolId }: DatasetWorksp
   }
 
   useEffect(() => {
-    if (!isDatasetsModalOpen || !isSortMenuOpen) return undefined;
-
-    function handlePointerDown(event: PointerEvent) {
-      if (!sortMenuRef.current?.contains(event.target as Node)) {
-        setIsSortMenuOpen(false);
-      }
-    }
-
-    document.addEventListener("pointerdown", handlePointerDown);
-
-    return () => {
-      document.removeEventListener("pointerdown", handlePointerDown);
-    };
-  }, [isDatasetsModalOpen, isSortMenuOpen]);
-
-  useEffect(() => {
     if (!isDatasetsModalOpen || (!openDatasetMenuId && !renamingDatasetId)) return undefined;
 
     function handlePointerDown(event: PointerEvent) {
@@ -1134,7 +1116,6 @@ export function DatasetWorkspaceRoute({ datasetId, activeToolId }: DatasetWorksp
 
   function startRenamingDataset(targetId: string, currentName: string) {
     const anchor = menuTriggerRefs.current[targetId];
-    setIsSortMenuOpen(false);
     setOpenDatasetMenuId(null);
     setRenamingDatasetId(targetId);
     setDatasetNameDraft(currentName);
@@ -1146,13 +1127,6 @@ export function DatasetWorkspaceRoute({ datasetId, activeToolId }: DatasetWorksp
     setOpenDatasetMenuId(null);
     setRenamingDatasetId(null);
     setDeleteConfirmDatasetId(null);
-    setIsSortMenuOpen(false);
-    setFloatingPanelStyle(null);
-    setDatasetNameDraft("");
-  }
-
-  function cancelRenamingDataset() {
-    setRenamingDatasetId(null);
     setFloatingPanelStyle(null);
     setDatasetNameDraft("");
   }
@@ -1169,7 +1143,6 @@ export function DatasetWorkspaceRoute({ datasetId, activeToolId }: DatasetWorksp
 
   function removeDataset(targetId: string) {
     const nextDatasets = deleteLocalDataset(targetId);
-    setIsSortMenuOpen(false);
     setOpenDatasetMenuId(null);
     setRenamingDatasetId(null);
     setDeleteConfirmDatasetId(null);
@@ -1211,7 +1184,7 @@ export function DatasetWorkspaceRoute({ datasetId, activeToolId }: DatasetWorksp
             <div className="dataset-side-panel__head">
               <p className="section-kicker">{isWorkspaceHome ? "workspace overview" : "current dataset"}</p>
               <div className="dataset-side-panel__dataset-block">
-                <h2 className="tools-sidebar-title dataset-side-panel__title">{dataset.name}</h2>
+                <h2 className="tools-sidebar-title dataset-side-panel__title dataset-user-title">{dataset.name}</h2>
               </div>
             </div>
 
@@ -1288,7 +1261,12 @@ export function DatasetWorkspaceRoute({ datasetId, activeToolId }: DatasetWorksp
                     ? "workspace overview"
                     : "dataset overview"}
               </p>
-              <h1 id="dataset-workspace-title" className="dataset-overview-title">
+              <h1
+                id="dataset-workspace-title"
+                className={`dataset-overview-title${
+                  !isNotFollowingBackView && !isWorkspaceHome ? " dataset-user-title" : ""
+                }`}
+              >
                 {isNotFollowingBackView ? "not following back" : isWorkspaceHome ? "current workspace overview" : dataset.name}
               </h1>
               {isNotFollowingBackView ? (
@@ -2057,15 +2035,6 @@ export function DatasetWorkspaceRoute({ datasetId, activeToolId }: DatasetWorksp
                 )}
               </div>
 
-              <button
-                type="button"
-                className="hero-btn hero-btn-secondary dataset-side-panel__action"
-                onClick={() => setIsToolsModalOpen(true)}
-              >
-                <Wrench size={16} aria-hidden="true" />
-                tools
-              </button>
-
               <article className="dataset-workspace__support-card">
                 <p className="dataset-meta-label">relationship signals</p>
                 <div className="dataset-relationship-signals">
@@ -2101,6 +2070,15 @@ export function DatasetWorkspaceRoute({ datasetId, activeToolId }: DatasetWorksp
                   })}
                 </div>
               </article>
+
+              <button
+                type="button"
+                className="hero-btn hero-btn-secondary dataset-side-panel__action"
+                onClick={() => setIsToolsModalOpen(true)}
+              >
+                <Wrench size={16} aria-hidden="true" />
+                tools
+              </button>
             </div>
           </aside>
 
@@ -2123,7 +2101,6 @@ export function DatasetWorkspaceRoute({ datasetId, activeToolId }: DatasetWorksp
                   event.stopPropagation();
 
                   if (event.target === event.currentTarget) {
-                    setIsSortMenuOpen(false);
                     setOpenDatasetMenuId(null);
                     setRenamingDatasetId(null);
                   }
@@ -2143,53 +2120,29 @@ export function DatasetWorkspaceRoute({ datasetId, activeToolId }: DatasetWorksp
                     <span className="dataset-modal__summary-label">saved exports:</span>{" "}
                     <span className="dataset-modal__summary-value">{datasets.length}</span>
                   </p>
-                  <div className="dataset-modal__sort-wrap" ref={sortMenuRef}>
-                    <button
-                      type="button"
-                      className="dataset-modal__sort"
-                      onClick={(event) => {
-                        event.stopPropagation();
-                        setOpenDatasetMenuId(null);
-                        setRenamingDatasetId(null);
-                        setIsSortMenuOpen((current) => !current);
-                      }}
-                      aria-haspopup="menu"
-                      aria-expanded={isSortMenuOpen}
-                      aria-label="Sort exports"
-                    >
-                      <span className="dataset-modal__sort-label">sort</span>
-                      <span className="dataset-modal__sort-value">
-                        {datasetSortOptions.find((option) => option.value === datasetSortOrder)?.label}
-                      </span>
-                      <ChevronDown size={14} aria-hidden="true" className="dataset-modal__sort-caret" />
-                    </button>
-                    {isSortMenuOpen ? (
-                      <div
-                        className="dataset-modal__menu dataset-modal__sort-menu"
-                        role="menu"
-                        aria-label="Sort exports"
-                        onClick={(event) => event.stopPropagation()}
+                  <label className="dataset-modal__sort">
+                    <span className="dataset-modal__sort-label">sort</span>
+                    <span className="dataset-modal__sort-control">
+                      <select
+                        value={datasetSortOrder}
+                        onChange={(event) => {
+                          setDatasetSortOrder(event.target.value as DatasetSortOrder);
+                          setOpenDatasetMenuId(null);
+                          setRenamingDatasetId(null);
+                          setFloatingPanelStyle(null);
+                          setDatasetNameDraft("");
+                        }}
+                        aria-label="sort exports"
                       >
                         {datasetSortOptions.map((option) => (
-                          <button
-                            key={option.value}
-                            type="button"
-                            className={`dataset-modal__sort-option${datasetSortOrder === option.value ? " is-selected" : ""}`}
-                            onClick={() => {
-                              setDatasetSortOrder(option.value);
-                              setOpenDatasetMenuId(null);
-                              setRenamingDatasetId(null);
-                              setIsSortMenuOpen(false);
-                            }}
-                            role="menuitemradio"
-                            aria-checked={datasetSortOrder === option.value}
-                          >
-                            <span>{option.label}</span>
-                          </button>
+                          <option key={option.value} value={option.value}>
+                            {option.label}
+                          </option>
                         ))}
-                      </div>
-                    ) : null}
-                  </div>
+                      </select>
+                      <ChevronDown size={16} aria-hidden="true" />
+                    </span>
+                  </label>
                 </div>
               </div>
               <button
@@ -2216,6 +2169,8 @@ export function DatasetWorkspaceRoute({ datasetId, activeToolId }: DatasetWorksp
                 const isRenaming = renamingDatasetId === item.id;
                 const isMenuOpen = openDatasetMenuId === item.id;
                 const dateRangeLabel = getDatasetExportWindowValue(item) || item.importReview.sourceLabel;
+                const accountUsername = item.profile?.username?.trim();
+                const accountHandle = accountUsername ? `@${accountUsername}` : "";
 
                 return (
                   <div
@@ -2225,7 +2180,10 @@ export function DatasetWorkspaceRoute({ datasetId, activeToolId }: DatasetWorksp
                     {isCurrentDataset ? (
                       <div className="dataset-modal__row-main">
                         <div className="dataset-modal__row-topline">
-                          <strong>{item.name}</strong>
+                          <div className="dataset-modal__row-title">
+                            <strong>{item.name}</strong>
+                            {accountHandle ? <span className="dataset-modal__row-handle">{accountHandle}</span> : null}
+                          </div>
                           <div className="dataset-modal__row-topmeta">
                             <p className="dataset-modal__row-date">imported {formatDate(item.createdAt)}</p>
                             <span className={`dataset-modal__row-status${isCurrentDataset ? " is-current" : ""}`}>
@@ -2242,7 +2200,10 @@ export function DatasetWorkspaceRoute({ datasetId, activeToolId }: DatasetWorksp
                         onClick={closeDatasetsModal}
                       >
                         <div className="dataset-modal__row-topline">
-                          <strong>{item.name}</strong>
+                          <div className="dataset-modal__row-title">
+                            <strong>{item.name}</strong>
+                            {accountHandle ? <span className="dataset-modal__row-handle">{accountHandle}</span> : null}
+                          </div>
                           <div className="dataset-modal__row-topmeta">
                             <p className="dataset-modal__row-date">imported {formatDate(item.createdAt)}</p>
                             <span className={`dataset-modal__row-status${isCurrentDataset ? " is-current" : ""}`}>
@@ -2267,7 +2228,6 @@ export function DatasetWorkspaceRoute({ datasetId, activeToolId }: DatasetWorksp
                         onClick={(event) => {
                           event.stopPropagation();
                           const trigger = event.currentTarget;
-                          setIsSortMenuOpen(false);
                           setRenamingDatasetId(null);
                           setOpenDatasetMenuId((currentId) => {
                             const nextId = currentId === item.id ? null : item.id;
@@ -2351,19 +2311,9 @@ export function DatasetWorkspaceRoute({ datasetId, activeToolId }: DatasetWorksp
                                     type="submit"
                                     className="dataset-modal__rename-icon"
                                     aria-label={`Save name for ${item.name}`}
+                                    title="save"
                                   >
                                     <Check size={15} aria-hidden="true" />
-                                  </button>
-                                  <button
-                                    type="button"
-                                    className="dataset-modal__rename-icon dataset-modal__rename-icon--ghost"
-                                    onClick={(event) => {
-                                      event.stopPropagation();
-                                      cancelRenamingDataset();
-                                    }}
-                                    aria-label={`Cancel renaming ${item.name}`}
-                                  >
-                                    <X size={15} aria-hidden="true" />
                                   </button>
                                 </div>
                               </div>

@@ -159,6 +159,7 @@ export function DatasetCreationFlow() {
   const entryPoint = entryPointValues.has(entryPointParam as DatasetEntryPoint)
     ? (entryPointParam as DatasetEntryPoint)
     : "unknown";
+  const shouldReturnToStorage = searchParams.get("returnTo") === "storage";
 
   useEffect(() => {
     window.scrollTo({ top: 0, behavior: "auto" });
@@ -308,7 +309,7 @@ export function DatasetCreationFlow() {
     }
 
     startTransition(() => {
-      router.push(`/app/datasets/${datasetId}`);
+      router.push(shouldReturnToStorage ? "/app/datasets" : `/app/datasets/${datasetId}`);
     });
   };
 

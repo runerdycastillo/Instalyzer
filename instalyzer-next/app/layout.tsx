@@ -18,6 +18,13 @@ const plexMono = IBM_Plex_Mono({
 export const metadata: Metadata = {
   title: "Instalyzer",
   description: "Instagram dataset workspace migration foundation",
+  icons: {
+    icon: [
+      { url: "/favicon.ico", sizes: "any" },
+      { url: "/assets/logo/instalyzer-icon-512.png", type: "image/png", sizes: "512x512" },
+    ],
+    apple: [{ url: "/assets/logo/apple-touch-icon.png", type: "image/png", sizes: "180x180" }],
+  },
 };
 
 export default async function RootLayout({

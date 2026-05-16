@@ -1,16 +1,51 @@
 "use client";
 
-import { FolderKanban } from "lucide-react";
-import Link from "next/link";
-import { useEffect, useState, useSyncExternalStore } from "react";
 import {
+  Check,
+  ChevronDown,
+  CircleAlert,
+  FolderKanban,
+  LayoutDashboard,
+  Pencil,
+  Plus,
+  Search,
+  SearchX,
+  Settings,
+  Trash2,
+  Upload,
+} from "lucide-react";
+import Link from "next/link";
+import {
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+  useSyncExternalStore,
+  type CSSProperties,
+} from "react";
+import { createPortal } from "react-dom";
+import {
+  DATASET_NAME_MAX_LENGTH,
+  deleteLocalDataset,
+  getActiveDatasetServerSnapshot,
   getLocalDatasetsServerSnapshot,
-  getEntryPointLabel,
   hasReachedLocalDatasetLimit,
   LOCAL_DATASET_LIMIT_MESSAGE,
+  LOCAL_DATASETS_STORAGE_KEY,
+  MAX_LOCAL_DATASETS,
+  readActiveDatasetId,
   readLocalDatasets,
+  subscribeToActiveDataset,
   subscribeToLocalDatasets,
+  type LocalDatasetRecord,
+  updateLocalDatasetName,
+  writeActiveDatasetId,
 } from "@/lib/instagram/local-datasets";
+
+type DatasetStorageSortOrder = "latest" | "earliest" | "a-z";
+type DatasetStorageIssue = "corrupt" | "unavailable" | "";
+
+const STORAGE_PROBE_KEY = "instalyzer_storage_probe";
 
 function formatDate(value: string) {
   const date = new Date(`${value}T00:00:00`);
@@ -22,30 +57,137 @@ function formatDate(value: string) {
   });
 }
 
-function DatasetsIndexLoadingState() {
+function getDatasetHandle(dataset: LocalDatasetRecord) {
+  const username = dataset.profile?.username?.trim();
+  return username ? `@${username}` : "account not detected";
+}
+
+function getDatasetWindow(dataset: LocalDatasetRecord) {
+  const insightWindow = dataset.scope?.insightDateRangeLabel?.trim();
+  if (insightWindow) return insightWindow.replace(/\s+-\s+/, " - ");
+
+  if (dataset.scope?.exportRequestRange === "all_time") return "all-time export";
+  if (dataset.scope?.exportRequestRange === "limited") return "limited export";
+  return "window not detected";
+}
+
+function getSearchText(dataset: LocalDatasetRecord) {
+  return [
+    dataset.name,
+    dataset.profile?.username,
+    dataset.profile?.displayName,
+    dataset.importReview.sourceLabel,
+    dataset.importReview.categoryLabels.join(" "),
+    getDatasetWindow(dataset),
+  ]
+    .filter(Boolean)
+    .join(" ")
+    .toLowerCase();
+}
+
+function detectDatasetStorageIssue(): DatasetStorageIssue {
+  if (typeof window === "undefined") return "";
+
+  try {
+    window.localStorage.setItem(STORAGE_PROBE_KEY, "1");
+    window.localStorage.removeItem(STORAGE_PROBE_KEY);
+  } catch {
+    return "unavailable";
+  }
+
+  let raw: string | null = null;
+
+  try {
+    raw = window.localStorage.getItem(LOCAL_DATASETS_STORAGE_KEY);
+  } catch {
+    return "unavailable";
+  }
+
+  if (!raw) return "";
+
+  try {
+    return Array.isArray(JSON.parse(raw) as unknown) ? "" : "corrupt";
+  } catch {
+    return "corrupt";
+  }
+}
+
+function buildStorageFloatingPanelStyle(
+  anchor: HTMLButtonElement | null,
+  panel: "menu" | "rename",
+): CSSProperties | null {
+  if (!anchor || typeof window === "undefined") return null;
+
+  const anchorRect = anchor.getBoundingClientRect();
+  const width = panel === "menu" ? 86 : Math.min(276, window.innerWidth - 32);
+  const height = panel === "menu" ? 46 : 76;
+  const gap = panel === "menu" ? 6 : 10;
+  const viewportPadding = 16;
+
+  let left = panel === "menu" ? anchorRect.right + gap : anchorRect.left - width - gap;
+  let top = anchorRect.top + anchorRect.height / 2 - height / 2;
+
+  if (panel === "menu" && left > window.innerWidth - width - viewportPadding) {
+    left = anchorRect.left - width - gap;
+  }
+
+  if (panel === "rename" && left < viewportPadding) {
+    left = anchorRect.right + gap;
+  }
+
+  left = Math.max(viewportPadding, Math.min(left, window.innerWidth - width - viewportPadding));
+  top = Math.max(viewportPadding, Math.min(top, window.innerHeight - height - viewportPadding));
+
+  return {
+    position: "fixed",
+    left,
+    top,
+    width,
+    zIndex: 60,
+  };
+}
+
+export function DatasetsIndexLoadingState() {
   return (
-    <section className="dataset-index dataset-index--loading" aria-busy="true" aria-labelledby="dataset-index-loading-title">
-      <div className="dataset-index__hero">
-        <span className="route-badge route-badge--workspace">workspace route</span>
-        <p className="route-path">/app/datasets</p>
-        <h1 id="dataset-index-loading-title">datasets</h1>
-        <p className="dataset-index__description">checking your saved exports.</p>
+    <section
+      className="dataset-index dataset-storage dataset-storage--loading"
+      aria-busy="true"
+      aria-labelledby="dataset-index-loading-title"
+    >
+      <div className="dataset-storage__header">
+        <div className="dataset-storage__headline">
+          <p className="section-kicker">storage</p>
+          <h1 id="dataset-index-loading-title">saved exports</h1>
+          <p className="dataset-index__description">checking your saved exports.</p>
+        </div>
       </div>
 
-      <div className="dataset-index__grid" aria-hidden="true">
-        {["one", "two", "three"].map((item) => (
-          <article key={item} className="dataset-card dataset-card--loading">
-            <div className="dataset-card__head">
-              <div>
-                <span className="dataset-skeleton-line dataset-skeleton-line--meta" />
-                <span className="dataset-skeleton-line dataset-skeleton-line--title" />
-              </div>
-              <span className="dataset-skeleton-line dataset-skeleton-line--chip" />
-            </div>
-            <span className="dataset-skeleton-line dataset-skeleton-line--body" />
-            <span className="dataset-skeleton-line dataset-skeleton-line--body" />
-          </article>
-        ))}
+      <div className="dataset-storage__toolbar dataset-storage__toolbar--loading" aria-hidden="true">
+        <div className="dataset-storage__search dataset-storage__search--skeleton">
+          <Search size={18} aria-hidden="true" />
+          <span className="dataset-skeleton-line dataset-storage-skeleton dataset-storage-skeleton--search" />
+        </div>
+
+        <div className="dataset-storage__sort dataset-storage__sort--skeleton">
+          <span className="dataset-skeleton-line dataset-storage-skeleton dataset-storage-skeleton--sort-label" />
+          <div className="dataset-storage__sort-control">
+            <span className="dataset-skeleton-line dataset-storage-skeleton dataset-storage-skeleton--sort" />
+            <ChevronDown size={18} aria-hidden="true" />
+          </div>
+        </div>
+
+        <span className="hero-btn hero-btn-primary dataset-storage__import-button dataset-storage__import-button--skeleton">
+          <Plus size={22} aria-hidden="true" />
+        </span>
+      </div>
+
+      <div className="dataset-storage__loading-panel" aria-hidden="true">
+        <div className="dataset-storage__loading-panel-head">
+          <span className="dataset-skeleton-line dataset-storage-skeleton dataset-storage-skeleton--panel-title" />
+          <span className="dataset-skeleton-line dataset-storage-skeleton dataset-storage-skeleton--panel-chip" />
+        </div>
+        <span className="dataset-skeleton-line dataset-storage-skeleton dataset-storage-skeleton--panel-main" />
+        <span className="dataset-skeleton-line dataset-storage-skeleton dataset-storage-skeleton--panel-sub" />
       </div>
     </section>
   );
@@ -53,21 +195,25 @@ function DatasetsIndexLoadingState() {
 
 function DatasetsIndexEmptyState() {
   return (
-    <section className="dataset-index dataset-index--empty" aria-labelledby="dataset-index-title">
+    <section className="dataset-index dataset-index--empty dataset-storage-state" aria-labelledby="dataset-index-title">
       <div className="dataset-index__hero">
-        <span className="route-badge route-badge--workspace">workspace route</span>
+        <span className="route-badge route-badge--workspace">storage</span>
         <p className="route-path">/app/datasets</p>
-        <h1 id="dataset-index-title">datasets</h1>
+        <h1 id="dataset-index-title">saved exports</h1>
         <p className="dataset-index__description">
-          Saved Instagram exports will appear here after you create your first dataset.
+          Saved Instagram exports will appear here after you import your first archive.
         </p>
+        <div className="dataset-storage__summary dataset-storage__summary--empty" aria-label={`0 / ${MAX_LOCAL_DATASETS} exports used`}>
+          <span>storage</span>
+          <strong>0 / {MAX_LOCAL_DATASETS}</strong>
+        </div>
       </div>
 
       <article className="dataset-card dataset-card--empty dataset-index-empty-card">
         <div className="dataset-card__head">
           <div>
-            <p className="dataset-card__eyebrow">no saved datasets</p>
-            <h2>create your first dataset</h2>
+            <p className="dataset-card__eyebrow">no saved exports</p>
+            <h2>import your first export</h2>
           </div>
           <span className="dataset-index-empty-card__icon" aria-hidden="true">
             <FolderKanban size={20} strokeWidth={1.85} />
@@ -75,7 +221,7 @@ function DatasetsIndexEmptyState() {
         </div>
 
         <p className="dataset-card__copy">
-          Upload an official Instagram export once, then return here to reopen the dataset,
+          Upload an official Instagram export once, then return here to reopen the workspace,
           manage it, and use workspace tools.
         </p>
 
@@ -88,11 +234,65 @@ function DatasetsIndexEmptyState() {
         </div>
 
         <div className="route-links dataset-index-empty-card__actions">
-          <Link href="/app/datasets/new?entry=datasets-index" className="hero-btn hero-btn-primary">
-            create dataset
+          <Link href="/app/datasets/new?entry=datasets-index&returnTo=storage" className="hero-btn hero-btn-primary">
+            <Upload size={16} aria-hidden="true" />
+            import export
           </Link>
           <Link href="/help" className="hero-btn hero-btn-secondary">
             view export guide
+          </Link>
+        </div>
+      </article>
+    </section>
+  );
+}
+
+function DatasetStorageIssueState({ issue }: { issue: Exclude<DatasetStorageIssue, ""> }) {
+  const copy =
+    issue === "corrupt"
+      ? {
+          eyebrow: "storage issue",
+          title: "saved exports need attention",
+          body: "we couldn't read the saved export data in this browser. reload first, and contact support before clearing browser data.",
+        }
+      : {
+          eyebrow: "storage unavailable",
+          title: "saved exports could not load",
+          body: "your browser is blocking local storage right now. enable browser storage, then reload this page.",
+        };
+
+  return (
+    <section
+      className="dataset-index dataset-index--empty dataset-storage-state dataset-storage-state--issue"
+      aria-labelledby="dataset-storage-issue-title"
+    >
+      <div className="dataset-storage__header">
+        <div className="dataset-storage__headline">
+          <p className="section-kicker">storage</p>
+          <h1 id="dataset-storage-issue-title">saved exports</h1>
+          <p className="dataset-index__description">manage imported instagram exports and reopen any workspace.</p>
+        </div>
+      </div>
+
+      <article className="dataset-card dataset-card--empty dataset-index-empty-card dataset-storage-state-card dataset-storage-state-card--issue">
+        <div className="dataset-card__head">
+          <div>
+            <p className="dataset-card__eyebrow">{copy.eyebrow}</p>
+            <h2>{copy.title}</h2>
+          </div>
+          <span className="dataset-storage-state-card__icon is-error" aria-hidden="true">
+            <CircleAlert size={20} strokeWidth={1.9} />
+          </span>
+        </div>
+
+        <p className="dataset-card__copy">{copy.body}</p>
+
+        <div className="route-links dataset-index-empty-card__actions">
+          <button type="button" className="hero-btn hero-btn-primary" onClick={() => window.location.reload()}>
+            reload
+          </button>
+          <Link href="/contact" className="hero-btn hero-btn-secondary">
+            contact support
           </Link>
         </div>
       </article>
@@ -107,17 +307,58 @@ export function DatasetsIndexRoute() {
     () => false,
   );
   const [isHydrationSettled, setIsHydrationSettled] = useState(false);
+  const [storageIssue, setStorageIssue] = useState<DatasetStorageIssue>("");
   const datasets = useSyncExternalStore(
     subscribeToLocalDatasets,
     readLocalDatasets,
     getLocalDatasetsServerSnapshot,
   );
+  const activeDatasetId = useSyncExternalStore(
+    subscribeToActiveDataset,
+    readActiveDatasetId,
+    getActiveDatasetServerSnapshot,
+  );
+  const [query, setQuery] = useState("");
+  const [sortOrder, setSortOrder] = useState<DatasetStorageSortOrder>("latest");
+  const [openDatasetMenuId, setOpenDatasetMenuId] = useState<string | null>(null);
+  const [renamingDatasetId, setRenamingDatasetId] = useState<string | null>(null);
+  const [deleteConfirmDatasetId, setDeleteConfirmDatasetId] = useState<string | null>(null);
+  const [datasetNameDraft, setDatasetNameDraft] = useState("");
+  const [floatingPanelStyle, setFloatingPanelStyle] = useState<CSSProperties | null>(null);
+  const rowActionsRef = useRef<HTMLDivElement | null>(null);
+  const floatingMenuRef = useRef<HTMLDivElement | null>(null);
+  const floatingRenameRef = useRef<HTMLFormElement | null>(null);
+  const menuTriggerRefs = useRef<Record<string, HTMLButtonElement | null>>({});
   const hasReachedDatasetLimit = hasReachedLocalDatasetLimit(datasets);
+  const normalizedQuery = query.trim().toLowerCase();
+  const filteredDatasets = useMemo(() => {
+    const nextDatasets = normalizedQuery
+      ? datasets.filter((dataset) => getSearchText(dataset).includes(normalizedQuery))
+      : [...datasets];
+
+    nextDatasets.sort((left, right) => {
+      if (sortOrder === "a-z") {
+        return left.name.localeCompare(right.name);
+      }
+
+      const leftCreatedAt = Number(left.createdAtMs) || 0;
+      const rightCreatedAt = Number(right.createdAtMs) || 0;
+      return sortOrder === "earliest" ? leftCreatedAt - rightCreatedAt : rightCreatedAt - leftCreatedAt;
+    });
+
+    return nextDatasets;
+  }, [datasets, normalizedQuery, sortOrder]);
+  const storageCountLabel = `${datasets.length} / ${MAX_LOCAL_DATASETS} exports used`;
+  const deleteConfirmDataset = deleteConfirmDatasetId
+    ? datasets.find((dataset) => dataset.id === deleteConfirmDatasetId) || null
+    : null;
+  const isManagedDatasetNameValid = Boolean(datasetNameDraft.trim());
 
   useEffect(() => {
     if (!hasMounted) return undefined;
 
     const settleTimer = window.setTimeout(() => {
+      setStorageIssue(detectDatasetStorageIssue());
       setIsHydrationSettled(true);
     }, 140);
 
@@ -126,8 +367,102 @@ export function DatasetsIndexRoute() {
     };
   }, [hasMounted]);
 
+  useEffect(() => {
+    if (!deleteConfirmDataset) return undefined;
+
+    document.documentElement.classList.add("modal-open");
+    document.body.classList.add("modal-open");
+
+    return () => {
+      document.documentElement.classList.remove("modal-open");
+      document.body.classList.remove("modal-open");
+    };
+  }, [deleteConfirmDataset]);
+
+  useEffect(() => {
+    if (!deleteConfirmDatasetId && !openDatasetMenuId && !renamingDatasetId) return undefined;
+
+    function handleKeyDown(event: KeyboardEvent) {
+      if (event.key !== "Escape") return;
+
+      if (deleteConfirmDatasetId) {
+        setDeleteConfirmDatasetId(null);
+        return;
+      }
+
+      setOpenDatasetMenuId(null);
+      setRenamingDatasetId(null);
+      setFloatingPanelStyle(null);
+      setDatasetNameDraft("");
+    }
+
+    document.addEventListener("keydown", handleKeyDown);
+
+    return () => {
+      document.removeEventListener("keydown", handleKeyDown);
+    };
+  }, [deleteConfirmDatasetId, openDatasetMenuId, renamingDatasetId]);
+
+  useEffect(() => {
+    if (!openDatasetMenuId && !renamingDatasetId) return undefined;
+
+    function handlePointerDown(event: PointerEvent) {
+      const target = event.target as Node;
+      const isInsideFloatingPanel =
+        floatingMenuRef.current?.contains(target) || floatingRenameRef.current?.contains(target);
+
+      if (!rowActionsRef.current?.contains(target) && !isInsideFloatingPanel) {
+        setOpenDatasetMenuId(null);
+        setRenamingDatasetId(null);
+        setFloatingPanelStyle(null);
+        setDatasetNameDraft("");
+      }
+    }
+
+    document.addEventListener("pointerdown", handlePointerDown);
+
+    return () => {
+      document.removeEventListener("pointerdown", handlePointerDown);
+    };
+  }, [openDatasetMenuId, renamingDatasetId]);
+
+  function startRenamingDataset(targetId: string, currentName: string) {
+    const anchor = menuTriggerRefs.current[targetId];
+    setOpenDatasetMenuId(null);
+    setRenamingDatasetId(targetId);
+    setDatasetNameDraft(currentName);
+    setFloatingPanelStyle(anchor ? buildStorageFloatingPanelStyle(anchor, "rename") : null);
+  }
+
+  function cancelRenamingDataset() {
+    setRenamingDatasetId(null);
+    setFloatingPanelStyle(null);
+    setDatasetNameDraft("");
+  }
+
+  function saveManagedDatasetName(targetId: string) {
+    const normalizedName = datasetNameDraft.trim().slice(0, DATASET_NAME_MAX_LENGTH);
+    if (!normalizedName) return;
+
+    updateLocalDatasetName(targetId, normalizedName);
+    cancelRenamingDataset();
+  }
+
+  function removeManagedDataset(datasetId: string) {
+    deleteLocalDataset(datasetId);
+    setOpenDatasetMenuId(null);
+    setRenamingDatasetId(null);
+    setDeleteConfirmDatasetId(null);
+    setFloatingPanelStyle(null);
+    setDatasetNameDraft("");
+  }
+
   if (!hasMounted || !isHydrationSettled) {
     return <DatasetsIndexLoadingState />;
+  }
+
+  if (storageIssue) {
+    return <DatasetStorageIssueState issue={storageIssue} />;
   }
 
   if (!datasets.length) {
@@ -135,76 +470,325 @@ export function DatasetsIndexRoute() {
   }
 
   return (
-    <section className="dataset-index" aria-labelledby="dataset-index-title">
-      <div className="dataset-index__hero">
-        <span className="route-badge route-badge--workspace">workspace route</span>
-        <p className="route-path">/app/datasets</p>
-        <h1 id="dataset-index-title">datasets</h1>
-        <p className="dataset-index__description">
-          Reusable Instagram imports live here. Each dataset becomes the anchor for
-          the workspace and every tool we add next.
-        </p>
+    <>
+    <section className="dataset-index dataset-storage" aria-labelledby="dataset-index-title">
+      <div className="dataset-storage__header">
+        <div className="dataset-storage__headline">
+          <p className="section-kicker">storage</p>
+          <h1 id="dataset-index-title">saved exports</h1>
+          <p className="dataset-index__description">
+            manage imported instagram exports and reopen any workspace.
+          </p>
+        </div>
       </div>
 
-      <div className="dataset-index__actions">
-        {hasReachedDatasetLimit ? (
-          <div className="dataset-index__limit-note">
-            <span className="hero-btn hero-btn-primary is-disabled" aria-disabled="true">
-              export limit reached
-            </span>
-            <p>{LOCAL_DATASET_LIMIT_MESSAGE}</p>
+      <div className="dataset-storage__toolbar">
+        <div className="dataset-storage__summary" aria-label={storageCountLabel}>
+          <span>storage</span>
+          <strong>{datasets.length} / {MAX_LOCAL_DATASETS}</strong>
+        </div>
+
+        <label className="dataset-storage__search">
+          <Search size={18} aria-hidden="true" />
+          <input
+            type="search"
+            value={query}
+            onChange={(event) => setQuery(event.target.value)}
+            placeholder="search exports"
+            aria-label="search exports"
+            autoComplete="off"
+            autoCapitalize="none"
+            spellCheck={false}
+          />
+        </label>
+
+        <label className="dataset-storage__sort">
+          <span>sort</span>
+          <div className="dataset-storage__sort-control">
+            <select
+              value={sortOrder}
+              onChange={(event) => setSortOrder(event.target.value as DatasetStorageSortOrder)}
+            >
+              <option value="latest">latest</option>
+              <option value="earliest">earliest</option>
+              <option value="a-z">a to z</option>
+            </select>
+            <ChevronDown size={18} aria-hidden="true" />
           </div>
+        </label>
+
+        {hasReachedDatasetLimit ? (
+          <span
+            className="hero-btn hero-btn-primary dataset-storage__import-button is-disabled"
+            aria-disabled="true"
+            aria-label={LOCAL_DATASET_LIMIT_MESSAGE}
+            title={LOCAL_DATASET_LIMIT_MESSAGE}
+          >
+            <Plus size={22} aria-hidden="true" />
+          </span>
         ) : (
-          <Link href="/app/datasets/new?entry=datasets-index" className="hero-btn hero-btn-primary">
-            create dataset
+          <Link
+            href="/app/datasets/new?entry=datasets-index&returnTo=storage"
+            className="hero-btn hero-btn-primary dataset-storage__import-button"
+            aria-label="import export"
+            title="import"
+          >
+            <Plus size={22} aria-hidden="true" />
           </Link>
         )}
       </div>
 
-      <div className="dataset-index__grid">
-        {datasets.map((dataset) => (
-          <article key={dataset.id} className="dataset-card">
-            <div className="dataset-card__head">
-              <div>
-                <p className="dataset-card__eyebrow">{getEntryPointLabel(dataset.entryPoint)}</p>
-                <h2>{dataset.name}</h2>
-              </div>
-              <span className="dataset-chip">{dataset.importReview.sourceLabel}</span>
-            </div>
+      {hasReachedDatasetLimit ? (
+        <article className="dataset-storage__notice is-full" role="status">
+          <span className="dataset-storage__notice-icon" aria-hidden="true">
+            <CircleAlert size={18} />
+          </span>
+          <div>
+            <strong>storage full</strong>
+            <p>{LOCAL_DATASET_LIMIT_MESSAGE} delete an export to import another.</p>
+          </div>
+        </article>
+      ) : null}
 
-            <p className="dataset-card__copy">{dataset.importReview.uploadSummary}</p>
+      <div className="dataset-storage__list" role="list" aria-label="Saved exports">
+        <div className="dataset-storage__list-head" aria-hidden="true">
+          <span>export</span>
+          <span>overview</span>
+          <span>imported</span>
+          <span>source</span>
+          <span>status</span>
+          <span>workspace</span>
+          <span>manage</span>
+        </div>
 
-            <div className="dataset-card__metrics">
-              <div>
-                <span>created</span>
-                <strong>{formatDate(dataset.createdAt)}</strong>
-              </div>
-              <div>
-                <span>files</span>
-                <strong>{dataset.importReview.fileCount}</strong>
-              </div>
-              <div>
-                <span>categories</span>
-                <strong>{dataset.importReview.categoryCount}</strong>
-              </div>
-            </div>
+        {filteredDatasets.length ? (
+          filteredDatasets.map((dataset) => {
+            const isActiveDataset = dataset.id === activeDatasetId;
+            const isMenuOpen = openDatasetMenuId === dataset.id;
+            const isRenaming = renamingDatasetId === dataset.id;
+            const handle = getDatasetHandle(dataset);
 
-            <div className="dataset-chip-row">
-              {dataset.importReview.categoryLabels.map((label) => (
-                <span key={label} className="dataset-chip">
-                  {label}
-                </span>
-              ))}
-            </div>
+            return (
+              <article
+                key={dataset.id}
+                className={`dataset-storage-row${isActiveDataset ? " is-selected" : ""}`}
+                role="listitem"
+              >
+                <button
+                  type="button"
+                  className="dataset-storage-row__select"
+                  onClick={() => writeActiveDatasetId(dataset.id)}
+                  aria-pressed={isActiveDataset}
+                  aria-label={`select ${dataset.name} workspace`}
+                />
 
-            <div className="route-links">
-              <Link href={`/app/datasets/${dataset.id}`} className="route-link">
-                open workspace
-              </Link>
-            </div>
+                <div className="dataset-storage-row__identity">
+                  <h2 className="dataset-user-title">{dataset.name}</h2>
+                  <span>{handle}</span>
+                </div>
+
+                <div className="dataset-storage-row__cell" data-label="overview">
+                  <strong>{getDatasetWindow(dataset)}</strong>
+                </div>
+
+                <div className="dataset-storage-row__cell" data-label="imported">
+                  <strong>{formatDate(dataset.createdAt)}</strong>
+                </div>
+
+                <div className="dataset-storage-row__cell" data-label="source">
+                  <strong>{dataset.importReview.sourceLabel}</strong>
+                </div>
+
+                <div className="dataset-storage-row__status" data-label="status">
+                  <span
+                    className={`dataset-storage-status${isActiveDataset ? " is-active" : ""}`}
+                    aria-label={isActiveDataset ? "selected workspace" : "saved workspace"}
+                    title={isActiveDataset ? "selected" : "saved"}
+                  >
+                    <span aria-hidden="true" />
+                  </span>
+                </div>
+
+                <Link
+                  href={`/app/datasets/${dataset.id}`}
+                  className="route-link dataset-storage-row__open"
+                  aria-label={`open ${dataset.name} workspace`}
+                  title="open workspace"
+                  onClick={() => writeActiveDatasetId(dataset.id)}
+                >
+                  <LayoutDashboard size={18} aria-hidden="true" />
+                </Link>
+
+                <div
+                  className="dataset-storage-row__actions"
+                  ref={isMenuOpen || isRenaming ? rowActionsRef : undefined}
+                >
+                  <button
+                    type="button"
+                    className="route-link dataset-storage-row__manage"
+                    ref={(node) => {
+                      menuTriggerRefs.current[dataset.id] = node;
+                    }}
+                    aria-label={`manage ${dataset.name}`}
+                    aria-expanded={isMenuOpen || isRenaming}
+                    title="manage export"
+                    onClick={(event) => {
+                      event.stopPropagation();
+                      const trigger = event.currentTarget;
+                      setDeleteConfirmDatasetId(null);
+                      setRenamingDatasetId(null);
+                      setDatasetNameDraft("");
+                      setOpenDatasetMenuId((currentId) => {
+                        const nextId = currentId === dataset.id ? null : dataset.id;
+                        setFloatingPanelStyle(nextId ? buildStorageFloatingPanelStyle(trigger, "menu") : null);
+                        return nextId;
+                      });
+                    }}
+                  >
+                    <Settings size={18} aria-hidden="true" />
+                  </button>
+
+                  {isMenuOpen
+                    ? createPortal(
+                        <div
+                          ref={floatingMenuRef}
+                          className="dataset-modal__menu dataset-modal__menu--actions dataset-storage-row__menu"
+                          style={floatingPanelStyle ?? undefined}
+                          role="menu"
+                          aria-label={`Actions for ${dataset.name}`}
+                          onClick={(event) => event.stopPropagation()}
+                        >
+                          <button
+                            type="button"
+                            className="dataset-modal__menu-item"
+                            role="menuitem"
+                            aria-label={`edit ${dataset.name}`}
+                            title="edit"
+                            onClick={(event) => {
+                              event.stopPropagation();
+                              startRenamingDataset(dataset.id, dataset.name);
+                            }}
+                          >
+                            <Pencil size={14} aria-hidden="true" />
+                          </button>
+                          <button
+                            type="button"
+                            className="dataset-modal__menu-item dataset-modal__menu-item--danger"
+                            role="menuitem"
+                            aria-label={`delete ${dataset.name}`}
+                            title="delete"
+                            onClick={(event) => {
+                              event.stopPropagation();
+                              setOpenDatasetMenuId(null);
+                              setRenamingDatasetId(null);
+                              setFloatingPanelStyle(null);
+                              setDatasetNameDraft("");
+                              setDeleteConfirmDatasetId(dataset.id);
+                            }}
+                          >
+                            <Trash2 size={14} aria-hidden="true" />
+                          </button>
+                        </div>,
+                        document.body,
+                      )
+                    : null}
+
+                  {isRenaming
+                    ? createPortal(
+                        <form
+                          ref={floatingRenameRef}
+                          className="dataset-modal__rename-popover dataset-storage-rename-popover"
+                          style={floatingPanelStyle ?? undefined}
+                          onSubmit={(event) => {
+                            event.preventDefault();
+                            event.stopPropagation();
+                            saveManagedDatasetName(dataset.id);
+                          }}
+                          onClick={(event) => event.stopPropagation()}
+                        >
+                          <div className="dataset-modal__rename-row">
+                            <input
+                              id={`storage-rename-${dataset.id}`}
+                              className="dataset-modal__rename-input"
+                              value={datasetNameDraft}
+                              maxLength={DATASET_NAME_MAX_LENGTH}
+                              onChange={(event) => setDatasetNameDraft(event.target.value)}
+                              aria-label={`rename ${dataset.name}`}
+                              autoFocus
+                            />
+                            <div className="dataset-modal__rename-actions">
+                              <button
+                                type="submit"
+                                className="dataset-modal__rename-icon"
+                                disabled={!isManagedDatasetNameValid}
+                                aria-label={`save name for ${dataset.name}`}
+                                title="save"
+                              >
+                                <Check size={15} aria-hidden="true" />
+                              </button>
+                            </div>
+                          </div>
+                        </form>,
+                        document.body,
+                      )
+                    : null}
+                </div>
+              </article>
+            );
+          })
+        ) : (
+          <article className="dataset-storage__empty-results" role="status">
+            <span className="dataset-storage__empty-results-icon" aria-hidden="true">
+              <SearchX size={20} />
+            </span>
+            <strong>no exports match that search</strong>
+            <p>try a different export name, username, source, or overview.</p>
           </article>
-        ))}
+        )}
       </div>
+
     </section>
+    {deleteConfirmDataset
+      ? createPortal(
+          <div
+            className="dataset-modal-backdrop dataset-modal-backdrop--confirm"
+            role="presentation"
+            onClick={() => setDeleteConfirmDatasetId(null)}
+          >
+            <div
+              className="dataset-modal dataset-modal--confirm"
+              role="alertdialog"
+              aria-modal="true"
+              aria-labelledby="storage-delete-export-title"
+              aria-describedby="storage-delete-export-copy"
+              onClick={(event) => event.stopPropagation()}
+            >
+              <div className="dataset-modal__confirm-copy">
+                <h2 id="storage-delete-export-title">delete export?</h2>
+                <p id="storage-delete-export-copy">this removes this saved export from storage.</p>
+              </div>
+              <div className="dataset-modal__confirm-actions">
+                <button
+                  type="button"
+                  className="dataset-modal__confirm-button dataset-modal__confirm-button--ghost"
+                  onClick={() => setDeleteConfirmDatasetId(null)}
+                  autoFocus
+                >
+                  cancel
+                </button>
+                <button
+                  type="button"
+                  className="dataset-modal__confirm-button dataset-modal__confirm-button--danger"
+                  onClick={() => removeManagedDataset(deleteConfirmDataset.id)}
+                >
+                  delete
+                </button>
+              </div>
+            </div>
+          </div>,
+          document.body,
+        )
+      : null}
+    </>
   );
 }

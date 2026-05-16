@@ -2,6 +2,7 @@
 
 import {
   Check,
+  ChevronDown,
   CircleAlert,
   Clock3,
   Download,
@@ -12,7 +13,7 @@ import {
   UserRoundX,
 } from "lucide-react";
 import Link from "next/link";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import type { LocalDatasetRecord } from "@/lib/instagram/local-datasets";
 import {
@@ -327,6 +328,10 @@ export function NotFollowingBackWorkspaceView({
   const highlightTimeoutRef = useRef<number | null>(null);
   const rowExitTimeoutsRef = useRef<Record<string, number>>({});
   const tooltipRef = useRef<HTMLDivElement | null>(null);
+  const listRef = useRef<HTMLUListElement | null>(null);
+  const rowRefs = useRef<Record<string, HTMLLIElement | null>>({});
+  const previousRowRectsRef = useRef<Map<string, DOMRect> | null>(null);
+  const pendingListScrollTopRef = useRef<number | null>(null);
   const unavailableState = useMemo(() => getNotFollowingBackUnavailableState(dataset), [dataset]);
   const allEntries = useMemo(() => deriveNotFollowingBackEntries(dataset), [dataset]);
   const allUsernames = useMemo(() => allEntries.map((entry) => entry.username), [allEntries]);
@@ -456,6 +461,46 @@ export function NotFollowingBackWorkspaceView({
     const unpinnedEntries = sortedEntries.filter((entry) => !pinnedSet.has(entry.username));
     return [...pinnedEntries, ...unpinnedEntries];
   }, [activeList, debouncedQuery, listEntries, pinnedSet, sortOrder]);
+
+  useLayoutEffect(() => {
+    const previousRowRects = previousRowRectsRef.current;
+    if (!previousRowRects) return;
+
+    previousRowRectsRef.current = null;
+
+    const listNode = listRef.current;
+    if (listNode && pendingListScrollTopRef.current !== null) {
+      listNode.scrollTop = pendingListScrollTopRef.current;
+    }
+    pendingListScrollTopRef.current = null;
+
+    if (prefersReducedMotion) return;
+
+    Object.entries(rowRefs.current).forEach(([username, rowNode]) => {
+      if (!rowNode) return;
+
+      const previousRect = previousRowRects.get(username);
+      if (!previousRect) return;
+
+      const nextRect = rowNode.getBoundingClientRect();
+      const deltaX = previousRect.left - nextRect.left;
+      const deltaY = previousRect.top - nextRect.top;
+
+      if (Math.abs(deltaX) < 1 && Math.abs(deltaY) < 1) return;
+
+      rowNode.animate(
+        [
+          { transform: `translate(${deltaX}px, ${deltaY}px)` },
+          { transform: "translate(0, 0)" },
+        ],
+        {
+          duration: 320,
+          easing: "cubic-bezier(0.22, 1, 0.36, 1)",
+        },
+      );
+    });
+  }, [prefersReducedMotion, visibleEntries]);
+
   const hasActiveSearch = debouncedQuery.trim().length > 0;
   const hasFlaggedAccounts = allEntries.length > 0;
   const emptyTitle = hasActiveSearch
@@ -562,9 +607,26 @@ export function NotFollowingBackWorkspaceView({
     }, ROW_EXIT_DURATION_MS);
   }
 
+  function captureRowLayoutForReorder() {
+    const previousRects = new Map<string, DOMRect>();
+
+    Object.entries(rowRefs.current).forEach(([username, rowNode]) => {
+      if (rowNode) {
+        previousRects.set(username, rowNode.getBoundingClientRect());
+      }
+    });
+
+    previousRowRectsRef.current = previousRects.size ? previousRects : null;
+    pendingListScrollTopRef.current = listRef.current?.scrollTop ?? null;
+  }
+
   function togglePinned(username: string) {
     const normalizedUsername = username.trim().toLowerCase();
     if (!normalizedUsername) return;
+
+    if (activeList === "pending") {
+      captureRowLayoutForReorder();
+    }
 
     setToolState((current) => {
       const nextPinned = current.pinned.filter((item) => item !== normalizedUsername);
@@ -674,6 +736,8 @@ export function NotFollowingBackWorkspaceView({
       accentClassName: "is-not-found",
     },
   ];
+  const activeSummaryCard = summaryCards.find((card) => card.key === activeList) || summaryCards[0];
+  const ActiveEmptyIcon = activeSummaryCard.Icon;
 
   if (unavailableState) {
     return <NotFollowingBackUnavailableStateView dataset={dataset} state={unavailableState} />;
@@ -731,15 +795,18 @@ export function NotFollowingBackWorkspaceView({
         <div className="relationship-tool__toolbar-actions">
           <label className="relationship-tool__sort">
             <span>sort</span>
-            <select
-              value={sortOrder}
-              onChange={(event) => setSortOrder(event.target.value as NotFollowingBackSortOrder)}
-            >
-              <option value="latest">latest</option>
-              <option value="earliest">earliest</option>
-              <option value="az">a to z</option>
-              <option value="za">z to a</option>
-            </select>
+            <div className="relationship-tool__sort-control">
+              <select
+                value={sortOrder}
+                onChange={(event) => setSortOrder(event.target.value as NotFollowingBackSortOrder)}
+              >
+                <option value="latest">latest</option>
+                <option value="earliest">earliest</option>
+                <option value="az">a to z</option>
+                <option value="za">z to a</option>
+              </select>
+              <ChevronDown size={18} aria-hidden="true" />
+            </div>
           </label>
 
           <span className="relationship-tool__download-wrap">
@@ -772,14 +839,20 @@ export function NotFollowingBackWorkspaceView({
           <strong className={`relationship-tool__note-tone ${activeToneClassName}`}>
             {hasFlaggedAccounts ? listMeta.label : "all clear"}
           </strong>:{" "}
-          {hasFlaggedAccounts ? listMeta.description : "no accounts need review in this export"}. Showing{" "}
-          <strong>{visibleEntries.length.toLocaleString()}</strong> result{visibleEntries.length === 1 ? "" : "s"}.
+          {hasFlaggedAccounts ? listMeta.description : "no accounts need review in this export"}.
+        </p>
+        <p className="relationship-tool__result-count">
+          <strong>{visibleEntries.length.toLocaleString()}</strong> result{visibleEntries.length === 1 ? "" : "s"}
         </p>
       </div>
 
       <div className="relationship-tool__list-shell">
         {visibleEntries.length ? (
-          <ul className="relationship-tool__list" aria-label={`Not following back ${listMeta.label} list`}>
+          <ul
+            className="relationship-tool__list"
+            ref={listRef}
+            aria-label={`Not following back ${listMeta.label} list`}
+          >
             {visibleEntries.map((entry) => {
               const isPinned = activeList === "pending" && pinnedSet.has(entry.username);
               const isExiting = Boolean(exitingRows[entry.username]);
@@ -787,13 +860,20 @@ export function NotFollowingBackWorkspaceView({
               return (
               <li
                 key={entry.username}
+                ref={(node) => {
+                  if (node) {
+                    rowRefs.current[entry.username] = node;
+                  } else {
+                    delete rowRefs.current[entry.username];
+                  }
+                }}
                 className={`relationship-tool__row${recentVisitSet.has(entry.username) ? " is-recently-visited" : ""}${isPinned ? " is-pinned" : ""}${isExiting ? " is-exiting" : ""}`}
               >
                 <div className="relationship-tool__row-main">
                   {activeList === "pending" ? (
                       <button
                         type="button"
-                        className="relationship-tool__action relationship-tool__action--primary relationship-tool__action--icon"
+                        className="relationship-tool__action relationship-tool__action--primary relationship-tool__action--icon relationship-tool__action--unfollowed"
                         onClick={(event) =>
                           moveUser(entry.username, "unfollowed", getInteractionTimestamp(event.timeStamp))
                         }
@@ -806,7 +886,7 @@ export function NotFollowingBackWorkspaceView({
                   ) : activeList !== "unfollowed" ? (
                       <button
                         type="button"
-                        className="relationship-tool__action relationship-tool__action--primary relationship-tool__action--icon"
+                        className="relationship-tool__action relationship-tool__action--primary relationship-tool__action--icon relationship-tool__action--unfollowed"
                         onClick={(event) =>
                           moveUser(entry.username, "unfollowed", getInteractionTimestamp(event.timeStamp))
                         }
@@ -819,7 +899,7 @@ export function NotFollowingBackWorkspaceView({
                   ) : (
                       <button
                         type="button"
-                        className="relationship-tool__action relationship-tool__action--icon"
+                        className="relationship-tool__action relationship-tool__action--icon relationship-tool__action--pending"
                         onClick={(event) =>
                           moveUser(entry.username, "pending", getInteractionTimestamp(event.timeStamp))
                         }
@@ -863,7 +943,7 @@ export function NotFollowingBackWorkspaceView({
                     <>
                       <button
                         type="button"
-                        className="relationship-tool__action relationship-tool__action--icon"
+                        className="relationship-tool__action relationship-tool__action--icon relationship-tool__action--review-later"
                         onClick={(event) =>
                           moveUser(entry.username, "reviewLater", getInteractionTimestamp(event.timeStamp))
                         }
@@ -878,7 +958,7 @@ export function NotFollowingBackWorkspaceView({
                       </button>
                       <button
                         type="button"
-                        className="relationship-tool__action relationship-tool__action--icon"
+                        className="relationship-tool__action relationship-tool__action--icon relationship-tool__action--not-found"
                         onClick={(event) =>
                           moveUser(entry.username, "notFound", getInteractionTimestamp(event.timeStamp))
                         }
@@ -895,7 +975,7 @@ export function NotFollowingBackWorkspaceView({
                   ) : (
                     <button
                       type="button"
-                      className="relationship-tool__action relationship-tool__action--icon"
+                      className="relationship-tool__action relationship-tool__action--icon relationship-tool__action--pending"
                       onClick={(event) =>
                         moveUser(entry.username, "pending", getInteractionTimestamp(event.timeStamp))
                       }
@@ -934,6 +1014,9 @@ export function NotFollowingBackWorkspaceView({
           </ul>
         ) : (
           <div className="relationship-tool__empty">
+            <span className={`relationship-tool__empty-icon ${activeToneClassName}`} aria-hidden="true">
+              <ActiveEmptyIcon size={22} strokeWidth={1.9} />
+            </span>
             <strong>{emptyTitle}</strong>
             {emptyDescription ? <p>{emptyDescription}</p> : null}
             {hasActiveSearch ? (

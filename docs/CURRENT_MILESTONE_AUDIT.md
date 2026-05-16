@@ -32,9 +32,11 @@ Current milestone focus:
 - [x] Firebase auth/account implementation plan documented
 - [x] Firebase auth/account foundation implemented
 - [ ] Auth UI/access polish completed
+- [x] Dedicated `/app/datasets` storage/list surface implemented for local datasets
+- [x] Current storage empty/full/error/loading states polished for the local-storage pass
 - [ ] Parser/domain logic extracted from static scripts
 
-## Current Roadmap - May 14, 2026
+## Current Roadmap - May 16, 2026
 
 This is the working roadmap for the next stretch. It condenses the latest end-of-day notes, Firebase plan, pre-launch audit, and Tier 2 plan into the practical build sequence.
 
@@ -46,10 +48,11 @@ Goal:
 
 Build next:
 
-- polish loading states across route-level loading, auth, upload/import, workspace panels, tools, and contact/support
-- turn `/app/datasets` into a real storage/list page with open, rename, delete, active dataset, imported date, and storage-count behavior
+- finish the remaining loading-state sweep across route-level loading, auth/account, upload/import, workspace panels, tools, and contact/support
+- decide whether the not-following-back route keeps the workspace loading shell or gets a dedicated tool loading state
 - add forgot-password/reset-password support
 - expand the signed-in `/account` route into a useful account/workspace home base
+- add the account/sign-in blank, loading, and error states that fall out of the signed-in account build
 - complete the remaining live auth QA in `docs/auth-state-qa.md`
 
 ### Phase 2: Access Gating
@@ -153,18 +156,49 @@ Build later:
 
 Recommended next implementation sequence:
 
-1. loading-state polish
-2. real `/app/datasets` storage page
-3. forgot-password flow
-4. signed-in account page polish
-5. auth route gating
-6. Firestore user profiles
-7. Firestore dataset metadata
-8. Firestore parsed dataset/tool data decision and implementation
-9. privacy/deletion update
-10. parser/data-confidence hardening
-11. soft-launch QA pass
-12. Tier 2 / paid SaaS planning
+1. finish loading-state polish
+2. decide not-following-back tool loading treatment
+3. signed-in account page polish
+4. account/sign-in blank, loading, and error states
+5. forgot-password flow
+6. auth route gating
+7. Firestore user profiles
+8. Firestore dataset metadata
+9. Firestore parsed dataset/tool data decision and implementation
+10. privacy/deletion update
+11. parser/data-confidence hardening
+12. soft-launch QA pass
+13. Tier 2 / paid SaaS planning
+
+## Latest Checkpoint - May 16, 2026
+
+Current surface polish is still the active phase.
+
+What changed:
+
+- built `/app/datasets` into the dedicated storage/list page for local saved exports
+- added storage row selection, workspace opening, import action, native sort, search, active dot, and settings/rename/delete behavior
+- polished storage full, empty, error, and loading states
+- tightened the manage exports modal with account handles, compact settings, simplified rename, and native sort consistency
+- polished not-following-back list details, including result count placement, empty-state icons, smoother pinning, scoped pin hover, and list-colored action buttons
+- centered sign-in, sign-up, and account panels within the under-navbar viewport space
+- refined the dev accuracy-audit layout so its main panels fit better in the viewport
+- added favicon/logo assets and tuned the browser-tab icon
+- matched the navbar color grade more closely to the footer while keeping the original flat nav shape
+
+Verification:
+
+- `npm run lint` passed
+- targeted Playwright checks covered storage/manage-sort and navbar color-only changes
+- horizontal overflow remained `0` in the checked views
+
+Next best move:
+
+- finish the remaining loading-state sweep
+- decide whether not-following-back needs a dedicated loading state
+- build the signed-in account page into a real operational surface
+- add account/sign-in blank, loading, and error states
+- rerun responsive checks after account/loading polish
 
 ## Latest Checkpoint - May 8, 2026
 

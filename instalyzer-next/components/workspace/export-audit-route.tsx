@@ -68,14 +68,14 @@ function formatAuditErrorMessage(rawMessage: string) {
   return message || "audit failed, try the export zip again";
 }
 
-function formatAuditReferenceSettings(auditSnapshot: ExportAuditSnapshot) {
+function getAuditReferenceSettings(auditSnapshot: ExportAuditSnapshot) {
   if (!auditSnapshot.hasDownloadRequestMetadata) {
-    return "request metadata not included in this export";
+    return null;
   }
 
   const exportFormat = auditSnapshot.exportFormat || "unknown format";
   const mediaQuality = auditSnapshot.mediaQuality || "media quality not recorded";
-  return `${exportFormat}, ${mediaQuality}`;
+  return { exportFormat, mediaQuality };
 }
 
 export function ExportAuditRoute() {
@@ -119,6 +119,7 @@ export function ExportAuditRoute() {
     (selectedDatasetId ? findLocalDataset(selectedDatasetId) : null);
   const mismatchCount = comparisonRows.filter((row) => !row.matches).length;
   const canResetAudit = !isAuditing && Boolean(auditFileName || auditError || auditSnapshot || comparisonRows.length);
+  const auditReferenceSettings = auditSnapshot ? getAuditReferenceSettings(auditSnapshot) : null;
   const auditDropzoneTitle = isAuditing
     ? "auditing ZIP..."
     : isAuditDropTargetActive
@@ -368,17 +369,11 @@ export function ExportAuditRoute() {
 
           <div className="export-audit-results-stack">
             <article className="export-audit-card export-audit-card--results">
-              <div className="export-audit-card__head">
-                <h2>comparison</h2>
-                <p>overview metrics and relationship signals are checked side by side.</p>
-              </div>
-
-              {!comparisonRows.length ? (
-                <div className="export-audit-placeholder">
-                  <p>metrics will appear here after the audit runs.</p>
+              <div className="export-audit-card__head export-audit-card__head--comparison">
+                <div className="export-audit-card__head-copy">
+                  <h2>comparison</h2>
                 </div>
-              ) : (
-                <>
+                {comparisonRows.length ? (
                   <div
                     className={`export-audit-result-note ${
                       mismatchCount === 0 ? "export-audit-result-note--success" : "export-audit-result-note--warning"
@@ -395,7 +390,15 @@ export function ExportAuditRoute() {
                         : `${mismatchCount} mismatch${mismatchCount === 1 ? "" : "es"}`}
                     </span>
                   </div>
+                ) : null}
+              </div>
 
+              {!comparisonRows.length ? (
+                <div className="export-audit-placeholder">
+                  <p>metrics will appear here after the audit runs.</p>
+                </div>
+              ) : (
+                <>
                   <div className="export-audit-table" role="table" aria-label="Dataset accuracy comparison">
                     <div className="export-audit-table__head" role="row">
                       <span role="columnheader">metric</span>
@@ -431,7 +434,18 @@ export function ExportAuditRoute() {
                 <article className="export-audit-info-card">
                   <span>audit source</span>
                   <strong>{auditFileName || "export ZIP"}</strong>
-                  <small>{formatAuditReferenceSettings(auditSnapshot)}</small>
+                  {auditReferenceSettings ? (
+                    <div className="export-audit-info-card__meta">
+                      <small>
+                        <b>file type:</b> {auditReferenceSettings.exportFormat}
+                      </small>
+                      <small>
+                        <b>quality:</b> {auditReferenceSettings.mediaQuality}
+                      </small>
+                    </div>
+                  ) : (
+                    <small>request metadata not included in this export</small>
+                  )}
                 </article>
               </div>
             ) : null}
