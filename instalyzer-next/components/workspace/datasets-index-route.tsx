@@ -5,6 +5,7 @@ import {
   ChevronDown,
   CircleAlert,
   FolderKanban,
+  Info,
   LayoutDashboard,
   Pencil,
   Plus,
@@ -13,6 +14,7 @@ import {
   Settings,
   Trash2,
   Upload,
+  X,
 } from "lucide-react";
 import Link from "next/link";
 import {
@@ -46,6 +48,20 @@ type DatasetStorageSortOrder = "latest" | "earliest" | "a-z";
 type DatasetStorageIssue = "corrupt" | "unavailable" | "";
 
 const STORAGE_PROBE_KEY = "instalyzer_storage_probe";
+const monthIndex: Record<string, number> = {
+  jan: 0,
+  feb: 1,
+  mar: 2,
+  apr: 3,
+  may: 4,
+  jun: 5,
+  jul: 6,
+  aug: 7,
+  sep: 8,
+  oct: 9,
+  nov: 10,
+  dec: 11,
+};
 
 function formatDate(value: string) {
   const date = new Date(`${value}T00:00:00`);
@@ -69,6 +85,172 @@ function getDatasetWindow(dataset: LocalDatasetRecord) {
   if (dataset.scope?.exportRequestRange === "all_time") return "all-time export";
   if (dataset.scope?.exportRequestRange === "limited") return "limited export";
   return "window not detected";
+}
+
+function formatOverviewWindow(scope?: {
+  insightDateRangeLabel?: string;
+  exportRequestEndTimestamp?: number | null;
+}) {
+  const rangeLabel = String(scope?.insightDateRangeLabel || "").trim();
+  if (!rangeLabel) return "overview window not detected";
+
+  const endTimestamp = Number(scope?.exportRequestEndTimestamp);
+  if (!Number.isFinite(endTimestamp) || endTimestamp <= 0) {
+    return rangeLabel;
+  }
+
+  const match = rangeLabel.match(
+    /^([A-Za-z]{3})\s+(\d{1,2})\s*-\s*([A-Za-z]{3})\s+(\d{1,2})$/,
+  );
+
+  if (!match) return rangeLabel;
+
+  const [, startMonthRaw, startDayRaw, endMonthRaw, endDayRaw] = match;
+  const startMonth = monthIndex[startMonthRaw.toLowerCase()];
+  const endMonth = monthIndex[endMonthRaw.toLowerCase()];
+  const startDay = Number(startDayRaw);
+  const endDay = Number(endDayRaw);
+
+  if (
+    startMonth === undefined ||
+    endMonth === undefined ||
+    !Number.isFinite(startDay) ||
+    !Number.isFinite(endDay)
+  ) {
+    return rangeLabel;
+  }
+
+  const endReference = new Date(endTimestamp * 1000);
+  const endYear = endReference.getFullYear();
+  const startYear =
+    startMonth > endMonth || (startMonth === endMonth && startDay > endDay) ? endYear - 1 : endYear;
+  const startDate = new Date(startYear, startMonth, startDay);
+  const endDate = new Date(endYear, endMonth, endDay);
+
+  if (Number.isNaN(startDate.getTime()) || Number.isNaN(endDate.getTime())) {
+    return rangeLabel;
+  }
+
+  const formatter = new Intl.DateTimeFormat("en-US", {
+    month: "short",
+    day: "numeric",
+    year: "numeric",
+  });
+
+  return `${formatter.format(startDate)} - ${formatter.format(endDate)}`;
+}
+
+function getPositiveTimestamp(value: unknown) {
+  const timestamp = Number(value);
+  return Number.isFinite(timestamp) && timestamp > 0 ? timestamp : null;
+}
+
+function formatTimestampSpan(startTimestamp: number | null, endTimestamp: number | null) {
+  const formatter = new Intl.DateTimeFormat("en-US", {
+    month: "short",
+    day: "numeric",
+    year: "numeric",
+  });
+  const startDate = startTimestamp ? formatter.format(new Date(startTimestamp * 1000)) : "";
+  const endDate = endTimestamp ? formatter.format(new Date(endTimestamp * 1000)) : "";
+
+  if (startDate && endDate) {
+    return startDate === endDate ? startDate : `${startDate} - ${endDate}`;
+  }
+
+  if (startDate) return `since ${startDate}`;
+  if (endDate) return `through ${endDate}`;
+  return "";
+}
+
+function getDatasetTimeline(dataset: LocalDatasetRecord) {
+  const followerTimestamps =
+    dataset.records?.followers
+      ?.map((record) => getPositiveTimestamp(record.timestamp))
+      .filter((timestamp): timestamp is number => timestamp !== null) || [];
+  const followingTimestamps =
+    dataset.records?.following
+      ?.map((record) => getPositiveTimestamp(record.timestamp))
+      .filter((timestamp): timestamp is number => timestamp !== null) || [];
+  const startCandidates = [
+    getPositiveTimestamp(dataset.scope?.accountTimelineStartTimestamp),
+    getPositiveTimestamp(dataset.profile?.profilePhotoCreatedAt),
+    ...followerTimestamps,
+    ...followingTimestamps,
+  ].filter((timestamp): timestamp is number => timestamp !== null);
+  const endCandidates = [
+    getPositiveTimestamp(dataset.scope?.accountTimelineEndTimestamp),
+    getPositiveTimestamp(dataset.scope?.exportRequestEndTimestamp),
+    getPositiveTimestamp(dataset.profile?.profilePhotoCreatedAt),
+    ...followerTimestamps,
+    ...followingTimestamps,
+  ].filter((timestamp): timestamp is number => timestamp !== null);
+  const startTimestamp = startCandidates.length ? Math.min(...startCandidates) : null;
+  const endTimestamp = endCandidates.length ? Math.max(...endCandidates) : null;
+  const value = formatTimestampSpan(startTimestamp, endTimestamp);
+
+  if (!value) return null;
+
+  return {
+    label: dataset.scope?.accountTimelineStartSource === "registration" ? "account timeline" : "archive coverage",
+    value,
+  };
+}
+
+function getExportRangeLabel(scope?: {
+  exportRequestRange?: "all_time" | "limited" | "unknown";
+}) {
+  if (scope?.exportRequestRange === "all_time") return "all-time export";
+  if (scope?.exportRequestRange === "limited") return "limited export";
+  return "export imported";
+}
+
+function formatExportFormat(scope?: {
+  exportRequestMetadataDetected?: boolean;
+  exportRequestFormat?: string;
+}) {
+  const exportFormat = String(scope?.exportRequestFormat || "").trim();
+  if (exportFormat) return exportFormat.toLowerCase();
+  if (scope?.exportRequestMetadataDetected === false) return "not included in this export";
+  return "not available";
+}
+
+function getRelationshipToolsStatus(scope?: {
+  notFollowingBackEligible?: boolean;
+  exportRequestRange?: "all_time" | "limited" | "unknown";
+}) {
+  if (scope?.notFollowingBackEligible) return "ready";
+  if (scope?.exportRequestRange === "limited") return "limited export";
+  return "not ready";
+}
+
+function getInsightsStatus(input?: {
+  scope?: {
+    insightDateRangeLabel?: string;
+  };
+  metrics?: {
+    followerTotalFromInsights?: number | null;
+    accountsReached?: number | null;
+    impressions?: number | null;
+    profileVisits?: number | null;
+    externalLinkTaps?: number | null;
+    contentInteractions?: number | null;
+    accountsEngaged?: number | null;
+  };
+}) {
+  const hasInsightSignal =
+    Boolean(String(input?.scope?.insightDateRangeLabel || "").trim()) ||
+    [
+      input?.metrics?.followerTotalFromInsights,
+      input?.metrics?.accountsReached,
+      input?.metrics?.impressions,
+      input?.metrics?.profileVisits,
+      input?.metrics?.externalLinkTaps,
+      input?.metrics?.contentInteractions,
+      input?.metrics?.accountsEngaged,
+    ].some((value) => Number.isFinite(value));
+
+  return hasInsightSignal ? "detected" : "not detected";
 }
 
 function getSearchText(dataset: LocalDatasetRecord) {
@@ -300,6 +482,95 @@ function DatasetStorageIssueState({ issue }: { issue: Exclude<DatasetStorageIssu
   );
 }
 
+function DatasetStorageDetailsModal({
+  dataset,
+  onClose,
+}: {
+  dataset: LocalDatasetRecord;
+  onClose: () => void;
+}) {
+  const datasetTimeline = getDatasetTimeline(dataset);
+
+  return createPortal(
+    <div
+      className="dataset-modal-backdrop dataset-modal-backdrop--details"
+      role="presentation"
+      onClick={onClose}
+    >
+      <article
+        className="dataset-modal dataset-modal--details"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="storage-dataset-details-title"
+        onClick={(event) => event.stopPropagation()}
+      >
+        <div className="dataset-modal__head">
+          <div className="dataset-modal__head-copy">
+            <p className="section-kicker">details</p>
+            <h2 id="storage-dataset-details-title" className="dataset-modal__title dataset-user-title">
+              {dataset.name}
+            </h2>
+            <p className="dataset-modal__copy">{getDatasetHandle(dataset)}</p>
+          </div>
+          <button
+            type="button"
+            className="dataset-modal__close"
+            aria-label="close dataset details"
+            onClick={onClose}
+            autoFocus
+          >
+            <X size={18} aria-hidden="true" />
+          </button>
+        </div>
+
+        <div className="dataset-storage-details">
+          <div className="dataset-overview-details-row dataset-overview-details-row--paired">
+            <div className="dataset-overview-details-cell">
+              <span>imported on</span>
+              <strong>{formatDate(dataset.createdAt)}</strong>
+            </div>
+            <div className="dataset-overview-details-cell">
+              <span>export format</span>
+              <strong>{formatExportFormat(dataset.scope)}</strong>
+            </div>
+          </div>
+          <div className="dataset-overview-details-row">
+            <span>overview window</span>
+            <strong>{formatOverviewWindow(dataset.scope)}</strong>
+          </div>
+          {datasetTimeline ? (
+            <div className="dataset-overview-details-row">
+              <span>{datasetTimeline.label}</span>
+              <strong>{datasetTimeline.value}</strong>
+            </div>
+          ) : null}
+          <div className="dataset-overview-details-row dataset-overview-details-row--paired">
+            <div className="dataset-overview-details-cell">
+              <span>export type</span>
+              <strong>{getExportRangeLabel(dataset.scope)}</strong>
+            </div>
+            <div className="dataset-overview-details-cell">
+              <span>import source</span>
+              <strong>{dataset.importReview.sourceLabel}</strong>
+            </div>
+          </div>
+          <div className="dataset-overview-details-row dataset-overview-details-row--paired">
+            <div className="dataset-overview-details-cell">
+              <span>relationship tools</span>
+              <strong>{getRelationshipToolsStatus(dataset.scope)}</strong>
+            </div>
+            <div className="dataset-overview-details-cell">
+              <span>insights</span>
+              <strong>{getInsightsStatus(dataset)}</strong>
+            </div>
+          </div>
+        </div>
+      </article>
+    </div>,
+    document.body,
+  );
+}
+
 export function DatasetsIndexRoute() {
   const hasMounted = useSyncExternalStore(
     () => () => {},
@@ -323,6 +594,7 @@ export function DatasetsIndexRoute() {
   const [openDatasetMenuId, setOpenDatasetMenuId] = useState<string | null>(null);
   const [renamingDatasetId, setRenamingDatasetId] = useState<string | null>(null);
   const [deleteConfirmDatasetId, setDeleteConfirmDatasetId] = useState<string | null>(null);
+  const [detailsDatasetId, setDetailsDatasetId] = useState<string | null>(null);
   const [datasetNameDraft, setDatasetNameDraft] = useState("");
   const [floatingPanelStyle, setFloatingPanelStyle] = useState<CSSProperties | null>(null);
   const rowActionsRef = useRef<HTMLDivElement | null>(null);
@@ -352,6 +624,9 @@ export function DatasetsIndexRoute() {
   const deleteConfirmDataset = deleteConfirmDatasetId
     ? datasets.find((dataset) => dataset.id === deleteConfirmDatasetId) || null
     : null;
+  const detailsDataset = detailsDatasetId
+    ? datasets.find((dataset) => dataset.id === detailsDatasetId) || null
+    : null;
   const isManagedDatasetNameValid = Boolean(datasetNameDraft.trim());
 
   useEffect(() => {
@@ -368,7 +643,7 @@ export function DatasetsIndexRoute() {
   }, [hasMounted]);
 
   useEffect(() => {
-    if (!deleteConfirmDataset) return undefined;
+    if (!deleteConfirmDataset && !detailsDataset) return undefined;
 
     document.documentElement.classList.add("modal-open");
     document.body.classList.add("modal-open");
@@ -377,16 +652,21 @@ export function DatasetsIndexRoute() {
       document.documentElement.classList.remove("modal-open");
       document.body.classList.remove("modal-open");
     };
-  }, [deleteConfirmDataset]);
+  }, [deleteConfirmDataset, detailsDataset]);
 
   useEffect(() => {
-    if (!deleteConfirmDatasetId && !openDatasetMenuId && !renamingDatasetId) return undefined;
+    if (!deleteConfirmDatasetId && !detailsDatasetId && !openDatasetMenuId && !renamingDatasetId) return undefined;
 
     function handleKeyDown(event: KeyboardEvent) {
       if (event.key !== "Escape") return;
 
       if (deleteConfirmDatasetId) {
         setDeleteConfirmDatasetId(null);
+        return;
+      }
+
+      if (detailsDatasetId) {
+        setDetailsDatasetId(null);
         return;
       }
 
@@ -401,7 +681,7 @@ export function DatasetsIndexRoute() {
     return () => {
       document.removeEventListener("keydown", handleKeyDown);
     };
-  }, [deleteConfirmDatasetId, openDatasetMenuId, renamingDatasetId]);
+  }, [deleteConfirmDatasetId, detailsDatasetId, openDatasetMenuId, renamingDatasetId]);
 
   useEffect(() => {
     if (!openDatasetMenuId && !renamingDatasetId) return undefined;
@@ -453,6 +733,7 @@ export function DatasetsIndexRoute() {
     setOpenDatasetMenuId(null);
     setRenamingDatasetId(null);
     setDeleteConfirmDatasetId(null);
+    setDetailsDatasetId(null);
     setFloatingPanelStyle(null);
     setDatasetNameDraft("");
   }
@@ -552,6 +833,7 @@ export function DatasetsIndexRoute() {
 
       <div className="dataset-storage__list" role="list" aria-label="Saved exports">
         <div className="dataset-storage__list-head" aria-hidden="true">
+          <span>details</span>
           <span>export</span>
           <span>overview</span>
           <span>imported</span>
@@ -581,6 +863,24 @@ export function DatasetsIndexRoute() {
                   aria-pressed={isActiveDataset}
                   aria-label={`select ${dataset.name} workspace`}
                 />
+
+                <button
+                  type="button"
+                  className="route-link dataset-storage-row__details"
+                  aria-label={`view details for ${dataset.name}`}
+                  title="details"
+                  onClick={(event) => {
+                    event.stopPropagation();
+                    setOpenDatasetMenuId(null);
+                    setRenamingDatasetId(null);
+                    setDeleteConfirmDatasetId(null);
+                    setDatasetNameDraft("");
+                    setFloatingPanelStyle(null);
+                    setDetailsDatasetId(dataset.id);
+                  }}
+                >
+                  <Info size={18} aria-hidden="true" />
+                </button>
 
                 <div className="dataset-storage-row__identity">
                   <h2 className="dataset-user-title">{dataset.name}</h2>
@@ -789,6 +1089,9 @@ export function DatasetsIndexRoute() {
           document.body,
         )
       : null}
+    {detailsDataset ? (
+      <DatasetStorageDetailsModal dataset={detailsDataset} onClose={() => setDetailsDatasetId(null)} />
+    ) : null}
     </>
   );
 }

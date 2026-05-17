@@ -1,5 +1,5 @@
-import { WorkspaceLoadingState } from "@/components/workspace/dataset-workspace-route";
+import { NotFollowingBackLoadingState } from "@/components/workspace/not-following-back-loading-state";
 
 export default function NotFollowingBackLoading() {
-  return <WorkspaceLoadingState />;
+  return <NotFollowingBackLoadingState />;
 }

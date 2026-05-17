@@ -1,7 +1,7 @@
 "use client";
 
 import { signOut } from "firebase/auth";
-import { CircleAlert } from "lucide-react";
+import { CircleAlert, LoaderCircle } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useId, useState } from "react";
 import { getFirebaseClientAuth } from "@/lib/firebase/client";
@@ -42,12 +42,22 @@ export function SignOutButton() {
     <>
       <button
         type="button"
-        className="hero-btn hero-btn-secondary account-route__sign-out"
+        className={`hero-btn hero-btn-secondary account-route__sign-out${isPending ? " is-loading" : ""}`}
         onClick={handleSignOut}
         disabled={isPending}
         aria-describedby={errorMessage ? errorMessageId : undefined}
       >
-        {isPending ? "signing out..." : "sign out"}
+        <span className="account-route__sign-out-content" aria-live="polite">
+          <span>{isPending ? "signing out" : "sign out"}</span>
+          {isPending ? (
+            <LoaderCircle
+              className="account-route__sign-out-spinner"
+              size={16}
+              strokeWidth={2.1}
+              aria-hidden="true"
+            />
+          ) : null}
+        </span>
       </button>
       {errorMessage ? (
         <span id={errorMessageId} className="account-route__sign-out-error" role="alert">

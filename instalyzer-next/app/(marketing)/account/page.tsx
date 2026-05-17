@@ -1,8 +1,16 @@
 import Link from "next/link";
-import { FileCheck2, LayoutDashboard, ShieldCheck } from "lucide-react";
+import {
+  BookOpen,
+  Database,
+  FileCheck2,
+  LayoutDashboard,
+  ShieldCheck,
+  Trash2,
+  type LucideIcon,
+} from "lucide-react";
 import { AuthForm } from "@/components/auth/auth-form";
 import { SignOutButton } from "@/components/auth/sign-out-button";
-import { getCurrentUser } from "@/lib/firebase/admin";
+import { type CurrentUser, getCurrentUser } from "@/lib/firebase/admin";
 
 export const dynamic = "force-dynamic";
 
@@ -23,6 +31,23 @@ const signedOutCards = [
     icon: ShieldCheck,
   },
 ];
+
+type AccountCardAction = {
+  label: string;
+  href: string;
+  variant: "primary" | "secondary";
+};
+
+type SignedInCard = {
+  title: string;
+  body: string;
+  icon: LucideIcon;
+  actions: AccountCardAction[];
+};
+
+function getAccountLabel(user: CurrentUser) {
+  return user.email || user.name || "your account";
+}
 
 export default async function AccountPage() {
   const user = await getCurrentUser();
@@ -72,60 +97,88 @@ export default async function AccountPage() {
     );
   }
 
+  const accountLabel = getAccountLabel(user);
+  const signedInCards: SignedInCard[] = [
+    {
+      title: "guide",
+      body: "revisit the export steps and workspace walkthrough.",
+      icon: BookOpen,
+      actions: [
+        { label: "open", href: "/help", variant: "secondary" },
+      ],
+    },
+    {
+      title: "storage",
+      body: "saved exports are still browser-local until persistent storage ships.",
+      icon: Database,
+      actions: [
+        { label: "open", href: "/app/datasets", variant: "secondary" },
+      ],
+    },
+    {
+      title: "data controls",
+      body: "review privacy or request account and export data deletion.",
+      icon: Trash2,
+      actions: [
+        { label: "privacy", href: "/privacy", variant: "secondary" },
+        { label: "delete data", href: "/data-deletion-request", variant: "secondary" },
+      ],
+    },
+  ];
+
   return (
     <section className="account-route account-route--signed-in" aria-labelledby="account-route-title">
       <div className="account-route__hero">
         <div className="account-route__hero-copy">
-          <p className="account-route__eyebrow">personal workspace</p>
-          <h1 id="account-route-title">your personal workspace</h1>
-          <p>manage your workspace access, dataset status, and account settings.</p>
+          <p className="account-route__eyebrow">signed in</p>
+          <h1 id="account-route-title">welcome</h1>
+          <p>import an instagram export or continue from your saved storage.</p>
           <div className="account-route__actions">
-            <Link href="/app/datasets" className="hero-btn hero-btn-primary">
-              open workspace
+            <Link href="/app/datasets/new?entry=account" className="hero-btn hero-btn-primary">
+              get started
             </Link>
-            <Link href="/data-deletion-request" className="hero-btn hero-btn-secondary">
-              manage data
-            </Link>
-            <SignOutButton />
           </div>
         </div>
 
-        <aside className="account-route__summary" aria-label="workspace status">
-          <h2>workspace status</h2>
-          <ul>
-            <li>
-              <strong>ready</strong>
-              <span>open your workspace, upload an export, or continue where you left off.</span>
-            </li>
-            <li>
-              <strong>connected to you</strong>
-              <span>{user.email || "your account is ready for workspace access."}</span>
-            </li>
-          </ul>
+        <aside className="account-route__summary account-route__summary--signed-in" aria-label="account status">
+          <p className="account-route__eyebrow">access</p>
+          <dl className="account-route__details account-route__details--compact">
+            <div>
+              <dt>email</dt>
+              <dd>{accountLabel}</dd>
+            </div>
+            <div>
+              <dt>plan</dt>
+              <dd>basic</dd>
+            </div>
+          </dl>
+          <SignOutButton />
         </aside>
       </div>
 
       <div className="account-route__grid">
-        <article className="account-card">
-          <p className="account-card__eyebrow">status: ready</p>
-          <h2>workspace</h2>
-          <p>open your workspace, upload an export, or continue where you left off.</p>
-        </article>
-
-        <article className="account-card">
-          <h2>account</h2>
-          <dl className="account-route__details">
-            <div>
-              <dt>signed in as</dt>
-              <dd>{user.email || "not shared"}</dd>
+        {signedInCards.map((card) => (
+          <article className="account-card account-card--actionable" key={card.title}>
+            <div className="account-card__head">
+              <span className="account-card__icon" aria-hidden="true">
+                <card.icon strokeWidth={1.9} />
+              </span>
+              <h2>{card.title}</h2>
             </div>
-          </dl>
-        </article>
-
-        <article className="account-card">
-          <h2>data control</h2>
-          <p>request deletion, review privacy, or manage your export workspace.</p>
-        </article>
+            <p>{card.body}</p>
+            <div className="account-card__actions">
+              {card.actions.map((action) => (
+                <Link
+                  href={action.href}
+                  className={`account-card__link account-card__link--${action.variant}`}
+                  key={action.label}
+                >
+                  {action.label}
+                </Link>
+              ))}
+            </div>
+          </article>
+        ))}
       </div>
     </section>
   );

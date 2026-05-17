@@ -167,6 +167,28 @@ async function createServerSession(idToken: string) {
   }
 }
 
+function getPostAuthHref() {
+  if (typeof window === "undefined") {
+    return "/account";
+  }
+
+  const nextHref = new URLSearchParams(window.location.search).get("next")?.trim();
+
+  if (!nextHref || !nextHref.startsWith("/") || nextHref.startsWith("//")) {
+    return "/account";
+  }
+
+  if (
+    nextHref.startsWith("/sign-in") ||
+    nextHref.startsWith("/sign-up") ||
+    nextHref.startsWith("/forgot-password")
+  ) {
+    return "/account";
+  }
+
+  return nextHref;
+}
+
 export function AuthForm({ mode, variant = "route", showSwitch = true }: AuthFormProps) {
   const router = useRouter();
   const errorMessageId = useId();
@@ -230,6 +252,9 @@ export function AuthForm({ mode, variant = "route", showSwitch = true }: AuthFor
         },
       ];
   const isPending = pendingAction !== null;
+  const forgotPasswordHref = normalizedEmail
+    ? `/forgot-password?email=${encodeURIComponent(normalizedEmail)}`
+    : "/forgot-password";
 
   useEffect(() => {
     return () => {
@@ -241,8 +266,10 @@ export function AuthForm({ mode, variant = "route", showSwitch = true }: AuthFor
 
   const finishSignIn = async (idToken: string) => {
     await createServerSession(idToken);
+    const postAuthHref = getPostAuthHref();
+
     router.refresh();
-    router.push("/account");
+    router.push(postAuthHref);
   };
 
   const handleEmailSubmit = async (event: FormEvent<HTMLFormElement>) => {
@@ -423,6 +450,12 @@ export function AuthForm({ mode, variant = "route", showSwitch = true }: AuthFor
           </button>
         </div>
       </label>
+
+      {!isSignUp ? (
+        <p className="auth-panel__helper-row">
+          <Link href={forgotPasswordHref}>forgot password?</Link>
+        </p>
+      ) : null}
 
       {isSignUp ? (
         <label className="dataset-field">

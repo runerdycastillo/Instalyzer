@@ -176,7 +176,25 @@ Support should also cover:
 - dataset import problems
 - paid-feature access issues
 
-### 8. Product QA Before Hard Launch
+### 8. Email Brand Trust
+
+Hard launch should make support and auth emails feel fully branded and trustworthy.
+
+Needed pieces:
+
+- keep `support@instalyzer.app` as the visible sender/reply-to identity
+- confirm SPF, DKIM, and DMARC are passing for Firebase/Auth emails
+- move DMARC toward an enforcement policy when the domain is ready
+- set up BIMI so Gmail and other supported inboxes can show the Instalyzer logo instead of the default sender initial
+- prepare the compliant BIMI logo asset and required DNS record
+- decide whether a VMC/CMC certificate is needed for the inboxes we care about most
+- verify real password reset and support email appearance in Gmail, Outlook, and Apple Mail before public launch
+
+Soft-launch note:
+
+- the default sender initial is acceptable for now as long as `mailed-by`, `signed-by`, sender, and reply-to all point to `instalyzer.app`
+
+### 9. Product QA Before Hard Launch
 
 Run a deliberate QA pass across:
 
@@ -217,4 +235,3 @@ Revisit this document when one of these becomes true:
 - parser extraction is the active focus again
 - the first paid tier name and pricing are being decided
 - auth/accounts become the next major build phase
-

@@ -36,7 +36,7 @@ Current milestone focus:
 - [x] Current storage empty/full/error/loading states polished for the local-storage pass
 - [ ] Parser/domain logic extracted from static scripts
 
-## Current Roadmap - May 16, 2026
+## Current Roadmap - May 17, 2026
 
 This is the working roadmap for the next stretch. It condenses the latest end-of-day notes, Firebase plan, pre-launch audit, and Tier 2 plan into the practical build sequence.
 
@@ -46,14 +46,12 @@ Goal:
 
 - make the existing local-storage product feel polished and complete before wiring it deeper into persistence
 
-Build next:
+Exit checks:
 
-- finish the remaining loading-state sweep across route-level loading, auth/account, upload/import, workspace panels, tools, and contact/support
-- decide whether the not-following-back route keeps the workspace loading shell or gets a dedicated tool loading state
-- add forgot-password/reset-password support
-- expand the signed-in `/account` route into a useful account/workspace home base
-- add the account/sign-in blank, loading, and error states that fall out of the signed-in account build
-- complete the remaining live auth QA in `docs/auth-state-qa.md`
+- run a short manual QA pass through the loading/auth/account/storage paths touched in the latest polish session
+- complete the remaining live auth checks in `docs/auth-state-qa.md`
+- recheck any route-level loading behavior that changes once access gating redirects are introduced
+- decide whether the dataset overview upgrade happens before or after Phase 2 access gating
 
 ### Phase 2: Access Gating
 
@@ -156,19 +154,49 @@ Build later:
 
 Recommended next implementation sequence:
 
-1. finish loading-state polish
-2. decide not-following-back tool loading treatment
-3. signed-in account page polish
-4. account/sign-in blank, loading, and error states
-5. forgot-password flow
-6. auth route gating
-7. Firestore user profiles
-8. Firestore dataset metadata
-9. Firestore parsed dataset/tool data decision and implementation
-10. privacy/deletion update
-11. parser/data-confidence hardening
-12. soft-launch QA pass
-13. Tier 2 / paid SaaS planning
+1. run Phase 1 exit QA across auth/loading/account/storage
+2. implement auth route gating
+3. implement `next=` redirects for protected-route sign-in/sign-up
+4. recheck signed-in/signed-out account behavior after redirects
+5. decide whether to upgrade dataset overview before Firestore
+6. create Firestore user profiles
+7. persist Firestore dataset metadata
+8. decide Firestore parsed dataset/tool data scope
+9. update privacy/deletion copy for persistent data
+10. harden parser/data-confidence handling
+11. run the soft-launch QA pass
+12. keep Tier 2 / paid SaaS planning deferred
+
+## Latest Checkpoint - May 17, 2026
+
+Current surface polish is effectively at the exit-check stage.
+
+What changed:
+
+- completed the main loading-state sweep across global, workspace, storage, dataset creation, dataset detail, not-following-back, account, sign-in, sign-up, forgot-password, and reset-password routes
+- gave not-following-back a dedicated tool-shaped loading state
+- polished dataset creation back behavior, create-panel sizing, and the modal-style creating state
+- moved dataset details out of overview and into storage through the row info/details action
+- simplified details modal content and close affordances
+- added forgot-password and reset-password flows with loading, success, invalid/expired, and responsive states
+- rebuilt signed-in `/account` into a minimal operational page with welcome copy, access details, sign-out, guide/storage/data-control cards, and responsive coverage
+- adjusted the Manage Datasets modal footer storage action to the quieter gray button with a blue storage icon
+- documented hard-launch email brand trust/BIMI work in the Tier 2 plan
+
+Verification:
+
+- `npm run lint` passed
+- `npm run build` passed
+- targeted Playwright checks covered signed-in account responsiveness from `1280px` down to `390px`
+- signed-in account horizontal overflow remained `0` in checked views
+
+Next best move:
+
+- run a short Phase 1 exit QA pass
+- start Phase 2 access gating
+- add protected-route `next=` redirect handling
+- recheck auth/account/loading behavior after redirects
+- decide whether dataset overview upgrade or Firestore dataset ownership should be the next main build target
 
 ## Latest Checkpoint - May 16, 2026
 

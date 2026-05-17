@@ -25,7 +25,7 @@ Applies to both `/sign-in` and the signed-out auth form on `/account`.
 | Google popup closed by user | Implemented, Recheck | Silent cancel by design; latest calmer popup behavior should be confirmed |
 | Google popup pending state | Implemented, Reviewed | Reduced to a quick shimmer; clicking Google again should refocus the existing popup |
 | Email submit pending state | Implemented, Reviewed | Static label with button morph only |
-| Successful email sign-in | Implemented, Needs live test | Confirm route transition and session handoff |
+| Successful email sign-in | Implemented, Reviewed | User-tested sign-in and signed-in account handoff |
 | Successful Google sign-in | Implemented, Needs live test | Confirm route transition and session handoff |
 | Session creation failure after auth | Implemented, Needs live test | Fallback message exists for `/api/auth/session` failure |
 | Password reveal toggle | Implemented, Reviewed | Eye toggle added to password field |
@@ -52,22 +52,44 @@ Sign-up is email/password only by design. Google is kept as a sign-in option, no
 | --- | --- | --- |
 | Sign-in form layout on signed-out account | Implemented, Reviewed | Matches sign-in treatment across breakpoints |
 | Sign-out failure message | Implemented, Needs live test | Inline error exists on failed sign-out |
+| Sign-out pending state | Implemented, Reviewed | Button holds a disabled `signing out` state with spinner |
 | Desktop CTA vs mobile auth switch behavior | Implemented, Reviewed | Desktop hero CTA stays separate; smaller widths use inline auth switch |
+| Signed-in account page | Implemented, Reviewed | Minimal welcome/access/cards surface; responsive checked from `1280px` through `390px` |
+
+## Password Recovery
+
+| State | Status | Notes |
+| --- | --- | --- |
+| Forgot-password route | Implemented, Reviewed | `/forgot-password` exists with responsive loading and form states |
+| Reset email pending state | Implemented, Reviewed | Primary button uses the shared loading treatment |
+| Reset email success state | Implemented, Reviewed | Button locks into concise disabled `email sent` state |
+| Reset email failure state | Implemented, Reviewed | Reuses auth error styling |
+| Reset-password route | Implemented, Reviewed | `/reset-password` exists with responsive loading and form states |
+| Reset code checking state | Implemented, Reviewed | Uses a regular loading skeleton instead of explicit link-checking copy |
+| Invalid or expired reset link | Implemented, Reviewed | Shows recovery path to request a new link |
+| Password update success | Implemented, Reviewed | Routes user toward sign-in after reset |
+| Password update validation/error | Implemented, Reviewed | Reuses auth error styling and confirm-password validation |
 
 ## Route-Level States
 
 | State | Status | Notes |
 | --- | --- | --- |
-| Global loading screen | Implemented, Needs sweep | Added app-level `loading.tsx` |
+| Global loading screen | Implemented, Reviewed | Added app-level `loading.tsx`; global/workspace overlap was tightened |
 | Global error screen | Implemented, Needs sweep | Added app-level `error.tsx` |
 | Global not-found screen | Implemented, Needs sweep | Added app-level `not-found.tsx` |
-| Dataset index loading state | Implemented, Needs sweep | Skeleton exists |
+| Dataset index loading state | Implemented, Reviewed | Minimal storage-shaped skeleton |
+| Dataset creation loading state | Implemented, Reviewed | Route-level creation skeleton exists |
+| Dataset creation processing state | Implemented, Reviewed | Upload/create/creating states are modal/panel based and responsive |
+| Not-following-back loading state | Implemented, Reviewed | Dedicated tool-shaped skeleton replaces workspace fallback |
+| Account/sign-in/sign-up loading states | Implemented, Reviewed | Route-level auth loading states exist and were visually checked |
 | Dataset not found state | Implemented, Needs sweep | Styled missing-dataset state exists |
 
 ## Next Checks
 
-1. Run the dedicated sign-up failure-state pass: password mismatch, email already in use, weak password, invalid email, and network failure.
-2. Trigger one real successful email sign-up and confirm redirect/session handoff.
-3. Recheck Google popup close/cancel and second-click refocus on `/sign-in` and signed-out `/account`.
-4. Force one blocked-popup case.
-5. Force one sign-out failure case.
+1. Run one short Phase 1 exit QA pass across sign-in, sign-up, forgot-password, reset-password, account, storage, import, workspace, and Tool 1 loading.
+2. Run the dedicated sign-up failure-state pass: password mismatch, email already in use, weak password, invalid email, and network failure.
+3. Trigger one real successful email sign-up and confirm redirect/session handoff.
+4. Recheck Google popup close/cancel and second-click refocus on `/sign-in` and signed-out `/account`.
+5. Force one blocked-popup case.
+6. Force one sign-out failure case.
+7. Recheck auth loading and redirects after Phase 2 access gating is implemented.

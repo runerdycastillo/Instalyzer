@@ -9,6 +9,7 @@ import {
   CircleAlert,
   ChevronLeft,
   ChevronDown,
+  Database,
   ExternalLink,
   FolderKanban,
   GitCompareArrows,
@@ -37,6 +38,7 @@ import { useRouter } from "next/navigation";
 import { createPortal } from "react-dom";
 import { useEffect, useRef, useState, useSyncExternalStore, type CSSProperties } from "react";
 import { DatasetWorkspaceEmptyState } from "@/components/workspace/dataset-workspace-empty-state";
+import { NotFollowingBackLoadingState } from "@/components/workspace/not-following-back-loading-state";
 import { NotFollowingBackWorkspaceView } from "@/components/workspace/not-following-back-workspace-view";
 import {
   readActiveDatasetId,
@@ -119,16 +121,6 @@ function formatProperCaseLabel(value: string) {
   return value.replace(/\b([a-z])([a-z']*)/g, (_match, first: string, rest: string) => {
     return `${first.toUpperCase()}${rest.toLowerCase()}`;
   });
-}
-
-function formatDetectedDataBadges(categoryCounts?: Array<[string, number]>) {
-  if (!categoryCounts?.length) return [];
-
-  return categoryCounts
-    .slice()
-    .sort((a, b) => b[1] - a[1])
-    .map(([label]) => formatProperCaseLabel(label))
-    .slice(0, 6);
 }
 
 function getClampedPercent(value: number | null | undefined) {
@@ -415,14 +407,6 @@ function getDatasetTimeline(dataset: NonNullable<ReturnType<typeof findLocalData
   };
 }
 
-function getExportRangeLabel(scope?: {
-  exportRequestRange?: "all_time" | "limited" | "unknown";
-}) {
-  if (scope?.exportRequestRange === "all_time") return "all-time export";
-  if (scope?.exportRequestRange === "limited") return "limited export";
-  return "export imported";
-}
-
 function getDatasetExportWindowValue(dataset: NonNullable<ReturnType<typeof findLocalDataset>>) {
   if (dataset.scope?.exportRequestRange === "all_time") {
     return getDatasetTimeline(dataset)?.value || "";
@@ -438,54 +422,6 @@ function getDatasetExportWindowValue(dataset: NonNullable<ReturnType<typeof find
   }
 
   return formatOverviewWindow(dataset.scope);
-}
-
-function formatExportFormat(scope?: {
-  exportRequestMetadataDetected?: boolean;
-  exportRequestFormat?: string;
-}) {
-  const exportFormat = String(scope?.exportRequestFormat || "").trim();
-  if (exportFormat) return exportFormat.toLowerCase();
-  if (scope?.exportRequestMetadataDetected === false) return "not included in this export";
-  return "not available";
-}
-
-function getRelationshipToolsStatus(scope?: {
-  notFollowingBackEligible?: boolean;
-  exportRequestRange?: "all_time" | "limited" | "unknown";
-}) {
-  if (scope?.notFollowingBackEligible) return "ready";
-  if (scope?.exportRequestRange === "limited") return "limited export";
-  return "not ready";
-}
-
-function getInsightsStatus(input?: {
-  scope?: {
-    insightDateRangeLabel?: string;
-  };
-  metrics?: {
-    followerTotalFromInsights?: number | null;
-    accountsReached?: number | null;
-    impressions?: number | null;
-    profileVisits?: number | null;
-    externalLinkTaps?: number | null;
-    contentInteractions?: number | null;
-    accountsEngaged?: number | null;
-  };
-}) {
-  const hasInsightSignal =
-    Boolean(String(input?.scope?.insightDateRangeLabel || "").trim()) ||
-    [
-      input?.metrics?.followerTotalFromInsights,
-      input?.metrics?.accountsReached,
-      input?.metrics?.impressions,
-      input?.metrics?.profileVisits,
-      input?.metrics?.externalLinkTaps,
-      input?.metrics?.contentInteractions,
-      input?.metrics?.accountsEngaged,
-    ].some((value) => Number.isFinite(value));
-
-  return hasInsightSignal ? "detected" : "not detected";
 }
 
 function getDisplayName(dataset: NonNullable<ReturnType<typeof findLocalDataset>>) {
@@ -615,9 +551,13 @@ function AnimatedValue({
 
 export function WorkspaceLoadingState() {
   return (
-    <section className="dataset-workspace" aria-busy="true" aria-label="Loading workspace">
+    <section
+      className="dataset-workspace dataset-workspace--loading-balanced"
+      aria-busy="true"
+      aria-label="Loading workspace"
+    >
       <div className="dataset-workspace__grid dataset-workspace__grid--static">
-        <aside className="dataset-side-panel dataset-side-panel--left dataset-side-panel--loading">
+        <aside className="dataset-side-panel dataset-side-panel--left dataset-side-panel--loading dataset-side-panel--loading-balanced">
           <div className="dataset-side-panel__head">
             <p className="section-kicker">current dataset</p>
             <div className="dataset-side-panel__dataset-block">
@@ -632,21 +572,6 @@ export function WorkspaceLoadingState() {
               <span className="dataset-skeleton-line dataset-skeleton-line--count" aria-hidden="true" />
             </div>
 
-            <div className="dataset-side-panel__recent">
-              <p className="dataset-side-panel__recent-label">recent datasets</p>
-              <div className="dataset-side-panel__recent-list">
-                {["a", "b", "c"].map((item, index) => (
-                  <div
-                    key={item}
-                    className={`dataset-side-panel__recent-chip${index === 0 ? " is-active" : ""}`}
-                  >
-                    <span className="dataset-skeleton-line dataset-skeleton-line--recent" aria-hidden="true" />
-                    <span className="dataset-skeleton-line dataset-skeleton-line--recent-meta" aria-hidden="true" />
-                  </div>
-                ))}
-              </div>
-            </div>
-
             <div className="dataset-side-panel__divider" aria-hidden="true" />
 
             <div className="hero-btn hero-btn-secondary dataset-side-panel__action dataset-side-panel__action--loading">
@@ -656,58 +581,46 @@ export function WorkspaceLoadingState() {
           </div>
         </aside>
 
-        <article className="dataset-workspace__surface dataset-workspace__surface--loading">
+        <article className="dataset-workspace__surface dataset-workspace__surface--loading dataset-workspace__surface--loading-balanced">
           <div className="dataset-overview-head dataset-dashboard-section dataset-dashboard-section--header">
-            <div className="dataset-overview-head__loading">
+            <div>
               <p className="section-kicker">dataset overview</p>
-              <span className="dataset-skeleton-line dataset-skeleton-line--hero-title" aria-hidden="true" />
-              <span className="dataset-skeleton-line dataset-skeleton-line--body" aria-hidden="true" />
+              <h1 className="dataset-overview-title">opening workspace</h1>
+              <p className="dataset-overview-copy dataset-overview-copy--inline">
+                loading your saved dataset.
+              </p>
             </div>
             <div className="dataset-overview-meta dataset-overview-meta--loading">
-              <span className="dataset-meta-label">created</span>
+              <span className="dataset-meta-label">status</span>
               <span className="dataset-skeleton-line dataset-skeleton-line--meta" aria-hidden="true" />
             </div>
           </div>
 
-          <div className="dataset-overview-body">
-            <div className="dataset-profile-band dataset-profile-band--loading">
+          <div className="dataset-overview-body" aria-hidden="true">
+            <div className="dataset-profile-band dataset-profile-band--loading dataset-profile-band--loading-balanced">
               <div className="dataset-profile-avatar-shell">
-                <div className="dataset-profile-avatar dataset-profile-avatar--loading" aria-hidden="true" />
+                <div className="dataset-profile-avatar dataset-profile-avatar--loading" />
               </div>
 
               <div className="dataset-profile-copy">
-                <span className="dataset-skeleton-line dataset-skeleton-line--handle" aria-hidden="true" />
-                <span className="dataset-skeleton-line dataset-skeleton-line--name" aria-hidden="true" />
-                <span className="dataset-skeleton-line dataset-skeleton-line--meta" aria-hidden="true" />
+                <span className="dataset-skeleton-line dataset-skeleton-line--handle" />
+                <span className="dataset-skeleton-line dataset-skeleton-line--name" />
+                <span className="dataset-skeleton-line dataset-skeleton-line--meta" />
               </div>
             </div>
 
-            <div className="dataset-overview-grid">
-              {[
-                "followers",
-                "accounts reached",
-                "profile visits",
-                "external link taps",
-                "content interactions",
-                "accounts engaged",
-                "impressions",
-                "categories detected",
-                "import source",
-              ].map((label) => (
+            <div className="dataset-overview-grid dataset-overview-grid--loading-balanced">
+              {["followers", "reach", "interactions"].map((label) => (
                 <article key={label} className="dataset-overview-card dataset-overview-card--loading">
                   <span className="dataset-meta-label">{label}</span>
-                  <span className="dataset-skeleton-line dataset-skeleton-line--card-value" aria-hidden="true" />
+                  <span className="dataset-skeleton-line dataset-skeleton-line--card-value" />
                 </article>
               ))}
-            </div>
-
-            <div className="dataset-workspace__notes">
-              <span className="dataset-skeleton-line dataset-skeleton-line--body" aria-hidden="true" />
             </div>
           </div>
         </article>
 
-        <aside className="dataset-side-panel dataset-side-panel--right dataset-side-panel--loading">
+        <aside className="dataset-side-panel dataset-side-panel--right dataset-side-panel--loading dataset-side-panel--loading-balanced">
           <div className="dataset-side-panel__head">
             <p className="section-kicker">workspace</p>
           </div>
@@ -722,10 +635,10 @@ export function WorkspaceLoadingState() {
               </span>
             </div>
 
-            <article className="dataset-workspace__support-card">
+            <article className="dataset-workspace__support-card dataset-workspace__support-card--loading-balanced">
               <p className="dataset-meta-label">relationship signals</p>
               <div className="dataset-card__metrics dataset-card__metrics--compact">
-                {["followers", "following", "mutuals", "not following back"].map((label) => (
+                {["followers", "following"].map((label) => (
                   <div key={label}>
                     <span>{label}</span>
                     <span className="dataset-skeleton-line dataset-skeleton-line--metric" aria-hidden="true" />
@@ -733,11 +646,6 @@ export function WorkspaceLoadingState() {
                 ))}
               </div>
             </article>
-
-            <div className="hero-btn hero-btn-secondary dataset-side-panel__action dataset-side-panel__action--loading">
-              <Wrench size={16} aria-hidden="true" />
-              <span>tools</span>
-            </div>
           </div>
         </aside>
       </div>
@@ -785,7 +693,6 @@ export function DatasetWorkspaceRoute({ datasetId, activeToolId }: DatasetWorksp
   const dataset = datasetId
     ? datasets.find((item) => item.id === datasetId) || findLocalDataset(datasetId)
     : datasets.find((item) => item.id === activeDatasetId) || datasets[0] || null;
-  const datasetTimeline = dataset ? getDatasetTimeline(dataset) : null;
   const motionKey = dataset?.id || "dataset-workspace";
   const datasetUsername = dataset?.profile?.username?.trim().toLowerCase() || "";
   const previousComparableDataset = datasetUsername
@@ -915,7 +822,6 @@ export function DatasetWorkspaceRoute({ datasetId, activeToolId }: DatasetWorksp
     0,
   );
   const audienceTrendChart = buildAudienceTrendChart(dataset?.metrics?.followerActivityByDay);
-  const detectedDataBadges = formatDetectedDataBadges(dataset?.meta?.categoryCounts);
   const relationshipSignalRows = [
     {
       key: "followers",
@@ -1063,6 +969,10 @@ export function DatasetWorkspaceRoute({ datasetId, activeToolId }: DatasetWorksp
   }, [hasMounted]);
 
   if (!hasMounted || !isHydrationSettled) {
+    if (isNotFollowingBackView) {
+      return <NotFollowingBackLoadingState />;
+    }
+
     return <WorkspaceLoadingState />;
   }
 
@@ -1929,69 +1839,6 @@ export function DatasetWorkspaceRoute({ datasetId, activeToolId }: DatasetWorksp
                 </div>
               </article>
 
-              <article className="dataset-overview-support-card dataset-overview-support-card--details">
-                <div className="dataset-overview-support-head">
-                  <div className="dataset-overview-panel-copy">
-                    <span className="dataset-overview-panel-title">dataset details</span>
-                  </div>
-                </div>
-                <div className="dataset-overview-details-stack">
-                  <div className="dataset-overview-details-row dataset-overview-details-row--paired">
-                    <div className="dataset-overview-details-cell">
-                      <span>imported on</span>
-                      <strong>{formatDate(dataset.createdAt)}</strong>
-                    </div>
-                    <div className="dataset-overview-details-cell">
-                      <span>export format</span>
-                      <strong>{formatExportFormat(dataset.scope)}</strong>
-                    </div>
-                  </div>
-                  <div className="dataset-overview-details-row">
-                    <span>overview window</span>
-                    <strong>{formatOverviewWindow(dataset.scope)}</strong>
-                  </div>
-                  {datasetTimeline ? (
-                    <div className="dataset-overview-details-row">
-                      <span>{datasetTimeline.label}</span>
-                      <strong>{datasetTimeline.value}</strong>
-                    </div>
-                  ) : null}
-                  <div className="dataset-overview-details-row dataset-overview-details-row--paired">
-                    <div className="dataset-overview-details-cell">
-                      <span>export type</span>
-                      <strong>{getExportRangeLabel(dataset.scope)}</strong>
-                    </div>
-                    <div className="dataset-overview-details-cell">
-                      <span>import source</span>
-                      <strong>{dataset.importReview.sourceLabel}</strong>
-                    </div>
-                  </div>
-                  <div className="dataset-overview-details-row dataset-overview-details-row--paired">
-                    <div className="dataset-overview-details-cell">
-                      <span>relationship tools</span>
-                      <strong>{getRelationshipToolsStatus(dataset.scope)}</strong>
-                    </div>
-                    <div className="dataset-overview-details-cell">
-                      <span>insights</span>
-                      <strong>{getInsightsStatus(dataset)}</strong>
-                    </div>
-                  </div>
-                  <div className="dataset-overview-details-row">
-                    <span>data detected</span>
-                    {detectedDataBadges.length ? (
-                      <div className="dataset-overview-details-badges">
-                        {detectedDataBadges.map((badge) => (
-                          <span key={badge} className="dataset-overview-details-badge">
-                            {badge}
-                          </span>
-                        ))}
-                      </div>
-                    ) : (
-                      <strong>not detected</strong>
-                    )}
-                  </div>
-                </div>
-              </article>
             </div>
             </div>
           </div>
@@ -2338,6 +2185,7 @@ export function DatasetWorkspaceRoute({ datasetId, activeToolId }: DatasetWorksp
                 className="dataset-modal__footer-cta"
                 onClick={closeDatasetsModal}
               >
+                <Database size={16} strokeWidth={2.1} aria-hidden="true" />
                 storage
               </Link>
             </div>
