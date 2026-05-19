@@ -144,13 +144,13 @@ function focusPopupWindow(popup: Window | null) {
   }
 }
 
-async function createServerSession(idToken: string) {
+async function createServerSession(idToken: string, keepSignedIn: boolean) {
   const response = await fetch("/api/auth/session", {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
     },
-    body: JSON.stringify({ idToken }),
+    body: JSON.stringify({ idToken, keepSignedIn }),
   });
 
   if (!response.ok) {
@@ -195,6 +195,8 @@ export function AuthForm({ mode, variant = "route", showSwitch = true }: AuthFor
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
+  const [keepSignedIn, setKeepSignedIn] = useState(true);
+  const [marketingOptIn, setMarketingOptIn] = useState(false);
   const [isPasswordVisible, setIsPasswordVisible] = useState(false);
   const [isConfirmPasswordVisible, setIsConfirmPasswordVisible] = useState(false);
   const [errorMessage, setErrorMessage] = useState("");
@@ -265,7 +267,7 @@ export function AuthForm({ mode, variant = "route", showSwitch = true }: AuthFor
   }, []);
 
   const finishSignIn = async (idToken: string) => {
-    await createServerSession(idToken);
+    await createServerSession(idToken, keepSignedIn);
     const postAuthHref = getPostAuthHref();
 
     router.refresh();
@@ -543,6 +545,28 @@ export function AuthForm({ mode, variant = "route", showSwitch = true }: AuthFor
           </button>
         ) : null}
       </div>
+
+      {isSignUp ? (
+        <label className="auth-panel__checkbox auth-panel__checkbox--after-actions">
+          <input
+            type="checkbox"
+            checked={marketingOptIn}
+            onChange={(event) => setMarketingOptIn(event.target.checked)}
+            disabled={isPending}
+          />
+          <span>send me product updates and release notes</span>
+        </label>
+      ) : (
+        <label className="auth-panel__checkbox auth-panel__checkbox--after-actions">
+          <input
+            type="checkbox"
+            checked={keepSignedIn}
+            onChange={(event) => setKeepSignedIn(event.target.checked)}
+            disabled={isPending}
+          />
+          <span>keep me signed in</span>
+        </label>
+      )}
 
       {showSwitch ? (
         <p className="auth-panel__switch">

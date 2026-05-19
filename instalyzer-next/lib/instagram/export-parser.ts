@@ -92,23 +92,62 @@ export type DatasetMetrics = {
   notFollowingBackCount: number;
   followerTotalFromInsights: number | null;
   accountsReached: number | null;
+  accountsReachedDeltaPercent: number | null;
   impressions: number | null;
+  impressionsDeltaPercent: number | null;
   profileVisits: number | null;
+  profileVisitsDeltaPercent: number | null;
   externalLinkTaps: number | null;
+  externalLinkTapsDeltaPercent: number | null;
   contentInteractions: number | null;
+  contentInteractionsDeltaPercent: number | null;
   accountsEngaged: number | null;
+  accountsEngagedDeltaPercent: number | null;
   postInteractions: number | null;
+  postInteractionsDeltaPercent: number | null;
   storyInteractions: number | null;
+  storyInteractionsDeltaPercent: number | null;
   storyReplies: number | null;
+  videoInteractions: number | null;
+  videoInteractionsDeltaPercent: number | null;
+  reelsInteractions: number | null;
+  reelsInteractionsDeltaPercent: number | null;
+  liveVideoInteractions: number | null;
+  liveVideoInteractionsDeltaPercent: number | null;
   followsInRange: number | null;
   unfollowsInRange: number | null;
   netFollowersInRange: number | null;
+  followerTotalDeltaPercent: number | null;
   reachFollowersPercent: number | null;
   reachNonFollowersPercent: number | null;
+  reachNonFollowersDeltaPercent: number | null;
+  engagedFollowersPercent: number | null;
+  engagedNonFollowersPercent: number | null;
+  engagedNonFollowersDeltaPercent: number | null;
   topFollowerCity: string;
   topFollowerCityPercent: number | null;
   topFollowerCountry: string;
   topFollowerCountryPercent: number | null;
+  followerCityBreakdown: Array<{
+    label: string;
+    percent: number | null;
+  }>;
+  followerCountryBreakdown: Array<{
+    label: string;
+    percent: number | null;
+  }>;
+  followerAgeBreakdownAll: Array<{
+    label: string;
+    percent: number | null;
+  }>;
+  followerAgeBreakdownMen: Array<{
+    label: string;
+    percent: number | null;
+  }>;
+  followerAgeBreakdownWomen: Array<{
+    label: string;
+    percent: number | null;
+  }>;
   menFollowerPercent: number | null;
   womenFollowerPercent: number | null;
   followerActivityByDay: Array<{
@@ -166,6 +205,7 @@ type ParsedRelationshipMatch = {
 
 type ParsedAudienceInsights = {
   followerTotal: number | null;
+  followerTotalDeltaPercent: number | null;
   followsInRange: number | null;
   unfollowsInRange: number | null;
   netFollowersInRange: number | null;
@@ -173,6 +213,26 @@ type ParsedAudienceInsights = {
   topFollowerCityPercent: number | null;
   topFollowerCountry: string;
   topFollowerCountryPercent: number | null;
+  followerCityBreakdown: Array<{
+    label: string;
+    percent: number | null;
+  }>;
+  followerCountryBreakdown: Array<{
+    label: string;
+    percent: number | null;
+  }>;
+  followerAgeBreakdownAll: Array<{
+    label: string;
+    percent: number | null;
+  }>;
+  followerAgeBreakdownMen: Array<{
+    label: string;
+    percent: number | null;
+  }>;
+  followerAgeBreakdownWomen: Array<{
+    label: string;
+    percent: number | null;
+  }>;
   menFollowerPercent: number | null;
   womenFollowerPercent: number | null;
   followerActivityByDay: Array<{
@@ -187,20 +247,38 @@ type ParsedAudienceInsights = {
 
 type ParsedReachInsights = {
   accountsReached: number | null;
+  accountsReachedDeltaPercent: number | null;
   impressions: number | null;
+  impressionsDeltaPercent: number | null;
   profileVisits: number | null;
+  profileVisitsDeltaPercent: number | null;
   externalLinkTaps: number | null;
+  externalLinkTapsDeltaPercent: number | null;
   reachFollowersPercent: number | null;
   reachNonFollowersPercent: number | null;
+  reachNonFollowersDeltaPercent: number | null;
   dateRangeLabel: string;
 };
 
 type ParsedInteractionInsights = {
   contentInteractions: number | null;
+  contentInteractionsDeltaPercent: number | null;
   postInteractions: number | null;
+  postInteractionsDeltaPercent: number | null;
   storyInteractions: number | null;
+  storyInteractionsDeltaPercent: number | null;
   storyReplies: number | null;
+  videoInteractions: number | null;
+  videoInteractionsDeltaPercent: number | null;
+  reelsInteractions: number | null;
+  reelsInteractionsDeltaPercent: number | null;
+  liveVideoInteractions: number | null;
+  liveVideoInteractionsDeltaPercent: number | null;
   accountsEngaged: number | null;
+  accountsEngagedDeltaPercent: number | null;
+  engagedFollowersPercent: number | null;
+  engagedNonFollowersPercent: number | null;
+  engagedNonFollowersDeltaPercent: number | null;
   postLikes: number | null;
   postComments: number | null;
   postSaves: number | null;
@@ -809,10 +887,7 @@ function parseInsightPercent(value: string) {
 }
 
 function parseLeadingBreakdownValue(value: string) {
-  const firstSegment = String(value || "")
-    .split(",")
-    .map((item) => item.trim())
-    .find(Boolean);
+  const firstSegment = parseInsightBreakdownList(value)[0];
 
   if (!firstSegment) {
     return {
@@ -821,30 +896,44 @@ function parseLeadingBreakdownValue(value: string) {
     };
   }
 
-  const match = firstSegment.match(/^(.+?):\s*([\d.]+)%$/);
-  if (!match) {
-    return {
-      label: firstSegment,
-      percent: null as number | null,
-    };
+  return firstSegment;
+}
+
+function parseInsightBreakdownList(value: string) {
+  const text = String(value || "").trim();
+  if (!text) return [];
+
+  const matches = Array.from(text.matchAll(/(?:^|,\s*)([^:]+?):\s*([+-]?\d+(?:\.\d+)?)%/g));
+  if (matches.length) {
+    return matches
+      .map((match) => ({
+        label: String(match[1] || "").trim(),
+        percent: parseInsightPercent(match[2]),
+      }))
+      .filter((item) => item.label);
   }
 
-  return {
-    label: match[1].trim(),
-    percent: parseInsightPercent(match[2]),
-  };
+  return text
+    .split(",")
+    .map((item) => item.trim())
+    .filter(Boolean)
+    .map((item) => ({
+      label: item,
+      percent: null as number | null,
+    }));
 }
 
 function extractAudienceInsights(data: unknown): ParsedAudienceInsights | null {
   const entry = getFirstArrayItem(data, "organic_insights_audience");
   if (!entry) return null;
 
-  const topCity = parseLeadingBreakdownValue(
-    getStringMapValue(entry, "Follower Percentage by City"),
-  );
-  const topCountry = parseLeadingBreakdownValue(
-    getStringMapValue(entry, "Follower Percentage by Country"),
-  );
+  const followerCityBreakdown = parseInsightBreakdownList(getStringMapValue(entry, "Follower Percentage by City"));
+  const followerCountryBreakdown = parseInsightBreakdownList(getStringMapValue(entry, "Follower Percentage by Country"));
+  const followerAgeBreakdownAll = parseInsightBreakdownList(getStringMapValue(entry, "Follower Percentage by Age for All Genders"));
+  const followerAgeBreakdownMen = parseInsightBreakdownList(getStringMapValue(entry, "Follower Percentage by Age for Men"));
+  const followerAgeBreakdownWomen = parseInsightBreakdownList(getStringMapValue(entry, "Follower Percentage by Age for Women"));
+  const topCity = followerCityBreakdown[0] || parseLeadingBreakdownValue("");
+  const topCountry = followerCountryBreakdown[0] || parseLeadingBreakdownValue("");
   const followerActivityDays = [
     { label: "Monday", value: parseInsightCount(getStringMapValue(entry, "Monday Follower Activity")) },
     { label: "Tuesday", value: parseInsightCount(getStringMapValue(entry, "Tuesday Follower Activity")) },
@@ -867,6 +956,7 @@ function extractAudienceInsights(data: unknown): ParsedAudienceInsights | null {
 
   return {
     followerTotal: parseInsightCount(getStringMapValue(entry, "Followers")),
+    followerTotalDeltaPercent: parseInsightPercent(getStringMapValue(entry, "Followers Delta")),
     followsInRange: parseInsightCount(getStringMapValue(entry, "Follows")),
     unfollowsInRange: parseInsightCount(getStringMapValue(entry, "Unfollows")),
     netFollowersInRange: parseInsightCount(getStringMapValue(entry, "Overall followers")),
@@ -874,6 +964,11 @@ function extractAudienceInsights(data: unknown): ParsedAudienceInsights | null {
     topFollowerCityPercent: topCity.percent,
     topFollowerCountry: topCountry.label,
     topFollowerCountryPercent: topCountry.percent,
+    followerCityBreakdown,
+    followerCountryBreakdown,
+    followerAgeBreakdownAll,
+    followerAgeBreakdownMen,
+    followerAgeBreakdownWomen,
     menFollowerPercent: parseInsightPercent(getStringMapValue(entry, "Total Follower Percentage for Men")),
     womenFollowerPercent: parseInsightPercent(getStringMapValue(entry, "Total Follower Percentage for Women")),
     followerActivityByDay: followerActivityDays.map((item) => ({
@@ -893,11 +988,16 @@ function extractReachInsights(data: unknown): ParsedReachInsights | null {
 
   return {
     accountsReached: parseInsightCount(getStringMapValue(entry, "Accounts reached")),
+    accountsReachedDeltaPercent: parseInsightPercent(getStringMapValue(entry, "Accounts Reached Delta")),
     impressions: parseInsightCount(getStringMapValue(entry, "Impressions")),
+    impressionsDeltaPercent: parseInsightPercent(getStringMapValue(entry, "Impressions Delta")),
     profileVisits: parseInsightCount(getStringMapValue(entry, "Profile visits")),
+    profileVisitsDeltaPercent: parseInsightPercent(getStringMapValue(entry, "Profile Visits Delta")),
     externalLinkTaps: parseInsightCount(getStringMapValue(entry, "External link taps")),
+    externalLinkTapsDeltaPercent: parseInsightPercent(getStringMapValue(entry, "External link taps delta")),
     reachFollowersPercent: parseInsightPercent(getStringMapValue(entry, "Followers")),
     reachNonFollowersPercent: parseInsightPercent(getStringMapValue(entry, "Non-Followers")),
+    reachNonFollowersDeltaPercent: parseInsightPercent(getStringMapValue(entry, "Non-Followers Delta")),
     dateRangeLabel: getStringMapValue(entry, "Date Range"),
   };
 }
@@ -905,13 +1005,27 @@ function extractReachInsights(data: unknown): ParsedReachInsights | null {
 function extractInteractionInsights(data: unknown): ParsedInteractionInsights | null {
   const entry = getFirstArrayItem(data, "organic_insights_interactions");
   if (!entry) return null;
+  const engagedFollowTypeBreakdown = parseInsightBreakdownList(getStringMapValue(entry, "Engaged Account By Follow Type"));
 
   return {
     contentInteractions: parseInsightCount(getStringMapValue(entry, "Content interactions")),
+    contentInteractionsDeltaPercent: parseInsightPercent(getStringMapValue(entry, "Content Interactions Delta")),
     postInteractions: parseInsightCount(getStringMapValue(entry, "Post interactions")),
+    postInteractionsDeltaPercent: parseInsightPercent(getStringMapValue(entry, "Post Interactions Delta")),
     storyInteractions: parseInsightCount(getStringMapValue(entry, "Story interactions")),
+    storyInteractionsDeltaPercent: parseInsightPercent(getStringMapValue(entry, "Story Interactions Delta")),
     storyReplies: parseInsightCount(getStringMapValue(entry, "Story replies")),
+    videoInteractions: parseInsightCount(getStringMapValue(entry, "Video Interactions")),
+    videoInteractionsDeltaPercent: parseInsightPercent(getStringMapValue(entry, "Video Interactions Delta")),
+    reelsInteractions: parseInsightCount(getStringMapValue(entry, "Reels Interactions")),
+    reelsInteractionsDeltaPercent: parseInsightPercent(getStringMapValue(entry, "Reels Interactions Delta")),
+    liveVideoInteractions: parseInsightCount(getStringMapValue(entry, "Live Video Interactions")),
+    liveVideoInteractionsDeltaPercent: parseInsightPercent(getStringMapValue(entry, "Live Video Interactions Delta")),
     accountsEngaged: parseInsightCount(getStringMapValue(entry, "Accounts engaged")),
+    accountsEngagedDeltaPercent: parseInsightPercent(getStringMapValue(entry, "Accounts Engaged Delta")),
+    engagedFollowersPercent: engagedFollowTypeBreakdown.find((item) => item.label.toLowerCase() === "followers")?.percent ?? null,
+    engagedNonFollowersPercent: engagedFollowTypeBreakdown.find((item) => item.label.toLowerCase() === "non-followers")?.percent ?? null,
+    engagedNonFollowersDeltaPercent: parseInsightPercent(getStringMapValue(entry, "You engaged delta% more accounts that werenât following you compared to previous period")),
     postLikes: parseInsightCount(getStringMapValue(entry, "Post Likes")),
     postComments: parseInsightCount(getStringMapValue(entry, "Post Comments")),
     postSaves: parseInsightCount(getStringMapValue(entry, "Post Saves")),
@@ -1257,24 +1371,48 @@ export async function prepareDatasetDraft(files: File[]): Promise<PreparedLocalD
   const metrics: DatasetMetrics = {
     ...relationshipMetrics,
     followerTotalFromInsights: audienceInsights?.followerTotal ?? null,
+    followerTotalDeltaPercent: audienceInsights?.followerTotalDeltaPercent ?? null,
     accountsReached: reachInsights?.accountsReached ?? null,
+    accountsReachedDeltaPercent: reachInsights?.accountsReachedDeltaPercent ?? null,
     impressions: reachInsights?.impressions ?? null,
+    impressionsDeltaPercent: reachInsights?.impressionsDeltaPercent ?? null,
     profileVisits: reachInsights?.profileVisits ?? null,
+    profileVisitsDeltaPercent: reachInsights?.profileVisitsDeltaPercent ?? null,
     externalLinkTaps: reachInsights?.externalLinkTaps ?? null,
+    externalLinkTapsDeltaPercent: reachInsights?.externalLinkTapsDeltaPercent ?? null,
     contentInteractions: interactionInsights?.contentInteractions ?? null,
+    contentInteractionsDeltaPercent: interactionInsights?.contentInteractionsDeltaPercent ?? null,
     accountsEngaged: interactionInsights?.accountsEngaged ?? null,
+    accountsEngagedDeltaPercent: interactionInsights?.accountsEngagedDeltaPercent ?? null,
     postInteractions: interactionInsights?.postInteractions ?? null,
+    postInteractionsDeltaPercent: interactionInsights?.postInteractionsDeltaPercent ?? null,
     storyInteractions: interactionInsights?.storyInteractions ?? null,
+    storyInteractionsDeltaPercent: interactionInsights?.storyInteractionsDeltaPercent ?? null,
     storyReplies: interactionInsights?.storyReplies ?? null,
+    videoInteractions: interactionInsights?.videoInteractions ?? null,
+    videoInteractionsDeltaPercent: interactionInsights?.videoInteractionsDeltaPercent ?? null,
+    reelsInteractions: interactionInsights?.reelsInteractions ?? null,
+    reelsInteractionsDeltaPercent: interactionInsights?.reelsInteractionsDeltaPercent ?? null,
+    liveVideoInteractions: interactionInsights?.liveVideoInteractions ?? null,
+    liveVideoInteractionsDeltaPercent: interactionInsights?.liveVideoInteractionsDeltaPercent ?? null,
     followsInRange: audienceInsights?.followsInRange ?? null,
     unfollowsInRange: audienceInsights?.unfollowsInRange ?? null,
     netFollowersInRange: audienceInsights?.netFollowersInRange ?? null,
     reachFollowersPercent: reachInsights?.reachFollowersPercent ?? null,
     reachNonFollowersPercent: reachInsights?.reachNonFollowersPercent ?? null,
+    reachNonFollowersDeltaPercent: reachInsights?.reachNonFollowersDeltaPercent ?? null,
+    engagedFollowersPercent: interactionInsights?.engagedFollowersPercent ?? null,
+    engagedNonFollowersPercent: interactionInsights?.engagedNonFollowersPercent ?? null,
+    engagedNonFollowersDeltaPercent: interactionInsights?.engagedNonFollowersDeltaPercent ?? null,
     topFollowerCity: audienceInsights?.topFollowerCity || "",
     topFollowerCityPercent: audienceInsights?.topFollowerCityPercent ?? null,
     topFollowerCountry: audienceInsights?.topFollowerCountry || "",
     topFollowerCountryPercent: audienceInsights?.topFollowerCountryPercent ?? null,
+    followerCityBreakdown: audienceInsights?.followerCityBreakdown || [],
+    followerCountryBreakdown: audienceInsights?.followerCountryBreakdown || [],
+    followerAgeBreakdownAll: audienceInsights?.followerAgeBreakdownAll || [],
+    followerAgeBreakdownMen: audienceInsights?.followerAgeBreakdownMen || [],
+    followerAgeBreakdownWomen: audienceInsights?.followerAgeBreakdownWomen || [],
     menFollowerPercent: audienceInsights?.menFollowerPercent ?? null,
     womenFollowerPercent: audienceInsights?.womenFollowerPercent ?? null,
     followerActivityByDay: audienceInsights?.followerActivityByDay || [],

@@ -151,6 +151,14 @@ export default async function AccountPage() {
               <dt>plan</dt>
               <dd>basic</dd>
             </div>
+            <div>
+              <dt>workspace</dt>
+              <dd>active</dd>
+            </div>
+            <div>
+              <dt>datasets</dt>
+              <dd>0</dd>
+            </div>
           </dl>
           <SignOutButton />
         </aside>

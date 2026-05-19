@@ -254,6 +254,9 @@ users/{uid}
   email
   displayName
   photoURL
+  marketingOptIn
+  marketingOptInSource
+  marketingOptInUpdatedAt
   createdAt
   updatedAt
 

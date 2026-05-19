@@ -242,6 +242,58 @@ Implementation and debugging metadata.
 
 The dataset overview should show only stable, defensible information.
 
+### Instagram Insights Parity
+
+The free overview should aim to match Instagram's own free Professional Dashboard baseline when the export provides the backing data.
+
+Baseline sections from the May 18 Instagram Insights screenshots:
+
+- views
+- interactions
+- new followers
+- content shared
+- follower vs non-follower splits
+- accounts reached
+- follows, unfollows, and net growth
+- content-type splits
+- top content by views
+
+This is not paid-tool value by itself. Treat it as the free dashboard foundation.
+
+Instalyzer-native insights can sit beside or below the parity overview when they calculate something Instagram does not directly provide, such as:
+
+- not following back
+- best day to post based on historical post performance
+- overperforming content compared with the account's own average
+- data availability and export completeness diagnostics
+
+Message data should stay out of the overview entirely.
+
+### Overview Parity Checklist
+
+Use this as the working checklist when changing the dataset overview.
+
+| Instagram baseline item | Export/parser support | Current overview status | Notes |
+| --- | --- | --- | --- |
+| Views | `impressions` from `profiles_reached.json` | `Partial` | Shown as `impressions` today. We may rename/display it as `views` if we confirm Instagram's export still uses impressions for the app's views surface. |
+| Accounts reached | `accountsReached` from `profiles_reached.json` | `Shown` | Primary KPI and reach detail drill-in. |
+| Follower vs non-follower split | `reachFollowersPercent`, `reachNonFollowersPercent` | `Shown` | Shown in reach detail and the lower audience split card. |
+| Profile visits | `profileVisits` from `profiles_reached.json` | `Shown` | Primary KPI and visit detail drill-in. |
+| External link taps | `externalLinkTaps` from `profiles_reached.json` | `Shown` | Primary KPI and link tap detail drill-in. |
+| Built-in period deltas | `*Delta` values from insight files | `Shown` | KPI support text uses Instagram's previous-period deltas when present. |
+| Interactions | `contentInteractions`, `accountsEngaged` from `content_interactions.json` | `Shown` | Primary KPI and interaction detail drill-in. |
+| Content-type split | `postInteractions`, `storyInteractions`, `storyReplies` from `content_interactions.json` | `Shown` | Interaction detail drill-in shows post interactions, story interactions, and story replies. |
+| Additional interaction types | `reelsInteractions`, `videoInteractions`, `liveVideoInteractions` from `content_interactions.json` | `Shown` | Interaction detail drill-in includes these when exported. |
+| Engaged follower/non-follower split | `engagedFollowersPercent`, `engagedNonFollowersPercent` from `content_interactions.json` | `Shown` | Interaction detail drill-in summarizes engaged audience follow state. |
+| Post response split | `postLikes`, `postComments`, `postSaves` from `content_interactions.json` | `Shown` | Shown as the segmented interaction composition view. |
+| New followers / growth | `followerTotalFromInsights`, `followsInRange`, `unfollowsInRange`, `netFollowersInRange` from `audience_insights.json` | `Shown` | Follower growth card covers follows, unfollows, and net movement. |
+| Audience geography | `followerCityBreakdown`, `followerCountryBreakdown`, plus top city/country fallbacks | `Shown` | Audience details card shows the ranked city and country lists parsed from the export. |
+| Audience age range | `followerAgeBreakdownAll`, plus men/women age breakdowns parsed for later filters | `Shown` | Audience details card shows the all-genders age distribution. |
+| Audience gender | `womenFollowerPercent`, `menFollowerPercent` | `Shown` | Audience details card. |
+| Content shared | Not parsed yet | `Missing` | Need parser support for content counts by type before displaying. |
+| Top content by views | Not parsed yet | `Missing` | Needs media/content performance parsing; likely a later overview upgrade. |
+| Follower activity / active day | Parser has `followerActivityByDay` | `Intentionally hidden` | Keep out of the free overview because it overlaps with the future paid best-day-to-post tool. |
+
 ### Top identity band
 
 - profile photo

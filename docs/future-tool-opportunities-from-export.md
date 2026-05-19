@@ -19,6 +19,9 @@ That means:
 - strong data support first
 - vague AI ideas later
 - no headline features built on weak assumptions
+- free overview should match Instagram's own free Insights baseline where the export supports it
+- paid tools should add calculated value Instagram does not directly provide
+- messages should stay out of the overview and near-term tool strategy
 
 ## What Is Already Strong
 
@@ -151,13 +154,14 @@ These are powerful, but should usually power tools rather than the base overview
 
 These are the strongest next candidates based on the export.
 
-### 1. Audience Insights
+### 1. Free Overview: Audience Insights Parity
 
 Why it is strong:
 
 - backed by explicit insight fields
 - useful to users
 - easier to explain than speculative AI features
+- overlaps with information Instagram already provides for free
 
 Potential outputs:
 
@@ -173,7 +177,12 @@ Confidence:
 
 - high
 
-### 2. Reach and Visibility Summary
+Product fit:
+
+- free overview parity, not a paid-tool headline
+- deeper interpretation can become paid later
+
+### 2. Free Overview: Reach and Visibility Parity
 
 Why it is strong:
 
@@ -191,7 +200,12 @@ Confidence:
 
 - high
 
-### 3. Content Interaction Summary
+Product fit:
+
+- free overview parity, not a paid-tool headline
+- paid value should come from comparisons, diagnosis, and recommendations
+
+### 3. Free Overview: Content Interaction Parity
 
 Why it is strong:
 
@@ -210,7 +224,30 @@ Confidence:
 
 - high
 
-### 4. Mutuals / Relationship Analysis
+Product fit:
+
+- free overview parity for Instagram-matched summaries
+- deeper content analysis can become a tool later
+
+### 4. Best Day To Post / Posting Pattern Guidance
+
+Why it is promising:
+
+- Instagram provides performance summaries, but does not clearly turn them into a posting-day recommendation
+- export-backed post timestamps and post performance can support a practical creator decision
+
+Potential outputs:
+
+- best day to post based on historical performance
+- sample size and confidence label
+- average performance by day
+- posts that overperformed the account's baseline
+
+Confidence:
+
+- medium to high after post-level metric mapping is confirmed
+
+### 5. Mutuals / Relationship Analysis
 
 Why it is useful:
 
@@ -231,7 +268,7 @@ Reason for medium confidence:
 
 - follower relationship completeness is still questionable
 
-### 5. Story Engagement Breakdown
+### 6. Story Engagement Breakdown
 
 Why it is promising:
 
@@ -250,7 +287,7 @@ Confidence:
 
 - medium to high
 
-### 6. Posting-Time / Activity Pattern Tool
+### 7. Posting-Time / Activity Pattern Tool
 
 Why it is promising:
 
@@ -314,13 +351,12 @@ Confidence:
 A realistic future-tool sequence is:
 
 1. Not Following Back
-2. Audience Insights
-3. Reach and Visibility Summary
-4. Content Interaction Summary
-5. Mutuals / Relationship Analysis
-6. Story Engagement Breakdown
-7. Posting-Time / Activity Pattern guidance
-8. AI recommendations later
+2. Best Day To Post / Posting Pattern Guidance
+3. Mutuals / Relationship Analysis
+4. Overperforming Content
+5. Story Engagement Breakdown
+6. Export-to-export comparison after persistent datasets exist
+7. AI recommendations later
 
 ## Best SaaS Framing
 
@@ -342,8 +378,8 @@ A strong SaaS split would be:
 
 The strongest next opportunities from the export are:
 
-- audience insights
-- reach summary
-- content interaction summary
+- free overview parity for audience, reach, interaction, follower growth, and top content summaries
+- best day to post as a calculated Instalyzer-native insight
+- not-following-back and mutuals as relationship tools
 
-Those are more trustworthy and more scalable than forcing the product to over-center relationship math too early.
+This keeps the free product honest while reserving paid/tool value for deductions, recommendations, and comparisons Instagram does not already package for the user.

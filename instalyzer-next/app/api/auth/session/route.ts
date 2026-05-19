@@ -8,8 +8,8 @@ import {
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
-const SESSION_COOKIE_MAX_AGE_MS = 5 * 24 * 60 * 60 * 1000;
-const SESSION_COOKIE_MAX_AGE_SECONDS = SESSION_COOKIE_MAX_AGE_MS / 1000;
+const STANDARD_SESSION_COOKIE_MAX_AGE_MS = 24 * 60 * 60 * 1000;
+const REMEMBERED_SESSION_COOKIE_MAX_AGE_MS = 14 * 24 * 60 * 60 * 1000;
 
 export async function POST(request: Request) {
   let payload: Record<string, unknown>;
@@ -26,6 +26,11 @@ export async function POST(request: Request) {
   }
 
   const idToken = typeof payload.idToken === "string" ? payload.idToken.trim() : "";
+  const keepSignedIn = payload.keepSignedIn === true;
+  const sessionCookieMaxAgeMs = keepSignedIn
+    ? REMEMBERED_SESSION_COOKIE_MAX_AGE_MS
+    : STANDARD_SESSION_COOKIE_MAX_AGE_MS;
+  const sessionCookieMaxAgeSeconds = sessionCookieMaxAgeMs / 1000;
 
   if (!idToken) {
     return NextResponse.json(
@@ -40,13 +45,13 @@ export async function POST(request: Request) {
     await getFirebaseAdminAuth().verifyIdToken(idToken);
 
     const sessionCookie = await getFirebaseAdminAuth().createSessionCookie(idToken, {
-      expiresIn: SESSION_COOKIE_MAX_AGE_MS,
+      expiresIn: sessionCookieMaxAgeMs,
     });
     const cookieStore = await cookies();
 
     cookieStore.set(getFirebaseSessionCookieName(), sessionCookie, {
       httpOnly: true,
-      maxAge: SESSION_COOKIE_MAX_AGE_SECONDS,
+      maxAge: sessionCookieMaxAgeSeconds,
       path: "/",
       sameSite: "lax",
       secure: process.env.NODE_ENV === "production",

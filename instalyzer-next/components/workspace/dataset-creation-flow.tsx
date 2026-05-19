@@ -42,6 +42,7 @@ import {
   readLocalDatasets,
   saveLocalDataset,
   subscribeToLocalDatasets,
+  writeActiveDatasetId,
 } from "@/lib/instagram/local-datasets";
 
 type CreationStep = "upload" | "create";
@@ -342,6 +343,7 @@ export function DatasetCreationFlow() {
           meta: nextPreparedDataset.meta,
           records: nextPreparedDataset.records,
         });
+        writeActiveDatasetId(datasetId);
       } catch (error) {
         const message = error instanceof Error ? error.message : LOCAL_DATASET_LIMIT_MESSAGE;
         setCreationError(message);

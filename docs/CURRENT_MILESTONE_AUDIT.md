@@ -36,9 +36,9 @@ Current milestone focus:
 - [x] Current storage empty/full/error/loading states polished for the local-storage pass
 - [ ] Parser/domain logic extracted from static scripts
 
-## Current Roadmap - May 17, 2026
+## Current Roadmap - May 19, 2026
 
-This is the working roadmap for the next stretch. It condenses the latest end-of-day notes, Firebase plan, pre-launch audit, and Tier 2 plan into the practical build sequence.
+This is the working roadmap for the next stretch. It condenses the latest end-of-day notes, Firebase plan, pre-launch audit, overview research, and Tier 2 plan into the practical build sequence.
 
 ### Phase 1: Current Surface Polish
 
@@ -48,10 +48,12 @@ Goal:
 
 Exit checks:
 
-- run a short manual QA pass through the loading/auth/account/storage paths touched in the latest polish session
+- finish the dataset overview upgrade as the final Phase 1 polish lane
+- keep overview data export-backed and avoid reserving UI for Instagram-only in-app fields that are not present in the export
+- remove or merge redundant overview/support panels left over from the old flat KPI design
+- run a focused responsive pass through the upgraded overview at the current desktop workspace breakpoints
+- run a short manual QA pass through the loading/auth/account/storage paths touched in the latest polish sessions
 - complete the remaining live auth checks in `docs/auth-state-qa.md`
-- recheck any route-level loading behavior that changes once access gating redirects are introduced
-- decide whether the dataset overview upgrade happens before or after Phase 2 access gating
 
 ### Phase 2: Access Gating
 
@@ -77,6 +79,7 @@ Build next:
 
 - create Firestore `users/{uid}` profile documents
 - save dataset metadata under `users/{uid}/datasets/{datasetId}`
+- persist sign-up marketing consent on the user profile with opt-in value, source, and timestamp
 - load only the current user's datasets in storage and workspace routes
 - add Firestore server helpers and ownership checks
 - add Firestore security rules for `users/{uid}` ownership
@@ -478,6 +481,9 @@ Use this section to track the current migration flow specifically.
 
 ### Watch Soon
 
+- [ ] Finish the dataset overview upgrade before leaving Phase 1
+- Why soon: today established the layered `views / interactions / followers` direction, but the detail panels and support sections still need polish before access gating starts
+
 - [ ] Do a deliberate interaction QA pass on overview + `not following back`
 - Why soon: recent polish added stronger visited, move-state, footer jump, legal-route, and animation behaviors, so a focused app-side QA pass is still valuable
 
@@ -750,3 +756,25 @@ Add one short entry per work session.
   - tying component-specific layout breakpoints to global title sizing could make the page feel inconsistent; title rhythm should stay shared unless a real component demands otherwise
 - Next step:
   - continue the short-height desktop audit with the target matrix captured in `docs/day-wraps/2026-05-04/end-of-day.md`, then return to mobile gate polish
+
+### Session Entry - 2026-05-19
+
+- Date: 2026-05-19
+- Focus: polish signed-in/account access, inspect real Instagram overview data, and start the dataset overview upgrade
+- What moved forward:
+  - signed-in account/access UI was tightened with better stat hierarchy, smaller welcome sizing, and quieter auth preference controls
+  - keep-signed-in and marketing-updates controls were added, with Firestore follow-up notes for durable opt-in storage
+  - local Instagram overview research was organized and excluded from git
+  - the real export was compared against Instagram's in-app Insights screenshots so the overview direction can stay honest
+  - dataset uploads now become the active dataset and the exports modal storage action has a clearer blue-outline treatment
+  - the dataset overview shifted from six flat KPI cards into a layered `views`, `interactions`, and `followers` model
+  - Views detail now shows export-backed total views, audience split, reach, profile visits, link taps, and profile activity
+  - the unsupported content-type placeholder was removed because that data appears to be in-app only, not export-backed
+- What remains rough:
+  - the overview upgrade still needs visual polish before Phase 1 can close
+  - interactions and followers need unique detail stories instead of duplicated metrics
+  - old support sections should be merged or removed where they repeat the new drill-in panels
+- Biggest risk:
+  - copying Instagram's visible in-app insights too literally could make Instalyzer expose unsupported empty states instead of a clean export-backed overview
+- Next step:
+  - continue polishing the overview upgrade, then run the desktop/laptop responsive matrix and move into access gating once Phase 1 is accepted
