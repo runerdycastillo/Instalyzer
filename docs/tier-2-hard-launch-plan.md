@@ -183,7 +183,7 @@ Hard launch should make support and auth emails feel fully branded and trustwort
 Needed pieces:
 
 - keep `support@instalyzer.app` as the visible sender/reply-to identity
-- confirm SPF, DKIM, and DMARC are passing for Firebase/Auth emails
+- confirm SPF, DKIM, and DMARC are passing for support/auth emails
 - move DMARC toward an enforcement policy when the domain is ready
 - set up BIMI so Gmail and other supported inboxes can show the Instalyzer logo instead of the default sender initial
 - prepare the compliant BIMI logo asset and required DNS record
@@ -193,6 +193,11 @@ Needed pieces:
 Soft-launch note:
 
 - the default sender initial is acceptable for now as long as `mailed-by`, `signed-by`, sender, and reply-to all point to `instalyzer.app`
+- SPF, Microsoft DKIM, and DMARC were manually verified as passing in Gmail on May 19, 2026.
+- The first vector BIMI asset now exists at `instalyzer-next/public/bimi.svg`.
+- Do not add the BIMI DNS record while the asset only exists locally.
+- After the soft-launch deployment exposes `https://instalyzer.app/bimi.svg`, add `default._bimi` as a TXT record with `v=BIMI1; l=https://instalyzer.app/bimi.svg;`.
+- Treat VMC/CMC certificate work as later public/hard-launch polish unless the target inboxes require it earlier.
 
 ### 9. Product QA Before Hard Launch
 

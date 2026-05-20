@@ -75,3 +75,52 @@ Today is May 19, 2026.
 - Instagram's in-app `by content type` split is visible in the screenshots but was not detected in the export. Do not reserve permanent UI space for it unless a future export source provides it.
 - The free overview should be generous, but the paid-tool strategy should center on things Instagram does not already give directly, such as not-following-back and computed posting/performance guidance.
 - The local dev URL remains `http://localhost:3000` when the Next server is running.
+
+## Evening Addendum: Email Trust And BIMI Prep
+
+This was a lighter follow-up session focused on getting the email-brand trust lane ready for soft launch/public deployment later.
+
+What we finished:
+
+- cleaned up the domain email-authentication setup:
+  - merged duplicate SPF records into one root SPF record for Microsoft 365 and Firebase email
+  - added the Microsoft DKIM selector CNAME records
+  - enabled DKIM signing in Microsoft Defender after DNS propagation
+  - verified a real Gmail delivery with `SPF: PASS`, `DKIM: PASS`, and `DMARC: PASS`
+- clarified that the current BIMI work should pause before the DNS step until the asset is publicly reachable over HTTPS
+- created and inspected the local BIMI logo research folder
+- reviewed the new logo PNGs and confirmed the source artwork is strong, but needs breathing room when used as an inbox-size brand mark
+- installed `potrace` as the local vectorization fallback after `vtracer` was not available through Homebrew
+- generated a real vector BIMI SVG from the transparent logo source:
+  - `instalyzer-next/public/bimi.svg`
+  - solid dark background
+  - real SVG paths, not an embedded PNG
+  - valid XML
+  - no scripts, styles, external links, or raster embeds
+  - approximately `2.3 KB`
+- verified the BIMI SVG is served locally at `/bimi.svg`
+- documented the future BIMI handoff in the launch docs:
+  - do not add the BIMI DNS TXT record while the asset only exists locally
+  - after deployment, verify `https://instalyzer.app/bimi.svg`
+  - then add `default._bimi` with `v=BIMI1; l=https://instalyzer.app/bimi.svg;`
+  - leave VMC/CMC certificate work for later public/hard-launch polish
+- resolved the stale sign-in loading icon diagnostic by aliasing the import in `sign-in/loading.tsx`
+
+What we verified:
+
+- Gmail showed the real support email authentication results as passing:
+  - SPF pass
+  - DKIM pass
+  - DMARC pass
+- `xmllint --noout instalyzer-next/public/bimi.svg` passed
+- `npm run build` passed after the sign-in loading fix and BIMI asset addition
+- local server returned `200 OK` for `http://localhost:3000/bimi.svg`
+
+Next session focus:
+
+1. Return to the dataset overview upgrade polish as the Phase 1 exit task.
+2. Continue refining the upgraded overview detail layout, especially Views first.
+3. Make the Interactions and Followers panels unique instead of repeating the same story.
+4. Remove or merge any remaining redundant overview/support sections.
+5. Review whether the new logo should replace existing app logo assets across the product.
+6. Run the responsive matrix again once the overview polish settles.

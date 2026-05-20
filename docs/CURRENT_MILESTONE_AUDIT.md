@@ -51,6 +51,7 @@ Exit checks:
 - finish the dataset overview upgrade as the final Phase 1 polish lane
 - keep overview data export-backed and avoid reserving UI for Instagram-only in-app fields that are not present in the export
 - remove or merge redundant overview/support panels left over from the old flat KPI design
+- evaluate whether the new BIMI logo artwork should replace the existing app logo assets across the product
 - run a focused responsive pass through the upgraded overview at the current desktop workspace breakpoints
 - run a short manual QA pass through the loading/auth/account/storage paths touched in the latest polish sessions
 - complete the remaining live auth checks in `docs/auth-state-qa.md`
@@ -138,6 +139,7 @@ Build next:
 - run the full new-user QA path from homepage to account, upload, saved dataset, workspace, Tool 1, deletion, support, and sign-out/sign-in
 - recheck responsive behavior after Firestore and auth gating are wired
 - verify support/contact, privacy/deletion, and account flows against the actual stored-data behavior
+- after the soft-launch deployment, verify `https://instalyzer.app/bimi.svg` is publicly reachable and then add the `default._bimi` DNS TXT record
 - update `docs/PRE_LAUNCH_SAAS_AUDIT.md` with findings, must-fix items, and launch confidence
 
 ### Phase 8: Tier 2 / Hard Launch

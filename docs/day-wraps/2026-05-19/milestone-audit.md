@@ -28,11 +28,22 @@ Goal:
 - new dataset uploads now become the active dataset
 - exports modal storage CTA received a clearer blue-outline treatment
 
+## Evening Addendum: Trust Prep
+
+- fixed the domain SPF setup so Microsoft 365 and Firebase email share one root SPF record instead of competing SPF records
+- added and enabled Microsoft DKIM for `instalyzer.app`
+- verified a real Gmail message from `support@instalyzer.app` with SPF, DKIM, and DMARC all passing
+- prepared the first vector BIMI logo asset at `instalyzer-next/public/bimi.svg`
+- documented that the BIMI DNS record should wait until the deployed site serves `https://instalyzer.app/bimi.svg`
+- noted VMC/CMC certificate work as later public/hard-launch polish
+- fixed the stale sign-in loading icon diagnostic with an explicit `ExportIcon` alias
+
 ## Still Open In Current Phase
 
 - polish the new overview detail layout visually
 - finish the interaction and follower detail stories
 - remove or merge redundant support panels left over from the previous overview design
+- review whether the new BIMI logo artwork should become the app-wide logo asset
 - re-run responsive checks across the overview after the remaining layout changes
 - do one final Phase 1 exit QA pass before moving into access gating
 
@@ -50,8 +61,9 @@ Goal:
 2. refine the Views panel first
 3. build unique interaction and follower detail panels
 4. remove remaining redundant overview sections
-5. run the laptop/desktop responsive matrix
-6. then move into Phase 2 access gating
+5. evaluate replacing the existing app logo assets with the new logo artwork
+6. run the laptop/desktop responsive matrix
+7. then move into Phase 2 access gating
 
 ## Phase Gate
 

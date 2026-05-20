@@ -47,6 +47,10 @@ Good additions in this phase:
 - response-time guidance
 - privacy reminder not to send passwords or sensitive credentials
 - optional lightweight contact form only if it clearly improves UX
+- email authentication foundation that supports trust work later:
+  - SPF passing
+  - DKIM passing
+  - DMARC passing
 
 Avoid in this phase:
 
@@ -86,6 +90,11 @@ Recommended upgrades in this phase:
 - tighten privacy guidance and submission expectations
 - clarify response-time expectations
 - make legal, privacy, deletion, and support pages feel like one system
+- complete the basic BIMI activation once the site is publicly deployed:
+  - confirm `https://instalyzer.app/bimi.svg` opens over HTTPS
+  - add `default._bimi` as a DNS TXT record
+  - use `v=BIMI1; l=https://instalyzer.app/bimi.svg;`
+  - verify the BIMI record after DNS propagation
 
 Avoid in this phase:
 
@@ -125,6 +134,7 @@ Only add later if volume actually requires it:
 - helpdesk tooling
 - canned replies
 - deeper automation
+- VMC/CMC certificate work if supported inboxes require stronger BIMI verification
 
 Definition of done for this phase:
 

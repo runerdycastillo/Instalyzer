@@ -1,7 +1,7 @@
-import { FileCheck2, LayoutDashboard, ShieldCheck } from "lucide-react";
+import { FileCheck2 as ExportIcon, LayoutDashboard, ShieldCheck } from "lucide-react";
 
 const signInLoadingCards = [
-  { title: "your export", Icon: FileCheck2 },
+  { title: "your export", Icon: ExportIcon },
   { title: "workspace", Icon: LayoutDashboard },
   { title: "control", Icon: ShieldCheck },
 ] as const;
